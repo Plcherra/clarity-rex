@@ -1,42 +1,32 @@
 # Clarity Review Crew
 
-A focused **4-agent CrewAI team** that reads the Clarity codebase, finds bugs,
-explains fixes in plain English, and can apply them. It works in **sequence**:
+A focused CrewAI team that **reviews** the Clarity codebase and can **optionally
+fix** it. It has two modes.
+
+**REVIEW mode (default — cheap, no file edits):**
 
 1. **ProjectReader** — maps the code in scope: key files, responsibilities, how they connect.
 2. **BugFinder** — hunts for real bugs, risks, and Clarity-rule violations (cites file:line).
-3. **FixSuggester** — explains each problem plainly and gives a concrete, minimal fix.
-4. **FixApplier** — applies the minimal fix directly, runs the relevant tests, and marks
-   each issue FIXED / FAILED / SKIPPED (reverting or leaving unapplied when tests fail).
+3. **FixSuggester** — writes a concrete fix report to `clarity_review_report.md`.
 
-The first three agents only get **read-only** tools (`list_directory`, `read_file`,
-`search_code`), all sandboxed to the repo root. **FixApplier** additionally gets
-`edit_file` (single, exact, unique-match replacement) and `run_tests` (pytest) so it can
-change code and verify it — still sandboxed to the repo root.
+**FIX mode (opt-in with `--fix` — edits files, one pass by default):**
 
-> Note: FixApplier writes to your source files. Run on a clean branch/commit so you can
-> review or revert its changes with git. The review report is written before any edits.
+4. **FixApplier** — applies each suggested fix, runs the closest tests, and marks each
+   issue FIXED / REVERTED (reverts exactly if its tests fail).
 
-## Aggressive auto-fix mode
+The first three agents get **read-only** tools (`list_directory`, `read_file`,
+`search_code`), sandboxed to the repo root. **FixApplier** additionally gets
+`edit_file` (exact, unique-match, syntax-checked), `run_tests` (pytest via the
+backend's own venv), and `restore_file` (byte-exact revert).
 
-Enable with the `--aggressive` flag or `AGGRESSIVE_FIX=true` in `.env`. In this mode the
-crew runs **fully automatically, no human intervention**:
+> 💸 **Cost warning:** FIX mode is much more expensive than REVIEW — it re-reads
+> code and runs the model in a tool loop, and on already-clean code it often
+> proposes marginal/no-op changes that then get reverted. **Start with REVIEW.**
+> Only add `--fix` when you actually expect bugs, and keep the scope narrow.
 
-- Scans the **whole repo** by default (or the folder you pass).
-- FixApplier applies **every** fix it can, immediately.
-- If tests fail, it tries a **different fix**; if that also fails it **reverts** and moves on.
-- It **loops pass-after-pass** until a pass makes no more edits, or it hits the caps
-  `MAX_FIXES` (default 40) / `MAX_ROUNDS` (default 6).
-- Prioritizes speed and fixing over caution.
-
-```powershell
-python clarity_crew.py --aggressive                     # whole repo
-python clarity_crew.py services/rex-api --aggressive    # one folder, aggressive
-```
-
-> ⚠️ Aggressive mode edits many files automatically and favors fixing over safety.
-> **Always run it on a clean git branch** so you can review the full diff and revert.
-> Tune the caps with `MAX_FIXES` and `MAX_ROUNDS` (see `.env.example`).
+> ⚠️ FIX mode edits your source files. **Run it on a clean git branch** and review
+> the full diff (`git diff`). It will not run multiple passes unless you pass
+> `--rounds N`.
 
 ## Setup
 
@@ -48,24 +38,65 @@ pip install -r requirements.txt
 copy .env.example .env       # then edit .env and add your API key
 ```
 
-By default it uses the cheap/fast **xAI Grok** model `xai/grok-3-mini`. Add your
-`XAI_API_KEY` (from https://console.x.ai) to `.env`. To use a bigger Grok model,
-change `MODEL` in `.env` (e.g. `xai/grok-3` or `xai/grok-4`).
+By default it uses the cheap/fast **xAI Grok** model `xai/grok-3-mini` (add your
+`XAI_API_KEY` from https://console.x.ai to `.env`).
+
+The provider is **auto-detected from the `MODEL` string**, so you can switch
+freely — just set `MODEL` and the matching key in `.env`:
+
+| `MODEL` | Provider | Key needed | Notes |
+| --- | --- | --- | --- |
+| `xai/grok-3-mini` | xAI | `XAI_API_KEY` | cheap/fast, but a reasoning model that can return empties |
+| `xai/grok-3` | xAI | `XAI_API_KEY` | non-reasoning, steadier |
+| `gpt-4o-mini` | OpenAI | `OPENAI_API_KEY` | cheap/fast and **most reliable inside CrewAI's tool loop** |
+| `gpt-4o` | OpenAI | `OPENAI_API_KEY` | strongest |
+
+> If Grok keeps returning empty responses (see below), the simplest reliable fix
+> is `MODEL=gpt-4o-mini` with `OPENAI_API_KEY` set.
 
 ## Run
 
-```powershell
-# Review a sensible default scope (services/rex-api/app/services)
-python clarity_crew.py
+Recommended workflow — **review → prune → apply-only** — so you never pay to
+apply fixes you don't want:
 
-# Review a specific folder or file (path relative to repo root)
+```powershell
+# 1) REVIEW (default): read + find + suggest, NO edits. Cheap. Start here.
 python clarity_crew.py services/rex-api/app/services/capabilities
-python clarity_crew.py apps/mobile/lib/rex/chat
+
+# 2) Open crew/clarity_review_report.md and DELETE any fixes you don't want.
+
+# 3) APPLY-ONLY: apply just the fixes left in the report (no re-analysis = cheap).
+python clarity_crew.py services/rex-api/app/services/capabilities --apply-only
 ```
 
-The review is saved to `crew/clarity_review_report.md`, and FixApplier's results
-(what was fixed vs. failed vs. skipped, with test output) are saved to
-`crew/clarity_fix_results.md`.
+Or do it all in one shot (analyze + apply, one pass):
+
+```powershell
+python clarity_crew.py <path> --fix
+python clarity_crew.py <path> --fix --rounds 3   # loop up to N passes (rarely needed)
+```
+
+| Flag | Meaning | Default |
+| --- | --- | --- |
+| *(none)* | REVIEW only — writes the report, edits nothing | on |
+| `--fix` / `--apply` | analyze **and** apply (FixApplier edits files) | off |
+| `--apply-only` | apply fixes from the existing report, skip analysis | off |
+| `--rounds N` | max fix passes (only with `--fix`) | 1 |
+
+### How the FixApplier decides (so tokens aren't wasted on reverts)
+
+- **No-op / cosmetic / duplicate** suggestion → **SKIPPED** (never edited).
+- Real fix, **tests pass** → kept, **FIXED**.
+- Real fix, **no test covers it** → kept, **APPLIED-UNVERIFIED** (flagged for your
+  review) — it is *not* thrown away just because there's no test.
+- Real fix, **a test now fails** → the applier **iterates on the code to make it
+  pass** (up to a few attempts; it never weakens/deletes tests). Green → **FIXED**.
+  Only if it still can't → reverted byte-exact, **REVERTED** (last resort).
+
+The review is always saved to `crew/clarity_review_report.md`. When applying,
+FixApplier's results plus a **Ground truth** section (real edit count +
+`git diff --stat`) are saved to `crew/clarity_fix_results.md`. For reliable edits
+set `APPLIER_MODEL=gpt-4o`.
 
 ## Reliability (empty-response handling)
 
@@ -78,9 +109,11 @@ hardened against this via `grok_client.py`:
   model is a reasoning model that occasionally emits only hidden reasoning with
   empty visible content; a plain retry at low temperature reproduces the same
   empty, so bumping temperature lets it take a different path.
-- **Non-reasoning fallback**: if it still comes back empty, that single call is
-  handed to `FALLBACK_MODEL` (default `xai/grok-3`), which reliably returns
-  visible content. Set `FALLBACK_MODEL=none` to disable.
+- **Automatic fallback model**: if it still comes back empty, that single call is
+  handed to `FALLBACK_MODEL`. If unset, it uses `gpt-4o-mini` when `OPENAI_API_KEY`
+  is present, otherwise `xai/grok-3`. Set `FALLBACK_MODEL=none` to disable.
+- **Smaller context**: file reads are capped (`READ_MAX_CHARS`, default 16k) so a
+  few large files don't blow up the context and trigger empty Grok responses.
 - **Lower `TEMPERATURE` (0.1)** for steadier output, **`MAX_TOKENS` cap (4000)**,
   and **`REASONING_EFFORT=low`** to reduce rate-limit pressure and wasted reasoning.
 - If a run *still* fails after retries and fallback, the crew **doesn't crash with
@@ -91,7 +124,9 @@ Want maximum reliability from the start? Set `MODEL=xai/grok-3` (non-reasoning) 
 
 ## Notes
 
-- Scope keeps token usage (and cost) low — point it at one area at a time rather
-  than the whole repo.
-- Nothing is modified: the crew only reads and reports. Apply the suggested fixes
-  yourself after reviewing them.
+- **REVIEW is the default** and by far the cheapest, most useful mode — the report
+  is the main value. Only reach for `--fix` when you expect real, fixable bugs.
+- Scoping to one folder keeps token usage (and cost) low and each pass fast.
+- FIX mode **modifies your code**. Use a clean git branch and review with `git diff`.
+- FIX mode runs a **single pass** unless you pass `--rounds N` — it will not silently
+  loop and burn tokens re-analyzing clean code.

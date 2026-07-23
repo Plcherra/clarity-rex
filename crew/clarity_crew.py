@@ -1,39 +1,40 @@
-"""Clarity Review Crew — a focused CrewAI team that reviews and fixes code.
+"""Clarity Review Crew — a CrewAI team that reviews code, and can optionally fix it.
 
-Pipeline (sequential):
+Two modes:
+
+  REVIEW (default, cheap — one pass, no file edits):
     1. ProjectReader  -> maps the codebase and explains how it is put together.
     2. BugFinder      -> hunts for real bugs, risks, and rule violations.
-    3. FixSuggester   -> explains each problem in plain English + concrete fixes.
-    4. FixApplier     -> applies the fix, runs tests, marks FIXED / FAILED / SKIPPED.
+    3. FixSuggester   -> writes a concrete fix report (clarity_review_report.md).
 
-Modes:
-    Normal    : one pass over a scoped folder; FixApplier is careful and skips
-                risky fixes.
-    Aggressive: scans the whole project (or a folder), applies every fix it can,
-                retries or reverts on test failure, and loops pass-after-pass with
-                no human intervention until no more edits happen or a max-fix cap
-                is reached. Prioritizes speed and fixing over caution.
+  FIX (opt-in with --fix — edits files, one pass by default):
+    4. FixApplier     -> applies each suggested fix, runs the closest tests, and
+                         reverts anything whose tests fail.
+
+Cost note: FIX mode is much more expensive (it re-reads code and runs the model
+in a tool loop). It also tends to propose marginal/no-op changes on already-clean
+code, so REVIEW is the default. Only add --fix when you expect real bugs.
 
 Run:
-    python clarity_crew.py                              # normal, default scope
-    python clarity_crew.py services/rex-api/app/services  # normal, one folder
-    python clarity_crew.py --aggressive                 # aggressive, whole repo
-    python clarity_crew.py services/rex-api --aggressive # aggressive, one folder
+    python clarity_crew.py services/rex-api/app/services   # REVIEW one folder
+    python clarity_crew.py .                                # REVIEW whole repo
+    python clarity_crew.py <path> --fix                     # also apply fixes
+    python clarity_crew.py <path> --fix --rounds 3          # loop fix up to 3x
 
-Enable aggressive mode with the --aggressive flag or AGGRESSIVE_FIX=true.
-Configure via .env (see .env.example). Uses xAI Grok (cheap/fast) by default.
+Configure via .env (see .env.example). Set APPLIER_MODEL=gpt-4o for reliable edits.
 """
 
 from __future__ import annotations
 
 import logging
 import os
+import subprocess
 import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
 
-from crewai import Agent, Crew, Process, Task
+from crewai import Crew, Process
 from dotenv import load_dotenv
 
 from codebase_tools import (
@@ -43,9 +44,11 @@ from codebase_tools import (
     list_directory,
     read_file,
     reset_edit_count,
+    restore_file,
     run_tests,
     search_code,
 )
+from crew_definitions import build_agents, build_apply_only_task, build_tasks
 from grok_client import build_grok_llm
 
 load_dotenv()
@@ -53,271 +56,130 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(messag
 log = logging.getLogger("clarity_crew")
 
 # --- Model: resilient xAI Grok (cheap + fast, retries empty responses) -------
-# grok-3-mini is inexpensive and quick. Set XAI_API_KEY in .env. Tune the model,
-# temperature, tokens, and retry behavior via env (see .env.example).
+# Configure model/temperature/tokens/retries via env (see .env.example).
 MODEL_NAME = os.environ.get("MODEL", "xai/grok-3-mini")
+# The Fix Applier needs precise, exact edits. Optionally give it a stronger model
+# (e.g. APPLIER_MODEL=gpt-4o) while the other agents use the cheaper MODEL.
+APPLIER_MODEL = os.environ.get("APPLIER_MODEL", "").strip()
 
 llm = build_grok_llm()
+applier_llm = build_grok_llm(APPLIER_MODEL) if APPLIER_MODEL else llm
 
 TOOLS = [list_directory, read_file, search_code]
 # FixApplier also gets write + test tools so it can change code and verify it.
-APPLIER_TOOLS = [list_directory, read_file, search_code, edit_file, run_tests]
+APPLIER_TOOLS = [
+    list_directory,
+    read_file,
+    search_code,
+    edit_file,
+    run_tests,
+    restore_file,
+]
 
-# Aggressive-loop caps (override via env).
+# Fix-mode caps. Default to a SINGLE pass so we never silently re-run the whole
+# (expensive) pipeline. Use --rounds N (or MAX_ROUNDS) to opt into looping.
 MAX_FIXES = int(os.environ.get("MAX_FIXES", "40"))
-MAX_ROUNDS = int(os.environ.get("MAX_ROUNDS", "6"))
+MAX_ROUNDS = int(os.environ.get("MAX_ROUNDS", "1"))
 
 
-def build_agents(aggressive: bool) -> tuple[Agent, Agent, Agent, Agent]:
-    project_reader = Agent(
-        role="Project Reader",
-        goal=(
-            "Understand the Clarity codebase in the requested scope: its structure, "
-            "the main modules, how they connect, and what each part is responsible for."
-        ),
-        backstory=(
-            "You are a meticulous senior engineer who joins a project that is already "
-            "80-90% built. You never guess — you use the tools to list directories, read "
-            "files, and search code until you genuinely understand how things fit together. "
-            "You care about the assistant pipeline (Grok brain + backend body), memory, "
-            "voice, and finance wiring."
-        ),
-        tools=TOOLS,
-        llm=llm,
-        allow_delegation=False,
-        verbose=True,
-        max_iter=25,
+def _build_crew(scope: str, apply: bool) -> Crew:
+    reader, finder, suggester, applier = build_agents(
+        llm, applier_llm, TOOLS, APPLIER_TOOLS
     )
-
-    bug_finder = Agent(
-        role="Bug Finder",
-        goal=(
-            "Find real bugs, correctness risks, and rule violations in the code that the "
-            "Project Reader mapped. Prioritize issues that would actually bite users."
-        ),
-        backstory=(
-            "You are a sharp code auditor. You look for logic errors, None/null handling, "
-            "race conditions, incorrect async usage, unhandled errors, security/scoping "
-            "issues (user data must stay scoped), and violations of the project's rules "
-            "(no fake memory, no invented balances, no silent saves, files under 500 lines). "
-            "You read the actual code before claiming a bug and cite file + line numbers."
-        ),
-        tools=TOOLS,
-        llm=llm,
-        allow_delegation=False,
-        verbose=True,
-        max_iter=25,
-    )
-
-    fix_suggester = Agent(
-        role="Fix Suggester",
-        goal=(
-            "Turn each confirmed issue into a plain-English explanation plus a concrete, "
-            "minimal fix a developer can apply directly."
-        ),
-        backstory=(
-            "You are a calm senior engineer who explains problems so a non-expert can "
-            "follow. For every issue you state: what is wrong, why it matters, and exactly "
-            "how to fix it (with a short code sketch when useful). You prefer root-cause "
-            "fixes over patches and respect the existing architecture."
-        ),
-        tools=TOOLS,
-        llm=llm,
-        allow_delegation=False,
-        verbose=True,
-        max_iter=20,
-    )
-
-    if aggressive:
-        applier_backstory = (
-            "You are a fast, decisive engineer in AGGRESSIVE auto-fix mode. You apply "
-            "every suggested fix immediately with edit_file, then run the relevant tests "
-            "with run_tests. If tests fail, you try a DIFFERENT fix; if that also fails, "
-            "you revert your change back to the original code and move on to the next "
-            "issue — you never get stuck. You favor speed and fixing over caution, but you "
-            "still never claim a fix works unless tests actually passed."
-        )
-        applier_max_iter = 60
+    tasks = build_tasks(scope, reader, finder, suggester, applier)
+    if not apply:
+        # REVIEW mode: drop the file-editing FixApplier and its task entirely.
+        tasks = tasks[:3]
+        agents = [reader, finder, suggester]
     else:
-        applier_backstory = (
-            "You are a careful engineer who turns suggestions into real, working changes. "
-            "You re-read the exact code before editing, apply the smallest change that "
-            "solves the root cause with edit_file, then run the relevant tests with "
-            "run_tests. You never claim success unless the tests actually pass. If a fix "
-            "is risky, ambiguous, or would touch code you cannot verify, you leave it "
-            "unapplied and explain why instead of guessing."
-        )
-        applier_max_iter = 30
-
-    fix_applier = Agent(
-        role="Fix Applier",
-        goal=(
-            "Apply the fixes suggested by the Fix Suggester directly to the code, run the "
-            "relevant tests, and mark each issue FIXED / FAILED / SKIPPED."
-        ),
-        backstory=applier_backstory,
-        tools=APPLIER_TOOLS,
-        llm=llm,
-        allow_delegation=False,
-        verbose=True,
-        max_iter=applier_max_iter,
-    )
-
-    return project_reader, bug_finder, fix_suggester, fix_applier
-
-
-def build_tasks(
-    scope: str,
-    aggressive: bool,
-    project_reader: Agent,
-    bug_finder: Agent,
-    fix_suggester: Agent,
-    fix_applier: Agent,
-) -> list[Task]:
-    read_task = Task(
-        description=(
-            f"Explore the Clarity repository, focusing on this scope: '{scope}'.\n"
-            "Use list_directory to see what exists, read_file to read the important files, "
-            "and search_code to trace how pieces connect.\n"
-            "Produce a clear map: the key files in scope, what each is responsible for, "
-            "how data/control flows between them, and any areas that look fragile or "
-            "overly complex. Note file sizes that look large (rule: keep under 500 lines)."
-        ),
-        expected_output=(
-            "A structured overview of the scope: bullet list of key files with a one-line "
-            "purpose each, a short description of how they interact, and a list of "
-            "'areas worth a closer look' for the bug hunt."
-        ),
-        agent=project_reader,
-    )
-
-    bug_task = Task(
-        description=(
-            "Using the Project Reader's map, hunt for real bugs and issues in scope: "
-            f"'{scope}'.\n"
-            "Read the actual code before flagging anything. Look for: logic errors, "
-            "None/empty handling, wrong async/await, unhandled exceptions, data-scoping/"
-            "security problems, and violations of Clarity rules (no fake success/memory, "
-            "no invented balances, no silent saves, files over 500 lines).\n"
-            "Ignore purely stylistic nits — focus on things that could actually break or "
-            "mislead users."
-        ),
-        expected_output=(
-            "A numbered list of concrete issues. Each item: a short title, the file path "
-            "and line number(s), severity (High/Medium/Low), and 1-3 sentences describing "
-            "the problem and the evidence you saw in the code."
-        ),
-        agent=bug_finder,
-        context=[read_task],
-    )
-
-    fix_task = Task(
-        description=(
-            "Take the Bug Finder's numbered issues and, for each one, write a plain-English "
-            "explanation and a concrete fix.\n"
-            "Re-read the relevant code if needed to make the fix accurate. Prefer minimal, "
-            "root-cause fixes that respect the existing architecture. Do NOT rewrite whole "
-            "files; give focused changes."
-        ),
-        expected_output=(
-            "A final Markdown report titled '# Clarity Review Report'. For each issue: \n"
-            "- **Issue** (title, file:line, severity)\n"
-            "- **In plain English** (what's wrong and why it matters)\n"
-            "- **Suggested fix** (clear steps, with a short code sketch when helpful)\n"
-            "End with a short 'Top 3 things to fix first' summary."
-        ),
-        agent=fix_suggester,
-        context=[read_task, bug_task],
-        output_file="clarity_review_report.md",
-    )
-
-    if aggressive:
-        apply_description = (
-            "AGGRESSIVE AUTO-FIX. Take the Fix Suggester's report and apply EVERY fix you "
-            f"can to the actual code in scope: '{scope}'. Work through all issues without "
-            "asking for permission.\n"
-            "For each issue:\n"
-            "1. Re-read the relevant file to confirm the exact current code.\n"
-            "2. Apply the fix immediately with edit_file (focused change, no whole-file "
-            "rewrites).\n"
-            "3. Run the relevant tests with run_tests (closest test file/folder, e.g. "
-            "services/rex-api/tests).\n"
-            "4. If tests pass, mark FIXED. If they FAIL, try a DIFFERENT fix; if that also "
-            "fails, revert your edit back to the original code and mark REVERTED, then move "
-            "on. Do not get stuck on any single issue.\n"
-            "Keep going until you have attempted every issue. Prioritize speed and fixing."
-        )
-    else:
-        apply_description = (
-            "Take the Fix Suggester's report and apply the fixes to the actual code in "
-            f"scope: '{scope}'.\n"
-            "For each issue, in order:\n"
-            "1. Re-read the relevant file to confirm the exact current code.\n"
-            "2. Apply the minimal fix with edit_file (smallest change that solves the "
-            "root cause; do not rewrite whole files).\n"
-            "3. Run the relevant tests with run_tests (target the closest test file/folder, "
-            "e.g. services/rex-api/tests).\n"
-            "4. If the tests pass, mark the issue FIXED. If they fail, report the failure "
-            "output and, if you cannot safely resolve it, revert your change back to the "
-            "original code so the repo stays green.\n"
-            "If an issue is too ambiguous or risky to apply safely, leave it UNAPPLIED and "
-            "explain why. Never claim a fix works unless tests actually passed."
-        )
-
-    apply_task = Task(
-        description=apply_description,
-        expected_output=(
-            "A Markdown section titled '# Fix Application Results'. For each issue: the "
-            "title, the file(s) changed, status (FIXED / FAILED / REVERTED / SKIPPED), the "
-            "test command target and its pass/fail result, and a one-line note. End with a "
-            "summary count of fixed vs. failed vs. reverted vs. skipped."
-        ),
-        agent=fix_applier,
-        context=[fix_task],
-        output_file="clarity_fix_results.md",
-    )
-
-    return [read_task, bug_task, fix_task, apply_task]
-
-
-def _build_crew(scope: str, aggressive: bool) -> Crew:
-    reader, finder, suggester, applier = build_agents(aggressive)
-    tasks = build_tasks(scope, aggressive, reader, finder, suggester, applier)
+        agents = [reader, finder, suggester, applier]
     return Crew(
-        agents=[reader, finder, suggester, applier],
+        agents=agents,
         tasks=tasks,
         process=Process.sequential,
         verbose=True,
     )
 
 
-def _parse_args(argv: list[str]) -> tuple[str | None, bool]:
-    """Return (scope, aggressive). scope is None if not provided."""
-    aggressive = os.environ.get("AGGRESSIVE_FIX", "").lower() in {"1", "true", "yes"}
+def _build_apply_only_crew(scope: str) -> Crew:
+    """Crew with only the FixApplier, applying fixes from the saved report."""
+    _, _, _, applier = build_agents(llm, applier_llm, TOOLS, APPLIER_TOOLS)
+    return Crew(
+        agents=[applier],
+        tasks=[build_apply_only_task(scope, applier)],
+        process=Process.sequential,
+        verbose=True,
+    )
+
+
+class RunConfig:
+    """Parsed CLI options for one invocation."""
+
+    def __init__(
+        self, scope: str, apply: bool, rounds: int, apply_only: bool, dry_run: bool
+    ) -> None:
+        self.scope = scope
+        self.apply = apply
+        self.rounds = rounds
+        self.apply_only = apply_only
+        self.dry_run = dry_run
+
+
+def _parse_args(argv: list[str]) -> RunConfig:
+    """Parse the scope and flags.
+
+    Modes:
+      (default)      REVIEW — 3 agents, no edits, cheapest.
+      --fix          analyze + apply (one pass; --rounds N to loop).
+      --apply-only   apply fixes from the EXISTING report (skip analysis, cheapest
+                     way to actually land curated fixes).
+    """
     scope: str | None = None
-    for arg in argv:
-        if arg in {"--aggressive", "-a"}:
-            aggressive = True
-        elif not arg.startswith("-") and scope is None:
+    apply = False
+    apply_only = False
+    dry_run = False
+    rounds = MAX_ROUNDS
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg in ("--fix", "--apply"):
+            apply = True
+        elif arg in ("--apply-only", "--apply-report"):
+            apply_only = True
+        elif arg in ("--dry-run", "--dry"):
+            dry_run = True
+        elif arg == "--rounds":
+            i += 1
+            if i < len(argv):
+                try:
+                    rounds = max(1, int(argv[i]))
+                except ValueError:
+                    rounds = MAX_ROUNDS
+        elif arg.startswith("--rounds="):
+            try:
+                rounds = max(1, int(arg.split("=", 1)[1]))
+            except ValueError:
+                rounds = MAX_ROUNDS
+        elif not arg.startswith("-"):
             scope = arg
-    return scope, aggressive
+        i += 1
+    return RunConfig(scope or ".", apply, rounds, apply_only, dry_run)
 
 
-def _write_error_report(scope: str, aggressive: bool, exc: Exception) -> None:
+def _write_error_report(scope: str, exc: Exception) -> None:
     """Record a run failure to the fix-results file so it isn't just a traceback."""
     fixes_path = Path("clarity_fix_results.md").resolve()
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     detail = "".join(traceback.format_exception_only(type(exc), exc)).strip()
     note = (
         f"\n\n---\n\n## Run error ({stamp})\n\n"
-        f"- **Scope:** `{scope}`  |  **Mode:** {'aggressive' if aggressive else 'normal'}\n"
+        f"- **Scope:** `{scope}`\n"
         f"- **Edits applied before failure:** {get_edit_count()}\n"
         f"- **Error:** {detail}\n\n"
-        "The crew stopped this pass because the Grok model could not return a "
-        "usable response (empty output or repeated API errors) even after retries. "
-        "Things to try: lower `MAX_TOKENS` pressure by narrowing the scope, switch "
-        "to a non-reasoning model (`MODEL=xai/grok-3`), or re-run — earlier applied "
-        "edits are preserved.\n"
+        "The crew stopped this pass because the model could not return a usable "
+        "response even after retries/fallback. Things to try: narrow the scope, "
+        "switch models (e.g. MODEL=gpt-4o-mini with OPENAI_API_KEY), or re-run — "
+        "earlier applied edits are preserved.\n"
     )
     try:
         with fixes_path.open("a", encoding="utf-8") as handle:
@@ -326,70 +188,149 @@ def _write_error_report(scope: str, aggressive: bool, exc: Exception) -> None:
         pass
 
 
-def _run_once(scope: str, aggressive: bool):
-    crew = _build_crew(scope, aggressive)
+def _append_ground_truth(scope: str) -> None:
+    """Append the REAL change set to the results file, independent of the LLM.
+
+    The agent's self-reported summary can be wrong (it may claim fixes it never
+    applied). This records the actual edit count and git diff so the user sees
+    ground truth.
+    """
+    fixes_path = Path("clarity_fix_results.md").resolve()
+    diff_stat = ""
+    try:
+        proc = subprocess.run(
+            ["git", "diff", "--stat", "--", scope if scope != "." else "."],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        diff_stat = (proc.stdout or "").strip() or "(no files changed)"
+    except Exception as exc:  # noqa: BLE001
+        diff_stat = f"(could not run git diff: {exc})"
+
+    section = (
+        f"\n\n---\n\n## Ground truth (verified, not self-reported)\n\n"
+        f"- **Successful file edits applied this run:** {get_edit_count()}\n"
+        f"- **git diff --stat:**\n\n```\n{diff_stat}\n```\n\n"
+        "If the summary above claims fixes but this shows no changes, the agent's "
+        "report was inaccurate — trust this section.\n"
+    )
+    try:
+        with fixes_path.open("a", encoding="utf-8") as handle:
+            handle.write(section)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _run_once(scope: str, apply: bool):
+    crew = _build_crew(scope, apply)
     return crew.kickoff()
 
 
-def main() -> None:
-    scope_arg, aggressive = _parse_args(sys.argv[1:])
-    # Aggressive mode defaults to the whole repo; normal mode to the backend services.
-    default_scope = "." if aggressive else "services/rex-api/app/services"
-    scope = scope_arg or default_scope
+def _run_review(scope: str):
+    """Single, cheap review pass — three agents, no file edits."""
+    print(f"\n{'#' * 70}\n# Review pass (no files will be edited)\n{'#' * 70}")
+    try:
+        return _run_once(scope, apply=False)
+    except Exception as exc:  # noqa: BLE001
+        log.error("Review failed: %s", exc)
+        _write_error_report(scope, exc)
+        return f"Review failed: {exc}"
 
-    print(f"Repo root : {REPO_ROOT}")
-    print(f"Scope     : {scope}")
-    print(f"Model     : {MODEL_NAME}")
-    print(f"Mode      : {'AGGRESSIVE auto-fix' if aggressive else 'normal (single pass)'}")
-    if aggressive:
-        print(f"Limits    : max {MAX_FIXES} fixes, max {MAX_ROUNDS} rounds")
-    print()
 
+def _run_fix(scope: str, rounds: int):
+    """Fix passes (edits files). Loops only up to `rounds` (default 1)."""
     reset_edit_count()
     last_result = None
-
-    if not aggressive:
+    round_num = 0
+    while round_num < rounds and get_edit_count() < MAX_FIXES:
+        round_num += 1
+        edits_before = get_edit_count()
+        print(f"\n{'#' * 70}\n# Fix round {round_num}/{rounds} "
+              f"(edits so far: {edits_before})\n{'#' * 70}")
         try:
-            last_result = _run_once(scope, aggressive)
-        except Exception as exc:  # noqa: BLE001 - report instead of crashing
-            log.error("Crew run failed: %s", exc)
-            _write_error_report(scope, aggressive, exc)
-            last_result = f"Run failed: {exc}"
+            last_result = _run_once(scope, apply=True)
+        except Exception as exc:  # noqa: BLE001 - keep prior edits, stop cleanly
+            log.error("Round %d failed: %s", round_num, exc)
+            _write_error_report(scope, exc)
+            last_result = f"Round {round_num} failed: {exc}"
+            print("Stopping after error; earlier edits are kept.")
+            break
+        edits_this_round = get_edit_count() - edits_before
+        print(f"\n[round {round_num}] edits applied this round: {edits_this_round} "
+              f"(total: {get_edit_count()})")
+        if edits_this_round == 0:
+            print("No edits applied this round — no more fixable issues. Stopping.")
+            break
+    _append_ground_truth(scope)
+    return last_result
+
+
+def _run_apply_only(scope: str):
+    """Apply fixes from the EXISTING report — no analysis agents. Cheapest apply."""
+    report = Path("clarity_review_report.md")
+    if not report.exists():
+        msg = (
+            "No clarity_review_report.md found. Run a review first "
+            "(python clarity_crew.py <scope>), optionally prune it, then --apply-only."
+        )
+        print(msg)
+        return msg
+    reset_edit_count()
+    print(f"\n{'#' * 70}\n# Apply-only (from saved report; no re-analysis)\n{'#' * 70}")
+    try:
+        result = _build_apply_only_crew(scope).kickoff()
+    except Exception as exc:  # noqa: BLE001
+        log.error("Apply-only failed: %s", exc)
+        _write_error_report(scope, exc)
+        result = f"Apply-only failed: {exc}"
+    _append_ground_truth(scope)
+    return result
+
+
+def main() -> None:
+    cfg = _parse_args(sys.argv[1:])
+    if cfg.apply_only:
+        mode = "APPLY-ONLY (edits files from saved report)"
+    elif cfg.apply:
+        mode = "FIX (edits files)"
     else:
-        round_num = 0
-        while round_num < MAX_ROUNDS and get_edit_count() < MAX_FIXES:
-            round_num += 1
-            edits_before = get_edit_count()
-            print(f"\n{'#' * 70}\n# Aggressive round {round_num} "
-                  f"(edits so far: {edits_before})\n{'#' * 70}")
-            try:
-                last_result = _run_once(scope, aggressive)
-            except Exception as exc:  # noqa: BLE001 - keep prior edits, stop cleanly
-                log.error("Aggressive round %d failed: %s", round_num, exc)
-                _write_error_report(scope, aggressive, exc)
-                last_result = f"Round {round_num} failed: {exc}"
-                print("Stopping aggressive loop after error; earlier edits are kept.")
-                break
-            edits_this_round = get_edit_count() - edits_before
-            print(f"\n[round {round_num}] edits applied this round: {edits_this_round} "
-                  f"(total: {get_edit_count()})")
-            if edits_this_round == 0:
-                print("No edits applied this round — no more fixable issues. Stopping.")
-                break
-        else:
-            if get_edit_count() >= MAX_FIXES:
-                print(f"\nReached max fixes ({MAX_FIXES}). Stopping.")
-            else:
-                print(f"\nReached max rounds ({MAX_ROUNDS}). Stopping.")
+        mode = "REVIEW (no edits)"
+    edits_mode = cfg.apply or cfg.apply_only
+
+    print(f"Repo root : {REPO_ROOT}")
+    print(f"Scope     : {cfg.scope}")
+    print(f"Model     : {MODEL_NAME}")
+    if edits_mode:
+        print(f"Applier   : {APPLIER_MODEL or MODEL_NAME}")
+    print(f"Mode      : {mode}" + (f"  (max {cfg.rounds} round(s))" if cfg.apply else ""))
+    if not edits_mode:
+        print("Tip       : review first, prune the report, then --apply-only (cheapest fix).")
+    print()
+
+    if cfg.dry_run:
+        print("[dry-run] Nothing was executed and no tokens were spent. "
+              "Remove --dry-run to actually run.")
+        return
+
+    if cfg.apply_only:
+        last_result = _run_apply_only(cfg.scope)
+    elif cfg.apply:
+        last_result = _run_fix(cfg.scope, cfg.rounds)
+    else:
+        last_result = _run_review(cfg.scope)
 
     report_path = Path("clarity_review_report.md").resolve()
     fixes_path = Path("clarity_fix_results.md").resolve()
     print("\n" + "=" * 70)
     print("Clarity Review Crew finished.")
-    print(f"Total edits applied: {get_edit_count()}")
+    if edits_mode:
+        print(f"Total edits applied: {get_edit_count()}")
+        print("Review the real changes with:  git diff")
     if report_path.exists():
         print(f"Review report saved to: {report_path}")
-    if fixes_path.exists():
+    if edits_mode and fixes_path.exists():
         print(f"Fix results saved to:   {fixes_path}")
     print("=" * 70)
     print(last_result)

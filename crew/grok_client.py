@@ -21,9 +21,16 @@ import os
 import time
 from typing import Any
 
+import litellm
 from crewai import LLM
 
 log = logging.getLogger("clarity_crew.grok")
+
+# CrewAI sends `stop` sequences for its ReAct loop, but xAI Grok models reject the
+# `stop` parameter ("Model grok-3 does not support parameter stop"). Telling
+# litellm to drop unsupported params makes it silently omit them per provider
+# instead of raising a 400 — the real fix for the Grok failures.
+litellm.drop_params = True
 
 
 class ResilientGrokLLM(LLM):
@@ -149,49 +156,99 @@ class ResilientGrokLLM(LLM):
         )
 
 
-def build_grok_llm() -> ResilientGrokLLM:
-    """Build the resilient Grok LLM from environment configuration."""
-    model = os.environ.get("MODEL", "xai/grok-3-mini")
-    temperature = float(os.environ.get("TEMPERATURE", "0.1"))
-    max_tokens = int(os.environ.get("MAX_TOKENS", "4000"))
-    empty_retries = int(os.environ.get("LLM_EMPTY_RETRIES", "3"))
-    retry_delay = float(os.environ.get("LLM_RETRY_DELAY", "3"))
-    api_key = os.environ.get("XAI_API_KEY")
-    api_retries = int(os.environ.get("LLM_API_RETRIES", "3"))
+def _is_xai(model: str) -> bool:
+    return model.lower().startswith("xai/") or "grok" in model.lower()
 
+
+def _is_openai(model: str) -> bool:
+    m = model.lower()
+    return m.startswith(("gpt", "openai/", "o1", "o3", "o4"))
+
+
+def _api_key_for(model: str) -> str | None:
+    """Pick the correct API key env var for the model's provider.
+
+    Returning None lets litellm read the standard provider env var itself.
+    """
+    if _is_xai(model):
+        return os.environ.get("XAI_API_KEY")
+    if _is_openai(model):
+        return os.environ.get("OPENAI_API_KEY")
+    if "gemini" in model.lower():
+        return os.environ.get("GEMINI_API_KEY")
+    return None
+
+
+def _llm_kwargs(model: str, temperature: float, max_tokens: int, api_retries: int) -> dict[str, Any]:
     kwargs: dict[str, Any] = {
         "model": model,
         "temperature": temperature,
-        "api_key": api_key,
         "max_tokens": max_tokens,
         # litellm-level retries for API errors (429/5xx) on top of our empty-retry.
         "num_retries": api_retries,
     }
+    key = _api_key_for(model)
+    if key:
+        kwargs["api_key"] = key
+    if _is_xai(model):
+        # xAI Grok rejects CrewAI's `stop` sequences with a 400. litellm's generic
+        # drop_params doesn't catch it for every Grok model (e.g. grok-3), so force
+        # it here for all xAI models.
+        kwargs["additional_drop_params"] = ["stop"]
+        # reasoning_effort is only valid for xAI's "mini" reasoning models (low|high).
+        reasoning = os.environ.get("REASONING_EFFORT", "low").lower()
+        if "mini" in model and reasoning in {"low", "high"}:
+            kwargs["reasoning_effort"] = reasoning
+    return kwargs
 
-    # reasoning_effort is only valid for the reasoning "mini" models, and Grok
-    # accepts only "low"/"high" there. Keeping it low avoids burning the whole
-    # token budget on hidden reasoning (a common cause of empty content).
-    reasoning = os.environ.get("REASONING_EFFORT", "low").lower()
-    if "mini" in model and reasoning in {"low", "high"}:
-        kwargs["reasoning_effort"] = reasoning
 
-    # Non-reasoning fallback for the rare case Grok keeps returning empty content.
-    # Skipped if the primary model is already non-reasoning (avoids a pointless
-    # duplicate) or explicitly disabled via FALLBACK_MODEL=none.
+def _default_fallback_model(primary_model: str) -> str:
+    """Choose a reliable fallback model based on what keys are available."""
+    explicit = os.environ.get("FALLBACK_MODEL")
+    if explicit is not None:
+        return explicit.strip()
+    # GPT is the most reliable inside CrewAI's tool loop — prefer it if configured.
+    if os.environ.get("OPENAI_API_KEY"):
+        return "gpt-4o-mini"
+    # Otherwise fall back to a non-reasoning Grok model.
+    if _is_xai(primary_model):
+        return "xai/grok-3"
+    return "none"
+
+
+def build_grok_llm(model_override: str | None = None) -> ResilientGrokLLM:
+    """Build the resilient LLM (Grok/OpenAI/Gemini) from environment config.
+
+    `model_override` lets callers pick a different model (e.g. a stronger model
+    for the Fix Applier) while reusing all other settings.
+    """
+    model = model_override or os.environ.get("MODEL", "xai/grok-3-mini")
+    temperature = float(os.environ.get("TEMPERATURE", "0.1"))
+    max_tokens = int(os.environ.get("MAX_TOKENS", "4000"))
+    empty_retries = int(os.environ.get("LLM_EMPTY_RETRIES", "3"))
+    retry_delay = float(os.environ.get("LLM_RETRY_DELAY", "3"))
+    api_retries = int(os.environ.get("LLM_API_RETRIES", "3"))
+
+    # Fallback model used only if the primary keeps returning empty content.
     fallback_llm: LLM | None = None
-    fallback_model = os.environ.get("FALLBACK_MODEL", "xai/grok-3").strip()
-    if fallback_model.lower() not in {"none", "", model.lower()} and "mini" in model:
-        fallback_llm = LLM(
-            model=fallback_model,
-            temperature=temperature,
-            api_key=api_key,
-            max_tokens=max_tokens,
-            num_retries=api_retries,
-        )
+    fallback_model = _default_fallback_model(model)
+    if fallback_model.lower() not in {"none", "", model.lower()}:
+        if _api_key_for(fallback_model) or not _is_xai(fallback_model):
+            fallback_llm = LLM(
+                **_llm_kwargs(fallback_model, temperature, max_tokens, api_retries)
+            )
+
+    log.info(
+        "LLM configured: model=%s temp=%s max_tokens=%s fallback=%s",
+        model,
+        temperature,
+        max_tokens,
+        getattr(fallback_llm, "model", None) or "none",
+    )
 
     return ResilientGrokLLM(
         max_empty_retries=empty_retries,
         retry_delay=retry_delay,
         fallback_llm=fallback_llm,
-        **kwargs,
+        **_llm_kwargs(model, temperature, max_tokens, api_retries),
     )

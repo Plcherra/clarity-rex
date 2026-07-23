@@ -34,12 +34,19 @@ IGNORED_DIRS = {
     "dist",
     ".pytest_cache",
 }
-MAX_READ_CHARS = 40_000
+# Per-read cap. Big reads pile up context fast and can make some models (Grok)
+# return empty responses, so keep this modest. Override with READ_MAX_CHARS.
+MAX_READ_CHARS = int(os.environ.get("READ_MAX_CHARS", "16000"))
 
-# --- Edit accounting (used by aggressive auto-fix loop control) --------------
+# --- Edit accounting (used by the auto-fix loop control) ---------------------
 # edit_file bumps this on every successful write so the outer loop can tell how
 # much changed in a pass and stop when a pass makes no more edits.
 _EDIT_COUNT = 0
+
+# First-seen (pre-edit) content of every file we touch this run, so restore_file
+# can deterministically put a file back exactly as it started — unlike asking the
+# LLM to re-edit its way back, which is unreliable.
+_ORIGINAL_SNAPSHOTS: dict[str, str] = {}
 
 
 def get_edit_count() -> int:
@@ -50,6 +57,37 @@ def get_edit_count() -> int:
 def reset_edit_count() -> None:
     global _EDIT_COUNT
     _EDIT_COUNT = 0
+    _ORIGINAL_SNAPSHOTS.clear()
+
+
+def _syntax_error(path: Path, text: str) -> str | None:
+    """Return a message if `text` is not valid Python for a .py file, else None."""
+    if path.suffix not in {".py", ".pyi"}:
+        return None
+    import ast
+
+    try:
+        ast.parse(text)
+    except SyntaxError as exc:
+        return f"line {exc.lineno}: {exc.msg}"
+    return None
+
+
+def _read_preserving(path: Path) -> tuple[str, str]:
+    """Read text as LF-normalized (so LLM \n matches) but remember the real EOL.
+
+    Editing must not silently convert a Windows CRLF file to LF, which would flag
+    the whole file as changed in git. We normalize for matching, then write back
+    with the file's original line-ending style.
+    """
+    raw = path.read_bytes().decode("utf-8")
+    newline = "\r\n" if "\r\n" in raw else "\n"
+    return raw.replace("\r\n", "\n"), newline
+
+
+def _write_preserving(path: Path, text: str, newline: str) -> None:
+    out = text.replace("\n", "\r\n") if newline == "\r\n" else text
+    path.write_bytes(out.encode("utf-8"))
 
 
 def _safe_resolve(relative_path: str) -> Path:
@@ -179,7 +217,7 @@ def edit_file(relative_path: str, old_string: str, new_string: str) -> str:
         return "old_string and new_string are identical; nothing to do."
 
     try:
-        content = target.read_text(encoding="utf-8")
+        content, newline = _read_preserving(target)
     except Exception as exc:  # noqa: BLE001
         return f"Could not read {relative_path}: {exc}"
 
@@ -196,13 +234,73 @@ def edit_file(relative_path: str, old_string: str, new_string: str) -> str:
         )
 
     updated = content.replace(old_string, new_string, 1)
+
+    # Reject edits that would break Python syntax — never write invalid code.
+    syntax_problem = _syntax_error(target, updated)
+    if syntax_problem is not None:
+        return (
+            f"Edit REJECTED: it would break Python syntax ({syntax_problem}). "
+            "The file was NOT changed. Fix your new_string (check indentation and "
+            "block structure) and try again."
+        )
+
+    # Snapshot the original the first time we touch this file, for restore_file.
+    key = target.as_posix()
+    if key not in _ORIGINAL_SNAPSHOTS:
+        _ORIGINAL_SNAPSHOTS[key] = (content, newline)
+
     try:
-        target.write_text(updated, encoding="utf-8")
+        _write_preserving(target, updated, newline)
     except Exception as exc:  # noqa: BLE001
         return f"Could not write {relative_path}: {exc}"
     global _EDIT_COUNT
     _EDIT_COUNT += 1
     return f"Applied edit to {relative_path} (1 replacement). [total edits: {_EDIT_COUNT}]"
+
+
+@tool("restore_file")
+def restore_file(relative_path: str) -> str:
+    """Restore a file to exactly its original contents (before any edits this run).
+
+    Use this to cleanly revert a fix when its tests fail — it puts the file back
+    exactly as it started, unlike trying to edit your way back. Input: the file
+    path relative to the repo root.
+    """
+    try:
+        target = _safe_resolve(relative_path)
+    except ValueError as exc:
+        return str(exc)
+    key = target.as_posix()
+    if key not in _ORIGINAL_SNAPSHOTS:
+        return f"No original snapshot for {relative_path}; it was not edited this run."
+    original, newline = _ORIGINAL_SNAPSHOTS[key]
+    try:
+        _write_preserving(target, original, newline)
+    except Exception as exc:  # noqa: BLE001
+        return f"Could not restore {relative_path}: {exc}"
+    return f"Restored {relative_path} to its original contents."
+
+
+BACKEND_DIR = (REPO_ROOT / "services" / "rex-api").resolve()
+
+
+def _backend_python() -> str:
+    """Path to the backend's own venv Python (which has pytest + app deps).
+
+    The crew's venv does not have the backend dependencies, so tests must run
+    with the backend interpreter. Override with TEST_PYTHON.
+    """
+    override = os.environ.get("TEST_PYTHON")
+    if override:
+        return override
+    candidates = [
+        BACKEND_DIR / ".venv" / "Scripts" / "python.exe",  # Windows
+        BACKEND_DIR / ".venv" / "bin" / "python",           # posix
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+    return "python"  # last resort
 
 
 @tool("run_tests")
@@ -211,26 +309,29 @@ def run_tests(test_target: str = "") -> str:
 
     `test_target` is an optional path relative to the repo root pointing at the
     tests to run (e.g. "services/rex-api/tests/test_open_thread_suggestion_flow.py"
-    or "services/rex-api/tests"). Backend tests run inside services/rex-api.
-    Returns pytest's summary output so you can tell if the fix works.
+    or "services/rex-api/tests"). Backend tests run inside services/rex-api using
+    the backend's own Python environment. Returns pytest's summary output so you
+    can tell if the fix works.
     """
     target = test_target.strip()
-    # Backend pytest must run from services/rex-api for imports/conftest to work.
-    backend = (REPO_ROOT / "services" / "rex-api").resolve()
-    cwd = REPO_ROOT
-    pytest_arg = target
-    if target.replace("\\", "/").startswith("services/rex-api"):
-        cwd = backend
-        rel = Path(target).resolve().relative_to(backend)
-        pytest_arg = rel.as_posix()
-    elif not target:
-        # Default to the backend test suite.
-        cwd = backend
+    # Resolve the target against the REPO ROOT (not the crew cwd) so paths like
+    # "services/rex-api/tests" map correctly.
+    if not target:
+        cwd = BACKEND_DIR
         pytest_arg = "tests"
+    else:
+        abs_target = (REPO_ROOT / target).resolve()
+        if REPO_ROOT not in abs_target.parents and abs_target != REPO_ROOT:
+            return f"Test target '{target}' escapes the repository root."
+        try:
+            # Backend tests run from services/rex-api for imports/conftest to work.
+            pytest_arg = abs_target.relative_to(BACKEND_DIR).as_posix()
+            cwd = BACKEND_DIR
+        except ValueError:
+            pytest_arg = abs_target.relative_to(REPO_ROOT).as_posix()
+            cwd = REPO_ROOT
 
-    cmd = ["python", "-m", "pytest", "-q"]
-    if pytest_arg:
-        cmd.append(pytest_arg)
+    cmd = [_backend_python(), "-m", "pytest", "-q", pytest_arg]
 
     try:
         result = subprocess.run(
@@ -238,7 +339,7 @@ def run_tests(test_target: str = "") -> str:
             cwd=cwd,
             capture_output=True,
             text=True,
-            timeout=600,
+            timeout=900,
         )
     except Exception as exc:  # noqa: BLE001
         return f"Failed to run tests: {exc}"
@@ -248,7 +349,10 @@ def run_tests(test_target: str = "") -> str:
     if len(output) > MAX_READ_CHARS:
         output = output[-MAX_READ_CHARS:]  # keep the tail (summary lives there)
     status = "PASSED" if result.returncode == 0 else "FAILED"
-    return f"[pytest {status}] (exit {result.returncode})\ncwd={cwd}\n\n{output}"
+    return (
+        f"[pytest {status}] (exit {result.returncode})\n"
+        f"cwd={cwd}\ntarget={pytest_arg}\n\n{output}"
+    )
 
 
 def _which(program: str) -> str | None:
