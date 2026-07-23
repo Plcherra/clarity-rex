@@ -68,8 +68,8 @@ _ACTIONS_MUTATE_OFF = (
     "Then append ```rex_action``` with create_open_thread or update_open_thread, "
     f'payload with non-empty title (required; {_TITLE_RULE}), summary?, '
     'thread_id?, and "explicit":true. '
-    "Prefer update_open_thread with a listed id. Off mode applies clear thread "
-    "commands in chat without a confirm prompt or card, so only emit mutate "
+    "Prefer update_open_thread with a listed id. Off mode applies only when "
+    '"explicit":true is set — no confirm prompt or card — so only emit mutate '
     "actions when the user truly wants the thread changed now. "
     f"{_JSON_RULE} "
     "Do not propose for vague desires without a concrete change "

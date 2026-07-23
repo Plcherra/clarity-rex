@@ -69,8 +69,8 @@ async def handle_open_thread_action(
 ) -> Optional[dict]:
     """Propose create/update while keeping Grok's conversational reply.
 
-    Gate is authority: Text/Card auto offers, or Off + explicit commands.
-    Card = confirm card; Text and Off+explicit = say-yes (no card).
+    Gate is authority: Text/Card auto offers, or Off + explicit:true only.
+    Card = confirm card; Text = say-yes; Off = apply immediately (no confirm).
     """
     if not is_open_thread_action(action):
         return None

@@ -49,15 +49,6 @@ _UPDATE_COMMAND_HINTS = (
     "switch",
     "adjust",
 )
-_CREATE_COMMAND_HINTS = (
-    "track",
-    "remind me",
-    "create",
-    "add",
-    "start",
-    "make this",
-    "make it",
-)
 _EXISTING_THREAD_HINTS = (
     "existing",
     "current",
@@ -240,18 +231,6 @@ def match_existing_open_thread(
     if second_score >= 0.68 and best_score - second_score < 0.08:
         return None
     return best_thread
-
-
-def looks_like_open_thread_command(action_name: str, user_text: str) -> bool:
-    """Direct thread commands may auto-apply in Off mode."""
-    lowered = str(user_text or "").strip().casefold()
-    if not lowered:
-        return False
-    if action_name == "update_open_thread":
-        return any(hint in lowered for hint in (*_UPDATE_COMMAND_HINTS, *_EXISTING_THREAD_HINTS))
-    if action_name == "create_open_thread":
-        return any(hint in lowered for hint in _CREATE_COMMAND_HINTS)
-    return False
 
 
 def looks_like_open_thread_update_request(

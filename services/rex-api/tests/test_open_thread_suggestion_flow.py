@@ -99,7 +99,7 @@ class _FakeMemoryService:
 
 
 @pytest.mark.asyncio
-async def test_off_mode_clear_thread_command_applies_without_confirmation() -> None:
+async def test_off_mode_explicit_command_applies_without_confirmation() -> None:
     memory = _FakeMemoryService()
     durable = DurableWriteService(memory_service=memory)
     settings = AssistantProposalSettings(mode="off", threads=True)
@@ -110,6 +110,7 @@ async def test_off_mode_clear_thread_command_applies_without_confirmation() -> N
             "title": "Wake at 5am",
             "summary": "Work on Clarity every morning",
         },
+        explicit=True,
     )
     gate = apply_auto_suggestions_gate(
         [action],
@@ -136,6 +137,25 @@ async def test_off_mode_clear_thread_command_applies_without_confirmation() -> N
     assert memory.rows[0]["summary"] == "Work on Clarity every morning"
     assert not memory.pending
     assert "updated in goals" in result["response"].lower()
+
+
+def test_off_mode_drops_command_shaped_message_without_explicit_flag() -> None:
+    settings = AssistantProposalSettings(mode="off", threads=True)
+    action = BrainAction(
+        name="update_open_thread",
+        payload={
+            "thread_id": "thread-wake",
+            "title": "Wake at 5am",
+        },
+        explicit=False,
+    )
+    gate = apply_auto_suggestions_gate(
+        [action],
+        settings,
+        user_message="Can you update my wake thread to 5am?",
+    )
+    assert gate.dropped_soft_actions
+    assert not gate.allowed_soft_actions
 
 
 @pytest.mark.asyncio

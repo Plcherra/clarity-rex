@@ -11,9 +11,6 @@ from app.services.assistant_proposal_settings import (
     AssistantProposalSettings,
 )
 from app.services.brain_action_schema import BrainAction
-from app.services.capabilities.open_thread_matching import (
-    looks_like_open_thread_command,
-)
 
 
 @dataclass(frozen=True)
@@ -33,7 +30,7 @@ def apply_auto_suggestions_gate(
     *,
     user_message: str = "",
 ) -> AutoSuggestionsGateResult:
-    _ = user_message  # reserved for later phases; Off is LLM-only
+    _ = user_message  # API compat; Off uses action.explicit only (no phrase heuristics)
     allowed: list[BrainAction] = []
     dropped: list[BrainAction] = []
     unsupported: list[str] = []
@@ -52,15 +49,12 @@ def apply_auto_suggestions_gate(
             continue
 
         kind = action.kind
-        # Off: no auto offers. Clear open-thread commands may still run silently.
+        # Off: no auto offers. Only Grok-marked explicit commands may run.
         if settings.mode == AUTO_PROPOSALS_OFF:
             if (
                 kind is not None
                 and settings.allows_explicit_command(kind)
-                and (
-                    action.explicit
-                    or looks_like_open_thread_command(action.name, user_message)
-                )
+                and action.explicit
             ):
                 allowed.append(action)
             else:

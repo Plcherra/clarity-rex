@@ -1,0 +1,6 @@
+.env
+.venv/
+venv/
+__pycache__/
+clarity_review_report.md
+clarity_fix_results.md
