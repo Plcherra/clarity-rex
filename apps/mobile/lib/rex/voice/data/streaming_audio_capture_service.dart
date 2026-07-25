@@ -147,10 +147,10 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
 
 class PackageStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
-  // Match conversational STT endpointing (~1.6–1.7s): allow breath pauses,
+  // Match conversational STT endpointing (~2.6s): allow short breath pauses,
   // still hand off soon after the user actually stops.
   static const _maximumStreamingSilenceAfterSpeech = Duration(
-    milliseconds: 1700,
+    milliseconds: 2600,
   );
   static const _minimumStreamingSpeechDuration = Duration(milliseconds: 260);
   static const _streamingSpeechStartThresholdDb = -50.0;

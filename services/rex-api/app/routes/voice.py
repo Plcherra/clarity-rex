@@ -146,6 +146,7 @@ async def voice_turn(
             latency_ms=_elapsed_ms(tts_started_at),
             model=synthesis.get("voice_name") or _google_tts_model(google_tts_service),
             character_count=len(text_to_speak.strip()),
+            synthesis=synthesis,
         )
     except DeepgramServiceError as error:
         await usage_tracking_service.record_stt_turn(
@@ -274,6 +275,7 @@ async def synthesize_voice(
         latency_ms=_elapsed_ms(started_at),
         model=synthesis.get("voice_name") or _google_tts_model(google_tts_service),
         character_count=len(request.text.strip()),
+        synthesis=synthesis,
     )
 
     return VoiceSynthesisResponse(**synthesis)

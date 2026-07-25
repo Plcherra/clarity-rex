@@ -83,6 +83,38 @@ async def test_record_event_uses_service_role_insert(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_record_tts_turn_uses_deepgram_aura_rate(monkeypatch):
+    calls = []
+
+    async def fake_request(method, url, headers=None, json=None):
+        calls.append(json)
+        return FakeResponse()
+
+    monkeypatch.setattr(usage_transport_module, "request_with_retries", fake_request)
+    settings = _settings()
+    settings.usage_tts_cents_per_1k_chars = 1.6
+    settings.usage_deepgram_tts_cents_per_1k_chars = 3.0
+    service = UsageTrackingService(settings=settings)
+
+    ok = await service.record_tts_turn(
+        user_id="00000000-0000-0000-0000-000000000001",
+        model="aura-2-gloria-es",
+        character_count=1000,
+        synthesis={
+            "voice_name": "aura-2-gloria-es",
+            "metadata": {"vendor": "deepgram_aura"},
+        },
+    )
+
+    assert ok is True
+    assert calls[0]["event_type"] == "tts"
+    assert calls[0]["provider"] == "deepgram_tts"
+    assert calls[0]["model"] == "aura-2-gloria-es"
+    assert calls[0]["unit_count"] == 1000.0
+    assert calls[0]["estimated_cost_cents"] == pytest.approx(3.0)
+
+
+@pytest.mark.asyncio
 async def test_record_event_fails_quietly_on_rejected_event_type(monkeypatch):
     calls = []
 

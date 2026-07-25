@@ -91,7 +91,7 @@ async def test_speech_synthesis_routes_spanish_to_deepgram(monkeypatch):
         google_tts=FakeGoogle(),
         deepgram_tts=FakeDeepgram(),
     )
-    result = await service.synthesize_speech("Buenos días", language_code="es-US")
+    result = await service.synthesize_speech("Buenos días 😊", language_code="es-US")
 
     assert result["voice_name"] == "aura-2-gloria-es"
     assert deepgram_calls == [

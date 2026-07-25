@@ -11,6 +11,7 @@ from app.services.deepgram_tts_service import (
 )
 from app.services.google_tts_service import GoogleTTSService, GoogleTTSServiceError
 from app.services.locale_utils import locale_to_tts_code, normalize_locale
+from app.services.tts_spoken_text import prepare_spoken_text
 
 
 class SpeechSynthesisService:
@@ -33,11 +34,17 @@ class SpeechSynthesisService:
         *,
         language_code: Optional[str] = None,
     ) -> dict[str, Any]:
+        spoken = prepare_spoken_text(text)
+        if not spoken:
+            raise GoogleTTSServiceError(
+                "Text to speak cannot be empty.",
+                status_code=400,
+            )
         active = language_code or self.settings.google_tts_language_code
         if self._use_deepgram_spanish(active):
             try:
                 return await self.deepgram_tts.synthesize_speech(
-                    text,
+                    spoken,
                     model=self.settings.deepgram_tts_model_es,
                     language_code=locale_to_tts_code("es"),
                 )
@@ -47,7 +54,7 @@ class SpeechSynthesisService:
                     status_code=error.status_code,
                 ) from error
         return await self.google_tts.synthesize_speech(
-            text,
+            spoken,
             language_code=active,
         )
 

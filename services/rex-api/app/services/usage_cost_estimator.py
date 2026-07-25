@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+from typing import Any
+
 from app.config import Settings
+
+_DEEPGRAM_TTS_PROVIDERS = frozenset(
+    {"deepgram", "deepgram_tts", "deepgram_aura"}
+)
 
 
 def estimate_usage_cost_cents(
@@ -11,6 +17,7 @@ def estimate_usage_cost_cents(
     prompt_tokens: int | None = None,
     completion_tokens: int | None = None,
     character_count: int | None = None,
+    provider: str | None = None,
     settings: Settings,
 ) -> float | None:
     if event_type == "llm":
@@ -32,6 +39,7 @@ def estimate_usage_cost_cents(
         return estimate_tts_cost_cents(
             character_count=character_count,
             duration_ms=duration_ms,
+            provider=provider,
             settings=settings,
         )
 
@@ -76,16 +84,47 @@ def estimate_tts_cost_cents(
     character_count: int | None,
     duration_ms: int | None,
     settings: Settings,
+    provider: str | None = None,
 ) -> float | None:
-    char_rate = settings.usage_tts_cents_per_1k_chars
+    char_rate = _tts_char_rate(provider=provider, settings=settings)
     if character_count is not None and character_count > 0 and char_rate > 0:
         return round((character_count / 1000.0) * char_rate, 6)
+
+    # Duration fallback is Google-oriented; skip for Deepgram Aura (char-billed).
+    if _is_deepgram_tts_provider(provider):
+        return None
 
     minute_rate = settings.usage_tts_cents_per_minute
     minutes = _duration_minutes(duration_ms)
     if minute_rate <= 0 or minutes is None:
         return None
     return round(minutes * minute_rate, 6)
+
+
+def resolve_tts_usage_provider(
+    *,
+    synthesis: dict[str, Any] | None = None,
+    provider: str | None = None,
+    voice_name: str | None = None,
+) -> str:
+    """Map synthesis metadata / voice id to a stable usage provider label."""
+    if provider:
+        normalized = provider.strip().lower()
+        if _is_deepgram_tts_provider(normalized):
+            return "deepgram_tts"
+        if normalized:
+            return normalized
+
+    payload = synthesis or {}
+    metadata = payload.get("metadata") or {}
+    vendor = str(metadata.get("vendor") or "").strip().lower()
+    if _is_deepgram_tts_provider(vendor):
+        return "deepgram_tts"
+
+    voice = str(payload.get("voice_name") or voice_name or "").strip().lower()
+    if voice.startswith("aura-"):
+        return "deepgram_tts"
+    return "google_tts"
 
 
 def llm_unit_count(token_count: int | None) -> float | None:
@@ -96,6 +135,18 @@ def llm_unit_count(token_count: int | None) -> float | None:
 
 def duration_unit_minutes(duration_ms: int | None) -> float | None:
     return _duration_minutes(duration_ms)
+
+
+def _tts_char_rate(*, provider: str | None, settings: Settings) -> float:
+    if _is_deepgram_tts_provider(provider):
+        return max(float(settings.usage_deepgram_tts_cents_per_1k_chars), 0.0)
+    return max(float(settings.usage_tts_cents_per_1k_chars), 0.0)
+
+
+def _is_deepgram_tts_provider(provider: str | None) -> bool:
+    if not provider:
+        return False
+    return provider.strip().lower() in _DEEPGRAM_TTS_PROVIDERS
 
 
 def _token_total(

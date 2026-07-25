@@ -48,7 +48,10 @@ class Settings(BaseSettings):
     usage_grok_output_cents_per_1k_tokens: float = 0.25
     usage_deepgram_cents_per_minute: float = 0.0
     usage_tts_cents_per_minute: float = 0.0
+    # Google Neural2 TTS (~$16/1M chars).
     usage_tts_cents_per_1k_chars: float = 1.6
+    # Deepgram Aura-2 TTS pay-as-you-go (~$30/1M chars). Spanish voice path.
+    usage_deepgram_tts_cents_per_1k_chars: float = 3.0
 
     plaid_client_id: Optional[str] = None
     plaid_secret: Optional[str] = None
@@ -70,10 +73,10 @@ class Settings(BaseSettings):
     deepgram_language: str = "en-US"
     deepgram_base_url: str = "https://api.deepgram.com/v1"
     deepgram_timeout_seconds: int = 60
-    # Conversational endpointing: tolerate breath/think pauses (~1.5s) without
-    # leaving listening stuck. Finish still lands ~1.6–1.8s after last speech.
-    deepgram_endpointing_ms: int = 1600
-    deepgram_live_transcript_idle_ms: int = 1800
+    # Conversational endpointing: allow a short breath/think pause without
+    # cutting the user off. Finish still lands ~2.6–2.8s after last speech.
+    deepgram_endpointing_ms: int = 2600
+    deepgram_live_transcript_idle_ms: int = 2800
     # Spanish TTS: Aura-2 Gloria (Colombian). English still uses Google TTS.
     deepgram_tts_spanish_enabled: bool = True
     deepgram_tts_model_es: str = "aura-2-gloria-es"

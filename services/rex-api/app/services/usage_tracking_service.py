@@ -16,6 +16,7 @@ from app.services.usage_cost_estimator import (
     estimate_tts_cost_cents,
     estimate_usage_cost_cents,
     llm_unit_count,
+    resolve_tts_usage_provider,
 )
 from app.services.usage_admin_period import UsageAdminPeriod, resolve_usage_admin_period
 from app.services.usage_tracking_owner_queries import (
@@ -167,6 +168,8 @@ class UsageTrackingService:
         latency_ms: int | None = None,
         model: str = "none",
         character_count: int | None = None,
+        provider: str | None = None,
+        synthesis: dict[str, Any] | None = None,
         status: UsageStatus = "success",
         error_class: str | None = None,
     ) -> bool:
@@ -175,9 +178,15 @@ class UsageTrackingService:
             if character_count is not None and character_count > 0
             else duration_unit_minutes(duration_ms)
         )
+        resolved_provider = resolve_tts_usage_provider(
+            synthesis=synthesis,
+            provider=provider,
+            voice_name=model if model != "none" else None,
+        )
         cost = estimate_tts_cost_cents(
             character_count=character_count,
             duration_ms=duration_ms,
+            provider=resolved_provider,
             settings=self.settings,
         )
         return await self.record_event(
@@ -186,7 +195,7 @@ class UsageTrackingService:
             surface="voice",
             feature="text_to_speech",
             channel="voice",
-            provider="google_tts",
+            provider=resolved_provider,
             model=model,
             duration_ms=duration_ms,
             latency_ms=latency_ms,

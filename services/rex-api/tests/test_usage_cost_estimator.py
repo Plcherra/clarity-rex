@@ -1,11 +1,11 @@
 import pytest
 
 from app.config import Settings
-from app.services.grok_usage import GrokUsage
 from app.services.usage_cost_estimator import (
     estimate_llm_cost_cents,
     estimate_tts_cost_cents,
     estimate_usage_cost_cents,
+    resolve_tts_usage_provider,
 )
 
 
@@ -42,6 +42,54 @@ def test_tts_cost_from_character_count():
         settings=_settings(usage_tts_cents_per_1k_chars=1.6),
     )
     assert cost == pytest.approx(3.2)
+
+
+def test_deepgram_tts_cost_uses_aura_rate():
+    cost = estimate_tts_cost_cents(
+        character_count=2000,
+        duration_ms=60_000,
+        provider="deepgram_tts",
+        settings=_settings(
+            usage_tts_cents_per_1k_chars=1.6,
+            usage_deepgram_tts_cents_per_1k_chars=3.0,
+        ),
+    )
+    assert cost == pytest.approx(6.0)
+
+
+def test_deepgram_tts_cost_skips_duration_fallback():
+    cost = estimate_tts_cost_cents(
+        character_count=None,
+        duration_ms=60_000,
+        provider="deepgram_aura",
+        settings=_settings(
+            usage_tts_cents_per_minute=1.2,
+            usage_deepgram_tts_cents_per_1k_chars=3.0,
+        ),
+    )
+    assert cost is None
+
+
+def test_resolve_tts_usage_provider_from_synthesis_metadata():
+    assert (
+        resolve_tts_usage_provider(
+            synthesis={
+                "voice_name": "aura-2-gloria-es",
+                "metadata": {"vendor": "deepgram_aura"},
+            }
+        )
+        == "deepgram_tts"
+    )
+    assert (
+        resolve_tts_usage_provider(
+            synthesis={
+                "voice_name": "en-US-Neural2-J",
+                "metadata": {"vendor": "google_tts"},
+            }
+        )
+        == "google_tts"
+    )
+    assert resolve_tts_usage_provider(voice_name="aura-2-gloria-es") == "deepgram_tts"
 
 
 def test_stt_cost_from_duration():

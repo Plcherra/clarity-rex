@@ -277,6 +277,7 @@ class VoiceStreamResponseWriterMixin:
             latency_ms=latency_ms,
             model=synthesis.get("voice_name"),
             character_count=len(text.strip()),
+            synthesis=synthesis,
         )
         if "tts_first_audio_ms" not in timings:
             timings["tts_first_audio_ms"] = latency_ms
@@ -384,6 +385,7 @@ class VoiceStreamResponseWriterMixin:
         latency_ms: int,
         model: Optional[str] = None,
         character_count: Optional[int] = None,
+        synthesis: Optional[dict[str, Any]] = None,
         status: str = "success",
         error_class: Optional[str] = None,
     ) -> None:
@@ -397,6 +399,7 @@ class VoiceStreamResponseWriterMixin:
             latency_ms=latency_ms,
             model=model or self._google_tts_model(),
             character_count=character_count,
+            synthesis=synthesis,
             status=status,
             error_class=error_class,
         )

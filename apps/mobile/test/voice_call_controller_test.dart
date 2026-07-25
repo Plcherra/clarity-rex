@@ -51,7 +51,7 @@ void main() {
     'voice endpoint detector keeps short pauses inside long speech open',
     () {
       const config = VoiceCaptureConfig();
-      expect(config.silenceAfterSpeech, const Duration(milliseconds: 2000));
+      expect(config.silenceAfterSpeech, const Duration(milliseconds: 2600));
       expect(config.maxUtteranceDuration, const Duration(seconds: 120));
 
       final startedAt = DateTime(2026);
@@ -688,7 +688,7 @@ void main() {
     expect(container.read(voiceCallBargeInEnabledProvider), isFalse);
     expect(
       container.read(voiceCallTranscriptIdleTimeoutProvider),
-      const Duration(milliseconds: 1700),
+      const Duration(milliseconds: 2600),
     );
     expect(
       container.read(voiceCallNoSpeechTimeoutProvider),

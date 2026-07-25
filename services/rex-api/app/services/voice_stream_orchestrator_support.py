@@ -7,6 +7,9 @@ from typing import Any, Optional
 from app.services.rex_channel import RexBrainChannel
 
 
+from app.services.tts_spoken_text import prepare_spoken_text
+
+
 def stream_should_buffer_for_action_truth(intent_decision, *, channel: RexBrainChannel) -> bool:
     _ = intent_decision
     return False
@@ -22,7 +25,7 @@ def voice_speakable_text(
     response_text: str,
     memory_changes: Optional[dict[str, Any]],
 ) -> str:
-    text = (response_text or "").strip()
+    text = prepare_spoken_text(response_text or "")
     if text:
         return text
     for proposal in (memory_changes or {}).get("write_proposals") or []:
@@ -30,9 +33,8 @@ def voice_speakable_text(
             continue
         if str(proposal.get("status") or "pending").strip().lower() != "pending":
             continue
-        spoken = (
+        spoken = prepare_spoken_text(
             str(proposal.get("confirmation_text") or proposal.get("title") or "")
-            .strip()
         )
         if spoken:
             return spoken
