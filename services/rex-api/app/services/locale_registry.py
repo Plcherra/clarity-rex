@@ -15,6 +15,8 @@ class LocaleSpec:
     prompt_label: str
     stt_code: str
     tts_code: str
+    tts_voice_name: str
+    tts_vendor: str = "google"
     enabled: bool = False
 
 
@@ -25,14 +27,20 @@ LOCALE_REGISTRY: tuple[LocaleSpec, ...] = (
         prompt_label="English",
         stt_code="en-US",
         tts_code="en-US",
+        # Default; prod may override via GOOGLE_TTS_VOICE_NAME for English.
+        tts_voice_name="en-US-Neural2-J",
+        tts_vendor="google",
         enabled=True,
     ),
     LocaleSpec(
         tag="es",
         language="es",
         prompt_label="Spanish",
-        stt_code="es-US",
-        tts_code="es-US",
+        stt_code="es",
+        tts_code="es",
+        # Deepgram Aura-2 Gloria (Colombian).
+        tts_voice_name="aura-2-gloria-es",
+        tts_vendor="deepgram",
         enabled=True,
     ),
     LocaleSpec(
@@ -41,6 +49,8 @@ LOCALE_REGISTRY: tuple[LocaleSpec, ...] = (
         prompt_label="Portuguese (Brazil)",
         stt_code="pt-BR",
         tts_code="pt-BR",
+        tts_voice_name="pt-BR-Neural2-B",
+        tts_vendor="google",
     ),
     LocaleSpec(
         tag="pt-PT",
@@ -48,6 +58,8 @@ LOCALE_REGISTRY: tuple[LocaleSpec, ...] = (
         prompt_label="Portuguese (Portugal)",
         stt_code="pt-PT",
         tts_code="pt-PT",
+        tts_voice_name="pt-PT-Wavenet-B",
+        tts_vendor="google",
     ),
     LocaleSpec(
         tag="fr",
@@ -55,6 +67,8 @@ LOCALE_REGISTRY: tuple[LocaleSpec, ...] = (
         prompt_label="French",
         stt_code="fr-FR",
         tts_code="fr-FR",
+        tts_voice_name="fr-FR-Neural2-B",
+        tts_vendor="google",
     ),
 )
 

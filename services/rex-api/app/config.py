@@ -74,6 +74,10 @@ class Settings(BaseSettings):
     # leaving listening stuck. Finish still lands ~1.6–1.8s after last speech.
     deepgram_endpointing_ms: int = 1600
     deepgram_live_transcript_idle_ms: int = 1800
+    # Spanish TTS: Aura-2 Gloria (Colombian). English still uses Google TTS.
+    deepgram_tts_spanish_enabled: bool = True
+    deepgram_tts_model_es: str = "aura-2-gloria-es"
+    deepgram_tts_encoding: str = "mp3"
 
     google_tts_project_id: Optional[str] = None
     google_tts_credentials_json: Optional[str] = None
@@ -107,6 +111,10 @@ class Settings(BaseSettings):
     @property
     def deepgram_transcription_url(self) -> str:
         return f"{self.deepgram_base_url.rstrip('/')}/listen"
+
+    @property
+    def deepgram_speak_url(self) -> str:
+        return f"{self.deepgram_base_url.rstrip('/')}/speak"
 
     @property
     def google_tts_is_configured(self) -> bool:

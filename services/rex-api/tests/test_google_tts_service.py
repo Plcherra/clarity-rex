@@ -58,10 +58,39 @@ async def test_synthesize_speech_posts_to_google_tts(monkeypatch):
     assert calls[0]["headers"]["x-goog-user-project"] == "rex-voice"
     assert calls[0]["json"]["input"]["text"] == "Hey Rex"
     assert calls[0]["json"]["voice"]["name"] == "en-US-Neural2-J"
+    assert calls[0]["json"]["voice"]["languageCode"] == "en-US"
     assert calls[0]["json"]["audioConfig"]["audioEncoding"] == "MP3"
     assert calls[0]["json"]["audioConfig"]["speakingRate"] == 1.15
     assert calls[0]["json"]["audioConfig"]["pitch"] == 0.0
     assert calls[0]["json"]["audioConfig"]["volumeGainDb"] == 10.0
+
+
+@pytest.mark.asyncio
+async def test_synthesize_speech_uses_spanish_voice_for_es_locale(monkeypatch):
+    calls = []
+    audio_base64 = base64.b64encode(b"mp3-bytes").decode()
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return make_response(json_data={"audioContent": audio_base64})
+
+    monkeypatch.setattr(
+        "app.services.google_tts_service.request_with_retries",
+        fake_request,
+    )
+    service = GoogleTTSService(configured_settings())
+    monkeypatch.setattr(service, "_access_token", lambda: async_token("access-token"))
+
+    # Direct Google path still maps es-US → Spanish Neural2 when called alone.
+    result = await service.synthesize_speech(
+        "Hola, ¿cómo estás?",
+        language_code="es-US",
+    )
+
+    assert result["language_code"] == "es-US"
+    assert result["voice_name"] == "es-US-Neural2-B"
+    assert calls[0]["json"]["voice"]["languageCode"] == "es-US"
+    assert calls[0]["json"]["voice"]["name"] == "es-US-Neural2-B"
 
 
 async def async_token(token):

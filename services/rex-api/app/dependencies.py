@@ -12,7 +12,7 @@ from app.services.deepgram_streaming_service import DeepgramStreamingService
 from app.services.entity_service import EntityService
 from app.services.file_service import FileService
 from app.services.financial_audit_service import FinancialAuditService
-from app.services.google_tts_service import GoogleTTSService
+from app.services.speech_synthesis_service import SpeechSynthesisService
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_service import SupabaseMemoryService
 from app.services.memory_write_service import MemoryWriteService
@@ -112,8 +112,9 @@ def get_deepgram_streaming_service() -> DeepgramStreamingService:
     return DeepgramStreamingService()
 
 
-def get_google_tts_service() -> GoogleTTSService:
-    return GoogleTTSService()
+def get_google_tts_service() -> SpeechSynthesisService:
+    """Speech synthesis router (EN Google TTS, ES Deepgram Aura Gloria)."""
+    return SpeechSynthesisService()
 
 
 def get_usage_tracking_service() -> UsageTrackingService:

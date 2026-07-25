@@ -163,11 +163,12 @@ class GoogleTTSService:
         language_code: Optional[str] = None,
     ) -> dict[str, Any]:
         active_language = language_code or self.settings.google_tts_language_code
+        voice_name = self._voice_name_for_language(active_language)
         return {
             "input": {"text": text},
             "voice": {
                 "languageCode": active_language,
-                "name": self.settings.google_tts_voice_name,
+                "name": voice_name,
             },
             "audioConfig": {
                 "audioEncoding": self.settings.google_tts_audio_encoding,
@@ -176,6 +177,26 @@ class GoogleTTSService:
                 "volumeGainDb": self.settings.google_tts_volume_gain_db,
             },
         }
+
+    def _voice_name_for_language(self, language_code: str) -> str:
+        from app.services.locale_registry import resolve_locale_tag
+
+        # Prefer configured English voice when language matches it.
+        configured = str(self.settings.google_tts_voice_name or "").strip()
+        if configured.startswith(language_code):
+            return configured
+
+        spec = resolve_locale_tag(language_code)
+        if spec.tts_vendor == "google":
+            if spec.language == "en":
+                return configured or spec.tts_voice_name
+            return spec.tts_voice_name
+
+        # Spanish (and other Deepgram locales) must never send Aura model ids
+        # to Google — use a LatAm Google fallback only if routing misses.
+        if spec.language == "es":
+            return "es-US-Neural2-B"
+        return configured or "en-US-Neural2-J"
 
     def _parse_synthesis_response(
         self,
@@ -206,12 +227,13 @@ class GoogleTTSService:
                 status_code=502,
             ) from error
 
+        active_language = language_code or self.settings.google_tts_language_code
         return {
             "audio_content_type": self._audio_content_type(),
             "audio_base64": audio_base64,
             "audio_encoding": self.settings.google_tts_audio_encoding,
-            "voice_name": self.settings.google_tts_voice_name,
-            "language_code": language_code or self.settings.google_tts_language_code,
+            "voice_name": self._voice_name_for_language(active_language),
+            "language_code": active_language,
             "metadata": {
                 "vendor": "google_tts",
                 "text_character_count": None,
