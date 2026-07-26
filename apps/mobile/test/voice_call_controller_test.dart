@@ -51,7 +51,7 @@ void main() {
     'voice endpoint detector keeps short pauses inside long speech open',
     () {
       const config = VoiceCaptureConfig();
-      expect(config.silenceAfterSpeech, const Duration(milliseconds: 2600));
+      expect(config.silenceAfterSpeech, const Duration(milliseconds: 4000));
       expect(config.maxUtteranceDuration, const Duration(seconds: 120));
 
       final startedAt = DateTime(2026);
@@ -64,33 +64,40 @@ void main() {
       expect(speechStart.speechStarted, isTrue);
       expect(speechStart.endpointReached, isFalse);
 
+      // Soft syllables in the hysteresis band keep the turn open.
+      final softSpeech = detector.addAmplitude(
+        currentDb: -55,
+        now: startedAt.add(const Duration(milliseconds: 800)),
+      );
+      expect(softSpeech.endpointReached, isFalse);
+
       final shortPause = detector.addAmplitude(
         currentDb: -80,
-        now: startedAt.add(const Duration(milliseconds: 1500)),
+        now: startedAt.add(const Duration(milliseconds: 2800)),
       );
       expect(shortPause.endpointReached, isFalse);
 
       final resumedSpeech = detector.addAmplitude(
         currentDb: -43,
-        now: startedAt.add(const Duration(milliseconds: 1600)),
+        now: startedAt.add(const Duration(milliseconds: 2900)),
       );
       expect(resumedSpeech.endpointReached, isFalse);
 
       final secondShortPause = detector.addAmplitude(
         currentDb: -80,
-        now: startedAt.add(const Duration(milliseconds: 3500)),
+        now: startedAt.add(const Duration(milliseconds: 5500)),
       );
       expect(secondShortPause.endpointReached, isFalse);
 
       final realEndpoint = detector.addAmplitude(
         currentDb: -43,
-        now: startedAt.add(const Duration(milliseconds: 3600)),
+        now: startedAt.add(const Duration(milliseconds: 5600)),
       );
       expect(realEndpoint.endpointReached, isFalse);
 
       final longerPauseEndpoint = detector.addAmplitude(
         currentDb: -80,
-        now: startedAt.add(const Duration(milliseconds: 5600)),
+        now: startedAt.add(const Duration(milliseconds: 9700)),
       );
       expect(longerPauseEndpoint.endpointReached, isTrue);
     },
@@ -688,7 +695,7 @@ void main() {
     expect(container.read(voiceCallBargeInEnabledProvider), isFalse);
     expect(
       container.read(voiceCallTranscriptIdleTimeoutProvider),
-      const Duration(milliseconds: 2600),
+      const Duration(milliseconds: 4000),
     );
     expect(
       container.read(voiceCallNoSpeechTimeoutProvider),

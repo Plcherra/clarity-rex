@@ -400,7 +400,7 @@ async def test_voice_stream_live_transcript_idle_uses_timing_contract(monkeypatc
 
     await session._process_live_utterance_after_transcript_idle(10.0)
 
-    assert delays == [1.8]
+    assert delays == [4.2]
 
 
 @pytest.mark.asyncio

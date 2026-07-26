@@ -73,10 +73,10 @@ class Settings(BaseSettings):
     deepgram_language: str = "en-US"
     deepgram_base_url: str = "https://api.deepgram.com/v1"
     deepgram_timeout_seconds: int = 60
-    # Conversational endpointing: allow a short breath/think pause without
-    # cutting the user off. Finish still lands ~2.6–2.8s after last speech.
-    deepgram_endpointing_ms: int = 2600
-    deepgram_live_transcript_idle_ms: int = 2800
+    # Conversational endpointing: allow mid-phrase breaths / think pauses
+    # without cutting long turns. Finish still lands ~4–4.2s after last speech.
+    deepgram_endpointing_ms: int = 4000
+    deepgram_live_transcript_idle_ms: int = 4200
     # Spanish TTS: Aura-2 Gloria (Colombian). English still uses Google TTS.
     deepgram_tts_spanish_enabled: bool = True
     deepgram_tts_model_es: str = "aura-2-gloria-es"

@@ -125,7 +125,7 @@ final voiceCaptureConfigProvider = Provider<VoiceCaptureConfig>(
       ? const VoiceCaptureConfig(
           speechStartThresholdDb: -68,
           silenceThresholdDb: -74,
-          silenceAfterSpeech: Duration(milliseconds: 2400),
+          silenceAfterSpeech: Duration(milliseconds: 4000),
           noSpeechTimeout: Duration(seconds: 18),
         )
       : const VoiceCaptureConfig(),
@@ -143,10 +143,10 @@ final voiceCallThinkingTimeoutProvider = Provider<Duration>(
 
 final voiceCallTranscriptIdleTimeoutProvider = Provider<Duration>(
   // STT transcript-stability endpoint for flutter_streaming (re-armed on each
-  // transcript update). Align with Deepgram endpointing (~2600) + local
-  // streaming silence (~2600): short breaths keep listening; finished speech
-  // still finalizes in under ~3s. Not a race patch.
-  (ref) => const Duration(milliseconds: 2600),
+  // transcript update). Align with Deepgram endpointing (~4000) + local
+  // streaming silence (~4000): mid-phrase breaths keep listening; finished
+  // speech still finalizes in a few seconds. Not a race patch.
+  (ref) => const Duration(milliseconds: 4000),
 );
 
 final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(
