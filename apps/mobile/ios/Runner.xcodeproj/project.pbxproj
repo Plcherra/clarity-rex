@@ -212,6 +212,7 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				7972582597EF6974C74F3C03 /* [CP] Embed Pods Frameworks */,
 				C0D3C0D3C0D3C0D3C0D3C0D3 /* Sign Native Asset Frameworks */,
+				A1B2C3D4E5F60718293A4B5C /* Copy LinkKit dSYM */,
 			);
 			buildRules = (
 			);
@@ -392,6 +393,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "set -eu\n\ncase \"${SDKROOT:-}\" in\n  *iphoneos*) ;;\n  *) exit 0 ;;\nesac\n\nframeworks_dir=\"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}\"\nif [ ! -d \"$frameworks_dir\" ]; then\n  exit 0\nfi\n\nsign_identity=\"${EXPANDED_CODE_SIGN_IDENTITY:-}\"\nif [ -z \"$sign_identity\" ] || [ \"$sign_identity\" = \"-\" ]; then\n  configured_identity=\"${CODE_SIGN_IDENTITY:-}\"\n  if [ -n \"$configured_identity\" ] && security find-identity -v -p codesigning | grep -Fq \"\\\"$configured_identity\\\"\"; then\n    sign_identity=\"$configured_identity\"\n  else\n    sign_identity=\"$(security find-identity -v -p codesigning | awk -F '\\\"' '/Apple Development/ { print $2; exit }')\"\n  fi\nfi\n\nif [ -z \"$sign_identity\" ]; then\n  echo \"warning: Could not find an Apple Development signing identity for native asset frameworks.\"\n  exit 0\nfi\n\nfor framework in \"$frameworks_dir\"/*.framework; do\n  [ -d \"$framework\" ] || continue\n  echo \"Signing native asset framework: $framework\"\n  /usr/bin/codesign --force --sign \"$sign_identity\" --timestamp=none \"$framework\"\ndone\n";
+		};
+		A1B2C3D4E5F60718293A4B5C /* Copy LinkKit dSYM */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${SRCROOT}/scripts/copy_linkkit_dsym.sh",
+			);
+			name = "Copy LinkKit dSYM";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"${SRCROOT}/scripts/copy_linkkit_dsym.sh\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
