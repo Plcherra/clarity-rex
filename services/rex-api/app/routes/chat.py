@@ -9,6 +9,10 @@ from pydantic import ValidationError
 from app.dependencies import get_chat_service
 from app.models.chat import ChatRequest, ChatResponse
 from app.services.ai_service import AIServiceError
+from app.services.chat_request_validation import (
+    chat_request_dropping_oversized_financial_context,
+    serializable_validation_errors,
+)
 from app.services.chat_service import ChatService, ConversationNotFoundError
 from app.services.memory_service import MemoryServiceError
 
@@ -137,28 +141,36 @@ async def _parse_chat_request(request: Request) -> tuple[ChatRequest, Optional[U
             if hasattr(file_value, "filename") and hasattr(file_value, "read"):
                 file = file_value
 
-            return (
-                ChatRequest(
-                    message=message,
-                    conversation_id=conversation_id,
-                    file=file.filename if file else None,
-                    stream=stream,
-                    financial_context=_json_dict(form.get("financial_context")),
-                    deep_think=_as_bool(form.get("deep_think")),
-                    locale=locale or None,
-                    write_confirmation=_json_dict(form.get("write_confirmation")),
-                    user_enabled_proactive_insights=_as_bool(
-                        form.get("user_enabled_proactive_insights"),
-                    ),
+            payload = {
+                "message": message,
+                "conversation_id": conversation_id,
+                "file": file.filename if file else None,
+                "stream": stream,
+                "financial_context": _json_dict(form.get("financial_context")),
+                "deep_think": _as_bool(form.get("deep_think")),
+                "locale": locale or None,
+                "write_confirmation": _json_dict(form.get("write_confirmation")),
+                "user_enabled_proactive_insights": _as_bool(
+                    form.get("user_enabled_proactive_insights"),
                 ),
-                file,
-            )
+            }
+            return _chat_request_from_payload(payload), file
 
         if content_type.startswith("application/json"):
             payload = await request.json()
-            return ChatRequest(**payload), None
+            if not isinstance(payload, dict):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid JSON body.",
+                )
+            return _chat_request_from_payload(payload), None
+    except HTTPException:
+        raise
     except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error.errors()) from error
+        raise HTTPException(
+            status_code=422,
+            detail=serializable_validation_errors(error),
+        ) from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail="Invalid JSON body.") from error
 
@@ -166,6 +178,22 @@ async def _parse_chat_request(request: Request) -> tuple[ChatRequest, Optional[U
         status_code=415,
         detail="Use application/json or multipart/form-data.",
     )
+
+
+def _chat_request_from_payload(payload: dict) -> ChatRequest:
+    try:
+        return ChatRequest(**payload)
+    except ValidationError as error:
+        recovered = chat_request_dropping_oversized_financial_context(
+            payload,
+            error,
+        )
+        if recovered is not None:
+            LOGGER.warning(
+                "chat_financial_context_dropped reason=exceeds_max_size",
+            )
+            return recovered
+        raise
 
 
 def _as_bool(value: object) -> bool:

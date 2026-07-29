@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clarity/features/budgets/domain/budget_models.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_snapshot.dart';
 import 'package:clarity/features/finance/application/assistant_financial_context_builder.dart';
+import 'package:clarity/features/finance/application/assistant_financial_context_size.dart';
 import 'package:clarity/features/finance/application/financial_read_model_service.dart';
 
 export 'assistant_financial_context_intent.dart';
 export 'assistant_financial_context_builder.dart';
+export 'assistant_financial_context_size.dart';
 
 final assistantFinancialContextServiceProvider =
     Provider<AssistantFinancialContextService?>((ref) => null);
@@ -71,11 +73,12 @@ final class AssistantFinancialContextService {
   }
 
   Future<Map<String, dynamic>> buildSummary({String? userMessage}) async {
-    return AssistantFinancialContextBuilder(
+    final summary = await AssistantFinancialContextBuilder(
       loadFinancialReadModel: _loadFinancialReadModel,
       spendReference: _spendReference,
       localeTag: _localeTag,
     ).buildSummary(userMessage: userMessage);
+    return capAssistantFinancialContextSize(summary);
   }
 
   Future<FinancialReadModel> _safeFinancialReadModel() async {

@@ -152,6 +152,42 @@ def test_chat_accepts_json(client):
     ]
 
 
+def test_chat_drops_oversized_financial_context_instead_of_500(client):
+    fake_chat_service = FakeChatService()
+    override_chat_service(fake_chat_service)
+
+    response = client.post(
+        "/chat",
+        json={
+            "message": "What subscriptions or bills do I still have coming charge until aug 6?",
+            "financial_context": {"blob": "y" * 40_000},
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["response"] == "Rex response"
+    assert fake_chat_service.calls[0]["financial_context"] is None
+    assert fake_chat_service.calls[0]["message"].startswith("What subscriptions")
+
+
+def test_chat_validation_errors_are_json_serializable(client):
+    fake_chat_service = FakeChatService()
+    override_chat_service(fake_chat_service)
+
+    response = client.post(
+        "/chat",
+        json={
+            "message": "x" * 20_000,
+        },
+    )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert isinstance(detail, list)
+    assert all(isinstance(item, dict) for item in detail)
+    assert all("msg" in item for item in detail)
+
+
 def test_chat_accepts_financial_context(client):
     fake_chat_service = FakeChatService()
     override_chat_service(fake_chat_service)
