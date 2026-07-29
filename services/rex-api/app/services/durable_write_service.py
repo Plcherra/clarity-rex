@@ -1,4 +1,4 @@
-"""Confirm, reject, and apply durable write pending actions."""
+"""Propose durable writes; confirm/apply lives in DurableWritePendingFlowMixin."""
 
 from __future__ import annotations
 
@@ -10,12 +10,13 @@ from app.services.assistant_proposal_settings import (
     fail_closed_proposal_settings,
     resolve_assistant_proposal_settings,
 )
-from app.services.conversation_pending_action import (
-    ConversationPendingActionService,
-    PendingAction,
-    is_affirmative_confirmation,
-    is_delete_rejection_message,
+from app.services.body_display_text import (
+    GoalCommand,
+    SimpleMemoryIntent,
+    clarification_turn_result,
+    goal_title,
 )
+from app.services.conversation_pending_action import ConversationPendingActionService
 from app.services.durable_write_applier import DurableWriteApplier
 from app.services.durable_write_builders import (
     proposal_from_discipline_decision,
@@ -23,28 +24,17 @@ from app.services.durable_write_builders import (
     proposal_from_memory_update,
     proposal_from_open_thread,
     proposal_from_open_thread_update,
+    proposal_from_person_note,
+    proposal_from_person_state,
     proposal_from_record_delete,
     proposal_from_simple_memory,
 )
-from app.services.durable_write_pending import (
-    pending_action_for_durable_write,
-    proposal_from_pending_action,
-    write_confirmation_edits,
-)
+from app.services.durable_write_pending import pending_action_for_durable_write
+from app.services.durable_write_pending_flow import DurableWritePendingFlowMixin
 from app.services.durable_write_proposal import DurableWriteProposal
 from app.services.durable_write_proposal_refiner import DurableWriteProposalRefiner
-from app.services.body_display_text import (
-    GoalCommand,
-    SimpleMemoryIntent,
-    clarification_turn_result,
-    format_plan_target_date_label,
-    goal_title,
-)
 from app.services.durable_write_results import (
-    applied_memory_changes,
-    failed_memory_changes,
     pending_memory_changes,
-    rejected_memory_changes,
 )
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_discipline_writes import (
@@ -54,7 +44,7 @@ from app.services.memory_discipline_writes import (
 from app.services.plan_service import PlanService
 
 
-class DurableWriteService:
+class DurableWriteService(DurableWritePendingFlowMixin):
     def __init__(
         self,
         memory_service: Any,
@@ -85,6 +75,9 @@ class DurableWriteService:
         user_message: dict,
         conversation_messages: Optional[list[dict]] = None,
         use_person_card: bool = True,
+        response: str | None = None,
+        proposal_settings: Optional[AssistantProposalSettings] = None,
+        surface_client_cards: Optional[bool] = None,
     ) -> dict:
         related = (
             await self._related_person_context(intent) if use_person_card else {}
@@ -128,6 +121,9 @@ class DurableWriteService:
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_messages=conversation_messages,
+            response=response,
+            proposal_settings=proposal_settings,
+            surface_client_cards=surface_client_cards,
         )
 
     async def propose_memory_update(
@@ -140,6 +136,9 @@ class DurableWriteService:
         user_message: dict,
         conversation_messages: Optional[list[dict]] = None,
         use_person_card: bool = True,
+        response: str | None = None,
+        proposal_settings: Optional[AssistantProposalSettings] = None,
+        surface_client_cards: Optional[bool] = None,
     ) -> dict:
         related = (
             await self._related_person_context(intent) if use_person_card else {}
@@ -156,6 +155,9 @@ class DurableWriteService:
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_messages=conversation_messages,
+            response=response,
+            proposal_settings=proposal_settings,
+            surface_client_cards=surface_client_cards,
         )
 
     async def propose_goal(
@@ -272,6 +274,9 @@ class DurableWriteService:
         conversation_id: str,
         user_message: dict,
         conversation_messages: Optional[list[dict]] = None,
+        response: str | None = None,
+        proposal_settings: Optional[AssistantProposalSettings] = None,
+        surface_client_cards: Optional[bool] = None,
     ) -> dict:
         proposal = proposal_from_record_delete(
             match,
@@ -283,72 +288,91 @@ class DurableWriteService:
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_messages=conversation_messages,
+            response=response,
+            proposal_settings=proposal_settings,
+            surface_client_cards=surface_client_cards,
         )
 
-    async def try_handle_pending(
+    async def propose_person_state(
         self,
-        message: str,
         *,
-        pending_action,
+        entity_id: str,
+        display_name: str,
+        state: str,
         conversation_id: str,
         user_message: dict,
-        write_confirmation: Any = None,
-    ) -> Optional[dict]:
-        pending = (
-            pending_action
-            if isinstance(pending_action, PendingAction)
-            else PendingAction.from_dict(pending_action)
+        conversation_messages: Optional[list[dict]] = None,
+        response: str | None = None,
+        proposal_settings: Optional[AssistantProposalSettings] = None,
+        surface_client_cards: Optional[bool] = None,
+    ) -> dict:
+        proposal = proposal_from_person_state(
+            entity_id=entity_id,
+            display_name=display_name,
+            state=state,
         )
-        if pending is None:
-            return None
-
-        if pending.action_type != "durable_write":
-            return None
-
-        proposal = proposal_from_pending_action(pending)
-        if proposal is None:
-            await self._pending().clear(conversation_id)
-            return None
-
-        confirmation_id = _write_confirmation_proposal_id(write_confirmation)
-        # Empty {} / missing proposal_id must not confirm — only an id match or
-        # a typed yes does.
-        confirmed = (
-            confirmation_id == proposal.proposal_id
-            if confirmation_id is not None
-            else is_affirmative_confirmation(message)
+        return await self._propose(
+            proposal,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            conversation_messages=conversation_messages,
+            response=response,
+            proposal_settings=proposal_settings,
+            surface_client_cards=surface_client_cards,
         )
-        rejected = is_delete_rejection_message(message)
-        if not confirmed and not rejected:
-            if confirmation_id is not None:
-                await self._pending().clear(conversation_id)
-                return await clarification_turn_result(
-                    self.memory_service,
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                    response=(
-                        "That save confirmation is no longer current. "
-                        "Please use the latest save card or ask me to save again."
-                    ),
-                    memory_changes=failed_memory_changes(proposal=proposal),
-                )
-            return None
 
-        if confirmed:
-            edits = write_confirmation_edits(write_confirmation)
-            return await self._apply(
-                proposal.with_edits(edits),
-                pending=pending,
-                conversation_id=conversation_id,
-                user_message=user_message,
-            )
-        if rejected:
-            return await self._reject(
-                proposal,
-                conversation_id=conversation_id,
-                user_message=user_message,
-            )
-        return None
+    async def propose_person_note(
+        self,
+        *,
+        entity_id: str,
+        display_name: str,
+        note: str,
+        existing_notes: str | None = None,
+        replace: bool = False,
+        conversation_id: str,
+        user_message: dict,
+        conversation_messages: Optional[list[dict]] = None,
+        response: str | None = None,
+        proposal_settings: Optional[AssistantProposalSettings] = None,
+        surface_client_cards: Optional[bool] = None,
+    ) -> dict:
+        proposal = proposal_from_person_note(
+            entity_id=entity_id,
+            display_name=display_name,
+            note=note,
+            existing_notes=existing_notes,
+            replace=replace,
+        )
+        return await self._propose(
+            proposal,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            conversation_messages=conversation_messages,
+            response=response,
+            proposal_settings=proposal_settings,
+            surface_client_cards=surface_client_cards,
+        )
+
+    async def propose_proposal(
+        self,
+        proposal: DurableWriteProposal,
+        *,
+        conversation_id: str,
+        user_message: dict,
+        conversation_messages: Optional[list[dict]] = None,
+        response: str | None = None,
+        proposal_settings: Optional[AssistantProposalSettings] = None,
+        surface_client_cards: Optional[bool] = None,
+    ) -> dict:
+        return await self._propose(
+            proposal,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            conversation_messages=conversation_messages,
+            response=response,
+            proposal_settings=proposal_settings,
+            surface_client_cards=surface_client_cards,
+        )
 
     async def _propose(
         self,
@@ -368,7 +392,6 @@ class DurableWriteService:
                 user_message=str(user_message.get("content") or ""),
             )
         settings = proposal_settings or await self._resolve_proposal_settings()
-        # Card mode surfaces write_proposals; Text mode keeps pending say-yes only.
         show_cards = (
             surface_client_cards
             if surface_client_cards is not None
@@ -432,153 +455,5 @@ class DurableWriteService:
 
         return await resolve_related_person_context(self.memory_service, intent)
 
-    async def _apply(
-        self,
-        proposal: DurableWriteProposal,
-        *,
-        pending: PendingAction,
-        conversation_id: str,
-        user_message: dict,
-        response: str | None = None,
-    ) -> dict:
-        if proposal.person_card is not None:
-            from app.services.person_confirm_proposal import (
-                person_card_blocks_apply,
-                person_card_insufficient_fields_message,
-            )
-
-            if person_card_blocks_apply(proposal.person_card):
-                return await clarification_turn_result(
-                    self.memory_service,
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                    response=person_card_insufficient_fields_message(),
-                    memory_changes=failed_memory_changes(
-                        proposal=proposal,
-                        reason="person_card_insufficient_fields",
-                    ),
-                )
-        result = await self.applier.apply_proposal(
-            proposal,
-            conversation_id=conversation_id,
-            source_message_id=str(user_message.get("id") or "") or None,
-        )
-        if not result.get("applied"):
-            failure_reason = str(result.get("reason") or "").strip() or None
-            if proposal.write_kind == "delete":
-                failure = (
-                    f"I understood you wanted to delete {proposal.title}, "
-                    "but I couldn't delete it just now. Please try again in a moment."
-                )
-            else:
-                failure = (
-                    f"I understood what you wanted to save about {proposal.title}, "
-                    "but I couldn't save it just now. Please try again in a moment."
-                )
-            return await clarification_turn_result(
-                self.memory_service,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                response=failure,
-                memory_changes=failed_memory_changes(
-                    proposal=proposal,
-                    reason=failure_reason,
-                ),
-            )
-
-        await self._pending().clear(conversation_id)
-        record = result.get("record") or {}
-        records = result.get("records") or ([record] if record else [])
-        updated_count = result.get("updated_count")
-        saved = response or _saved_response(
-            proposal,
-            record=record,
-            merged=bool(result.get("merged")),
-            updated_count=updated_count,
-        )
-        return await clarification_turn_result(
-            self.memory_service,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            response=saved,
-            memory_changes=applied_memory_changes(
-                proposal=proposal,
-                record=record,
-                merged=bool(result.get("merged")),
-                records=records,
-                updated_count=updated_count,
-            ),
-        )
-
-    async def _reject(
-        self,
-        proposal: DurableWriteProposal,
-        *,
-        conversation_id: str,
-        user_message: dict,
-    ) -> dict:
-        await self._pending().clear(conversation_id)
-        verb = "delete" if proposal.write_kind == "delete" else "save"
-        return await clarification_turn_result(
-            self.memory_service,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            response=f"Okay, I won't {verb} {proposal.title}.",
-            memory_changes=rejected_memory_changes(proposal=proposal),
-        )
-
     def _pending(self) -> ConversationPendingActionService:
         return ConversationPendingActionService(self.memory_service)
-
-
-def _write_confirmation_proposal_id(raw: Any) -> str | None:
-    """Non-empty proposal_id from write_confirmation, else None.
-
-    Empty {} must not count as a confirmation.
-    """
-    if not isinstance(raw, dict):
-        return None
-    confirmed_id = str(raw.get("proposal_id") or "").strip()
-    return confirmed_id or None
-
-
-def _saved_response(
-    proposal: DurableWriteProposal,
-    *,
-    record: dict[str, Any],
-    merged: bool,
-    updated_count: int | None = None,
-) -> str:
-    if proposal.write_kind == "memory":
-        snapshot_type = str(proposal.apply_snapshot.get("type") or "")
-        if snapshot_type == "memory_update":
-            return f"Updated Clarity Knows: {proposal.title}"
-        return f"Saved to Clarity Knows: {proposal.title}"
-    if merged and proposal.merge_target_title:
-        return f"Updated existing plan \"{proposal.merge_target_title}\" with that context."
-    if proposal.write_kind == "update_plan":
-        snapshot_type = str(proposal.apply_snapshot.get("type") or "")
-        if snapshot_type == "bulk_plan_target_date":
-            payload = dict(proposal.apply_snapshot.get("payload") or {})
-            target_date = str(payload.get("target_date") or "")
-            count = updated_count or len(payload.get("plans") or [])
-            date_label = format_plan_target_date_label(target_date)
-            return f"Updated target dates for {count} goals to {date_label}."
-    if proposal.write_kind == "plan":
-        return f"Saved plan in Goals: {proposal.title}"
-    if proposal.write_kind == "open_thread":
-        if str(proposal.apply_snapshot.get("type") or "") == "open_thread_update":
-            return (
-                f"Updated open thread in Goals: {proposal.title}. "
-                "This is companion follow-up — not saved memory."
-            )
-        return (
-            f"Tracking as an open thread in Goals: {proposal.title}. "
-            "This is companion follow-up — not saved memory."
-        )
-    if proposal.write_kind == "milestone":
-        target = proposal.target_label or "your plan"
-        return f"Saved milestone under {target}: {proposal.title}"
-    if proposal.write_kind == "delete":
-        return f"Permanently deleted: {proposal.title}."
-    return f"Saved {proposal.title}."

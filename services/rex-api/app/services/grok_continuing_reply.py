@@ -50,3 +50,16 @@ def continuing_reply_for_apply(grok_reply: str, *, title: str) -> str:
     ):
         return text
     return f"{text}\n\nUpdated in Goals."
+
+
+def continuing_reply_for_knows_apply(grok_reply: str, *, title: str) -> str:
+    """Keep Grok's voice after a Knows apply."""
+    text = str(grok_reply or "").strip()
+    if not text:
+        return f"Done — saved in Knows: {title}."
+    lowered = text.lower()
+    if "knows" in lowered and (
+        "saved" in lowered or "updated" in lowered or "deleted" in lowered
+    ):
+        return text
+    return f"{text}\n\nSaved in Knows."

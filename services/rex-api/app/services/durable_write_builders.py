@@ -276,6 +276,73 @@ def proposal_from_bulk_plan_target_date(
     )
 
 
+def proposal_from_person_state(
+    *,
+    entity_id: str,
+    display_name: str,
+    state: str,
+) -> DurableWriteProposal:
+    label = str(display_name or "this person").strip() or "this person"
+    state_text = str(state or "").strip()
+    title = f"Update state for {label}"
+    return DurableWriteProposal(
+        write_kind="memory",
+        title=title,
+        body=state_text,
+        editable_fields=("body",),
+        apply_snapshot={
+            "type": "person_state_update",
+            "payload": {
+                "entity_id": entity_id,
+                "display_name": label,
+                "summary": state_text,
+            },
+        },
+        custom_assistant_prompt=(
+            f"I can update {label}'s current state in Knows to: {state_text}. "
+            "Tap confirm to save — nothing is saved until you confirm."
+        ),
+    )
+
+
+def proposal_from_person_note(
+    *,
+    entity_id: str,
+    display_name: str,
+    note: str,
+    existing_notes: str | None = None,
+    replace: bool = False,
+) -> DurableWriteProposal:
+    label = str(display_name or "this person").strip() or "this person"
+    note_text = str(note or "").strip()
+    prior = str(existing_notes or "").strip()
+    if replace or not prior:
+        merged_notes = note_text
+    else:
+        merged_notes = f"{prior}\n{note_text}".strip()
+    title = f"Add note for {label}"
+    return DurableWriteProposal(
+        write_kind="memory",
+        title=title,
+        body=note_text,
+        editable_fields=("body",),
+        apply_snapshot={
+            "type": "person_note_update",
+            "payload": {
+                "entity_id": entity_id,
+                "display_name": label,
+                "note": note_text,
+                "notes": merged_notes,
+                "replace": replace,
+            },
+        },
+        custom_assistant_prompt=(
+            f"I can add this note on {label}'s person card: {note_text}. "
+            "Tap confirm to save — nothing is saved until you confirm."
+        ),
+    )
+
+
 def proposal_from_record_delete(
     match,
     *,

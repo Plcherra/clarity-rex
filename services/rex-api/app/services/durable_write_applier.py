@@ -106,6 +106,18 @@ class DurableWriteApplier:
             return await self._apply_bulk_plan_target_date(snapshot)
         if snapshot_type == "record_delete":
             return await self._apply_record_delete(snapshot)
+        if snapshot_type == "person_state_update":
+            from app.services.durable_write_person_apply import (
+                apply_person_state_update,
+            )
+
+            return await apply_person_state_update(self.memory_service, snapshot)
+        if snapshot_type == "person_note_update":
+            from app.services.durable_write_person_apply import (
+                apply_person_note_update,
+            )
+
+            return await apply_person_note_update(self.memory_service, snapshot)
         return apply_failure_result(
             snapshot_type=snapshot_type or "unknown",
             detail="unsupported_snapshot_type",

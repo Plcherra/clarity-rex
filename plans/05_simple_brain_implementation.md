@@ -1,6 +1,6 @@
 # 05 — Simple brain implementation
 
-**Status:** Phase C complete (2026-07-18) on `plan/04-aggressive-deletion`. Phases A–B done.  
+**Status:** Phase D complete (2026-07-28) on `plan/04-aggressive-deletion`. Phases A–C done.  
 **Depends on:** [`04_aggressive_deletion.md`](04_aggressive_deletion.md) (complete)  
 **Vision reference:** [`01_vision_gap_and_token_budget.md`](01_vision_gap_and_token_budget.md)
 
@@ -169,8 +169,8 @@ Confirm cards and Truth remain mandatory for durable writes.
 
 ### Phase D — Memory / person basics
 
-- [ ] `save_memory` / `save_person` / `update_person_state` / `add_person_note` via durable write
-- [ ] Delete via action + confirm
+- [x] `save_memory` / `save_person` / `update_person_state` / `add_person_note` via durable write
+- [x] Delete via action + confirm
 
 **Manual tests:**
 

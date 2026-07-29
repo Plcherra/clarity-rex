@@ -238,6 +238,11 @@ class DurableWriteProposal:
         if "body" in edits:
             if self.write_kind == "open_thread":
                 inner["summary"] = body
+            elif snapshot.get("type") == "person_state_update":
+                inner["summary"] = body
+            elif snapshot.get("type") == "person_note_update":
+                inner["note"] = body
+                inner["notes"] = body
             else:
                 inner["content"] = body
                 inner["description"] = body

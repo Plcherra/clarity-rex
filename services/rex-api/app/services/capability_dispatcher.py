@@ -1,4 +1,4 @@
-"""Route gated Grok actions to body handlers (plan 05 Phase C)."""
+"""Route gated Grok actions to body handlers (plan 05)."""
 
 from __future__ import annotations
 
@@ -6,6 +6,10 @@ from typing import Optional
 
 from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.auto_suggestions_gate import AutoSuggestionsGateResult
+from app.services.capabilities.memory_capability import (
+    handle_memory_action,
+    is_memory_action,
+)
 from app.services.capabilities.open_thread_capability import (
     handle_delete_open_thread_action,
     handle_open_thread_action,
@@ -24,7 +28,7 @@ async def dispatch_allowed_actions(
     conversation_messages: Optional[list[dict]] = None,
     assistant_reply: str = "",
 ) -> Optional[dict]:
-    """Run the first allowed open-thread action. Returns a full turn dict or None."""
+    """Run the first allowed body action. Returns a full turn dict or None."""
     # Catalog no longer lists delete_open_thread; if Grok still emits it, speak
     # honestly instead of silently dropping.
     for action in (*gate.allowed_soft_actions, *gate.passthrough_actions):
@@ -35,18 +39,30 @@ async def dispatch_allowed_actions(
                 user_message=user_message,
             )
 
-    for action in gate.allowed_soft_actions:
-        if not is_open_thread_action(action):
-            continue
-        result = await handle_open_thread_action(
-            action,
-            durable_write_service=durable_write_service,
-            settings=settings,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_messages=conversation_messages,
-            assistant_reply=assistant_reply,
-        )
-        if result is not None:
-            return result
+    candidates = (*gate.allowed_soft_actions, *gate.passthrough_actions)
+    for action in candidates:
+        if is_open_thread_action(action):
+            result = await handle_open_thread_action(
+                action,
+                durable_write_service=durable_write_service,
+                settings=settings,
+                conversation_id=conversation_id,
+                user_message=user_message,
+                conversation_messages=conversation_messages,
+                assistant_reply=assistant_reply,
+            )
+            if result is not None:
+                return result
+        if is_memory_action(action):
+            result = await handle_memory_action(
+                action,
+                durable_write_service=durable_write_service,
+                settings=settings,
+                conversation_id=conversation_id,
+                user_message=user_message,
+                conversation_messages=conversation_messages,
+                assistant_reply=assistant_reply,
+            )
+            if result is not None:
+                return result
     return None

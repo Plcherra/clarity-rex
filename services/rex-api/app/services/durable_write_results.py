@@ -51,6 +51,8 @@ def applied_memory_changes(
             or snapshot_type
             in {
                 "memory_update",
+                "person_state_update",
+                "person_note_update",
                 "update_plan",
                 "update_milestone",
                 "bulk_plan_target_date",
