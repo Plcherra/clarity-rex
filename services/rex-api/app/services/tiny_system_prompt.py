@@ -47,6 +47,9 @@ _ACTIONS_MUTATE = (
     "For achievement goals (not habits), use create_goal / update_goal / "
     "delete_goal with a short title (and description when known). "
     "Prefer plan_id or existing_title/reference when updating or deleting. "
+    "A step under a goal is a milestone (create_milestone / update_milestone / "
+    "delete_milestone) — include plan_id or goal_title. "
+    "A recurring habit/check-in is an open thread, not a milestone. "
     f"{_JSON_RULE} Keep talking; do not claim updated before confirm."
 )
 
@@ -60,6 +63,8 @@ _ACTIONS_MUTATE_CARD = (
     "both fields. "
     "For achievement goals, append create_goal / update_goal / delete_goal "
     "so a confirm card can appear — never only talk about saving a goal. "
+    "For a step under a goal, append create_milestone / update_milestone / "
+    "delete_milestone with plan_id or goal_title. Habits stay open threads. "
     f"{_JSON_RULE} "
     "The body shows a confirm card — never only talk about updating in prose. "
     "Do not claim updated before they confirm on the card."
@@ -76,9 +81,12 @@ _ACTIONS_MUTATE_OFF = (
     "Prefer update_open_thread with a listed id. "
     "Same for goals: create_goal / update_goal / delete_goal only on clear "
     'commands, with "explicit":true. '
+    "Same for milestones under a goal: create_milestone / update_milestone / "
+    'delete_milestone only on clear commands, with "explicit":true and '
+    "plan_id or goal_title. Habits remain open threads. "
     "Off mode applies only when "
     '"explicit":true is set — no confirm prompt or card — so only emit mutate '
-    "actions when the user truly wants the thread or goal changed now. "
+    "actions when the user truly wants the thread, goal, or milestone changed now. "
     "Do not set auto:true on Off mutate actions. "
     f"{_JSON_RULE} "
     "Do not propose for vague desires without a concrete change "

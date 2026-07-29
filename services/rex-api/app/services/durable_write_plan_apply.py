@@ -1,10 +1,15 @@
-"""Apply plan create/update snapshots for durable writes."""
+"""Apply plan create/update and milestone snapshots for durable writes."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from app.models.plan import PlanCreateRequest, PlanUpdateRequest
+from app.models.plan import (
+    PlanCreateRequest,
+    PlanMilestoneCreateRequest,
+    PlanMilestoneUpdateRequest,
+    PlanUpdateRequest,
+)
 from app.services.durable_write_apply_failures import apply_failure_result
 from app.services.memory_discipline_confirmed_writes import CONFIRMED_PLAN_SERVICE_CHANNEL
 from app.services.plan_errors import PlanServiceError
@@ -158,6 +163,107 @@ async def apply_bulk_plan_target_date(
         "records": updated_records,
         "merged": False,
         "updated_count": len(updated_records),
+    }
+
+
+async def apply_milestone_create(
+    plan_service: PlanService,
+    snapshot: dict[str, Any],
+    *,
+    conversation_id: str,
+    source_message_id: str | None,
+) -> dict[str, Any]:
+    payload = dict(snapshot.get("payload") or {})
+    plan_id = str(payload.get("plan_id") or "").strip()
+    if not plan_id:
+        return apply_failure_result(
+            snapshot_type="milestone",
+            detail="missing_plan_id",
+            conversation_id=conversation_id,
+        )
+    metadata = dict(payload.get("metadata") or {})
+    metadata.setdefault("source", "durable_write_confirmed")
+    metadata.setdefault("discipline_write_channel", CONFIRMED_PLAN_SERVICE_CHANNEL)
+    try:
+        record = await plan_service.create_milestone(
+            PlanMilestoneCreateRequest(
+                plan_id=plan_id,
+                title=str(payload.get("title") or ""),
+                description=payload.get("description"),
+                milestone_type=payload.get("milestone_type") or "checkpoint",
+                target_date=payload.get("target_date"),
+                source_conversation_id=conversation_id,
+                source_message_id=source_message_id,
+                priority=int(payload.get("priority") or 3),
+                status=payload.get("status") or "open",
+                metadata=metadata,
+            )
+        )
+    except PlanServiceError as exc:
+        return apply_failure_result(
+            snapshot_type="milestone",
+            error=exc,
+            conversation_id=conversation_id,
+        )
+    return {"applied": True, "record": record, "merged": False}
+
+
+async def apply_milestone_update(
+    plan_service: PlanService,
+    snapshot: dict[str, Any],
+) -> dict[str, Any]:
+    payload = dict(snapshot.get("payload") or {})
+    milestone_id = str(payload.get("milestone_id") or "").strip()
+    if not milestone_id:
+        return apply_failure_result(
+            snapshot_type="milestone_update",
+            detail="missing_milestone_id",
+        )
+    update_kwargs: dict[str, Any] = {}
+    for key in (
+        "title",
+        "description",
+        "milestone_type",
+        "target_date",
+        "priority",
+        "status",
+    ):
+        if key in payload and payload[key] is not None:
+            update_kwargs[key] = payload[key]
+    metadata = payload.get("metadata")
+    if isinstance(metadata, dict):
+        existing_meta: dict[str, Any] = {}
+        try:
+            rows = await plan_service.list_milestones(active=True, limit=100)
+        except Exception:
+            rows = []
+        for row in rows or []:
+            if str(row.get("id") or "") == milestone_id:
+                raw_meta = row.get("metadata")
+                if isinstance(raw_meta, dict):
+                    existing_meta = dict(raw_meta)
+                break
+        update_kwargs["metadata"] = {**existing_meta, **metadata}
+    try:
+        record = await plan_service.update_milestone(
+            milestone_id,
+            PlanMilestoneUpdateRequest(**update_kwargs),
+        )
+    except PlanServiceError as exc:
+        return apply_failure_result(
+            snapshot_type="milestone_update",
+            error=exc,
+        )
+    if not isinstance(record, dict) or not record.get("id"):
+        return apply_failure_result(
+            snapshot_type="milestone_update",
+            detail="missing_record",
+        )
+    return {
+        "applied": True,
+        "record": record,
+        "merged": False,
+        "updated_count": 1,
     }
 
 

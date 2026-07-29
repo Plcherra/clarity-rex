@@ -509,6 +509,14 @@ class FakeMemoryService:
         self.created_plan_milestones.append(milestone)
         return milestone
 
+    async def update_plan_milestone(self, milestone_id, **updates):
+        for milestone in self.plan_milestones:
+            if milestone["id"] == milestone_id:
+                milestone.update(updates)
+                milestone["updated_at"] = "2026-05-11T00:00:00Z"
+                return milestone
+        return None
+
 
 class FakeAccountabilityService:
     def __init__(self, signals=None, should_fail=False):

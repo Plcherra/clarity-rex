@@ -89,6 +89,13 @@ class DurableWriteProposal:
         if self.write_kind == "update_plan":
             target = self.target_label or "your plan"
             return f"Update plan \"{target}\" with:\n{self.body or self.title}"
+        if self.write_kind == "update_milestone":
+            target = self.target_label or "your plan"
+            lines = [f"Update milestone under {target} to:", self.title]
+            body = (self.body or "").strip()
+            if body and body.casefold() != self.title.casefold():
+                lines.append(body)
+            return "\n".join(lines)
         if self.write_kind == "entity_event":
             target = self.target_label or "that person"
             return f"Save as a note on {target}?\n{self.body or self.title}"
@@ -133,6 +140,7 @@ class DurableWriteProposal:
             "open_thread": "an open thread",
             "entity_event": "a related note",
             "update_plan": "a plan update",
+            "update_milestone": "a milestone update",
             "delete": "saved item",
         }
         return labels.get(self.write_kind, "saved item")

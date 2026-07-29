@@ -14,6 +14,10 @@ from app.services.capabilities.memory_capability import (
     handle_memory_action,
     is_memory_action,
 )
+from app.services.capabilities.milestone_capability import (
+    handle_milestone_action,
+    is_milestone_action,
+)
 from app.services.capabilities.open_thread_capability import (
     handle_delete_open_thread_action,
     handle_open_thread_action,
@@ -71,6 +75,18 @@ async def dispatch_allowed_actions(
                 return result
         if is_goal_action(action):
             result = await handle_goal_action(
+                action,
+                durable_write_service=durable_write_service,
+                settings=settings,
+                conversation_id=conversation_id,
+                user_message=user_message,
+                conversation_messages=conversation_messages,
+                assistant_reply=assistant_reply,
+            )
+            if result is not None:
+                return result
+        if is_milestone_action(action):
+            result = await handle_milestone_action(
                 action,
                 durable_write_service=durable_write_service,
                 settings=settings,

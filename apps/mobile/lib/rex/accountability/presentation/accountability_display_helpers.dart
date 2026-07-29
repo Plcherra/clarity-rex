@@ -26,6 +26,21 @@ String? planSubtitle(PlanRecord plan) {
   return null;
 }
 
+/// Thin Goals listing: open milestone titles under a parent goal.
+String? planMilestonePreviewSubtitle(List<PlanMilestone> openMilestones) {
+  final titles = openMilestones
+      .map((milestone) => milestone.title.trim())
+      .where((title) => title.isNotEmpty)
+      .toList(growable: false);
+  if (titles.isEmpty) {
+    return null;
+  }
+  if (titles.length <= 3) {
+    return titles.join(' · ');
+  }
+  return '${titles.take(3).join(' · ')} +${titles.length - 3}';
+}
+
 String? openThreadSubtitle(AppLocalizations l10n, OpenThread thread) {
   final summary = thread.summary?.trim();
   if (summary != null &&

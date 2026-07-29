@@ -29,6 +29,9 @@ from app.services.durable_write_builders import (
     proposal_from_simple_memory,
 )
 from app.services.durable_write_goal_propose import DurableWriteGoalProposeMixin
+from app.services.durable_write_milestone_propose import (
+    DurableWriteMilestoneProposeMixin,
+)
 from app.services.durable_write_pending import pending_action_for_durable_write
 from app.services.durable_write_pending_flow import DurableWritePendingFlowMixin
 from app.services.durable_write_proposal import DurableWriteProposal
@@ -44,7 +47,11 @@ from app.services.memory_discipline_writes import (
 from app.services.plan_service import PlanService
 
 
-class DurableWriteService(DurableWriteGoalProposeMixin, DurableWritePendingFlowMixin):
+class DurableWriteService(
+    DurableWriteGoalProposeMixin,
+    DurableWriteMilestoneProposeMixin,
+    DurableWritePendingFlowMixin,
+):
     def __init__(
         self,
         memory_service: Any,

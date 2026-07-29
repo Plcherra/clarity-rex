@@ -239,6 +239,9 @@ def saved_response(
             f"Tracking as an open thread in Goals: {proposal.title}. "
             "This is companion follow-up — not saved memory."
         )
+    if proposal.write_kind == "update_milestone":
+        target = proposal.target_label or "your plan"
+        return f"Updated milestone under {target}: {proposal.title}"
     if proposal.write_kind == "milestone":
         target = proposal.target_label or "your plan"
         return f"Saved milestone under {target}: {proposal.title}"

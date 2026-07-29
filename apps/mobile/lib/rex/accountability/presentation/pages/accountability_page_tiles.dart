@@ -3,22 +3,31 @@ part of 'accountability_page.dart';
 class _GoalTile extends StatelessWidget {
   const _GoalTile({
     required this.plan,
+    required this.openMilestones,
     required this.onTap,
     required this.onArchive,
   });
 
   final PlanRecord plan;
+  final List<PlanMilestone> openMilestones;
   final VoidCallback onTap;
   final VoidCallback onArchive;
 
   @override
   Widget build(BuildContext context) {
+    final milestoneLine = planMilestonePreviewSubtitle(openMilestones);
+    final baseSubtitle = planSubtitle(plan);
+    final subtitle = milestoneLine == null
+        ? baseSubtitle
+        : (baseSubtitle == null
+            ? milestoneLine
+            : '$baseSubtitle · $milestoneLine');
     return _AccountabilityTile(
       onTap: onTap,
       leading: _PriorityDot(priority: plan.priority),
       icon: Icons.flag_rounded,
       title: plan.title,
-      subtitle: planSubtitle(plan),
+      subtitle: subtitle,
       deadline: plan.targetDate,
       priority: plan.priority,
       status: plan.status,

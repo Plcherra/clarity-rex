@@ -14,6 +14,8 @@ from app.services.confirmed_plan_write_applier import ConfirmedPlanWriteApplier
 from app.services.durable_write_apply_failures import apply_failure_result
 from app.services.durable_write_plan_apply import (
     apply_bulk_plan_target_date,
+    apply_milestone_create,
+    apply_milestone_update,
     apply_plan_create,
     apply_plan_update,
     preview_plan_merge_title,
@@ -99,6 +101,15 @@ class DurableWriteApplier:
             )
         if snapshot_type == "plan_update":
             return await apply_plan_update(self.plan_service, snapshot)
+        if snapshot_type in {"milestone", "create_milestone"}:
+            return await apply_milestone_create(
+                self.plan_service,
+                snapshot,
+                conversation_id=conversation_id,
+                source_message_id=source_message_id,
+            )
+        if snapshot_type in {"milestone_update", "update_milestone"}:
+            return await apply_milestone_update(self.plan_service, snapshot)
         if snapshot_type == "open_thread":
             return await self._apply_open_thread(
                 snapshot,

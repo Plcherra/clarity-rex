@@ -271,6 +271,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                             Expanded(
                               child: _GoalsSection(
                                 plans: overview.activePlans,
+                                planHierarchy: overview.planHierarchy,
                                 onOpenPlan: _openPlanDetail,
                                 onArchivePlan: _archivePlan,
                                 onAddGoal: _createPlan,
@@ -292,6 +293,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                       else ...[
                         _GoalsSection(
                           plans: overview.activePlans,
+                          planHierarchy: overview.planHierarchy,
                           onOpenPlan: _openPlanDetail,
                           onArchivePlan: _archivePlan,
                           onAddGoal: _createPlan,

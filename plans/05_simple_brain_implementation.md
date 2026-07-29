@@ -1,6 +1,6 @@
 # 05 — Simple brain implementation
 
-**Status:** Phase E complete (2026-07-29) on `plan/04-aggressive-deletion`. Phases A–D done.  
+**Status:** Phase E2 complete (2026-07-29) on `plan/04-aggressive-deletion`. Phases A–E2 done.  
 **Depends on:** [`04_aggressive_deletion.md`](04_aggressive_deletion.md) (complete)  
 **Vision reference:** [`01_vision_gap_and_token_budget.md`](01_vision_gap_and_token_budget.md)
 
@@ -190,11 +190,13 @@ Confirm cards and Truth remain mandatory for durable writes.
 
 ### Phase E2 — Milestones (basic base)
 
+Pre-E2 Truth/identity fixes landed (former 05a). Phase 3 thin-state goal titles deferred — prefer parent-goal listing in the milestone capability instead.
+
 Fit: a **milestone** is a step under a **plan/goal** (not an Open Thread). Catalog actions: create/update/delete milestone; durable write already has `milestone` / `update_milestone` kinds — wire through Grok actions + confirm, minimal Goals UI if missing.
 
-- [ ] `create_milestone` / `update_milestone` / `delete_milestone` via dispatcher → durable write
-- [ ] Thin listing under parent goal in Goals (or confirm-only path if UI thin)
-- [ ] No heuristic “looks like milestone” detector — Grok chooses the action
+- [x] `create_milestone` / `update_milestone` / `delete_milestone` via dispatcher → durable write
+- [x] Thin listing under parent goal in Goals (or confirm-only path if UI thin)
+- [x] No heuristic “looks like milestone” detector — Grok chooses the action
 
 **Manual tests:**
 
