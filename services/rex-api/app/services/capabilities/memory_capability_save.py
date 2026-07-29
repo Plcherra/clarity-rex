@@ -68,6 +68,7 @@ async def handle_save_memory_or_person(
     reply = continuing_reply_for_propose(
         assistant_reply,
         surface_client_cards=mode_plan.surface_client_cards,
+        surface="knows",
     )
     return await durable_write_service.propose_simple_memory(
         intent,
@@ -121,6 +122,7 @@ async def handle_update_memory(
     reply = continuing_reply_for_propose(
         assistant_reply,
         surface_client_cards=mode_plan.surface_client_cards,
+        surface="knows",
     )
     return await durable_write_service.propose_memory_update(
         intent,

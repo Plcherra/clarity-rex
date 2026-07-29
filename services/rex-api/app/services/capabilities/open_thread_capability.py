@@ -128,6 +128,7 @@ async def handle_open_thread_action(
     reply = continuing_reply_for_propose(
         assistant_reply,
         surface_client_cards=mode_plan.surface_client_cards,
+        surface="goals",
     )
     if mode == "update":
         return await durable_write_service.propose_open_thread_update(

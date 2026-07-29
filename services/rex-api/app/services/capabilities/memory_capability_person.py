@@ -68,6 +68,7 @@ async def handle_person_state(
     reply = continuing_reply_for_propose(
         assistant_reply,
         surface_client_cards=mode_plan.surface_client_cards,
+        surface="knows",
     )
     return await durable_write_service.propose_person_state(
         entity_id=target.entity_id,
@@ -128,6 +129,7 @@ async def handle_person_note(
     reply = continuing_reply_for_propose(
         assistant_reply,
         surface_client_cards=mode_plan.surface_client_cards,
+        surface="knows",
     )
     return await durable_write_service.propose_person_note(
         entity_id=target.entity_id,

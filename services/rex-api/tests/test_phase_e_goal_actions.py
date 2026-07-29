@@ -207,6 +207,86 @@ async def test_update_goal_card_then_confirm() -> None:
 
 
 @pytest.mark.asyncio
+async def test_update_goal_new_title_only_clarifies_without_wrong_plan() -> None:
+    store = FakeMemoryService()
+    plan = await store.create_plan(
+        {
+            "title": "Buy 16GB RAM",
+            "description": "Old target",
+            "desired_outcome": "Old target",
+            "plan_type": "personal",
+        }
+    )
+    # A different plan whose title matches the new_title — must not be selected.
+    other = await store.create_plan(
+        {
+            "title": "Buy 32GB RAM",
+            "description": "Already exists",
+            "desired_outcome": "Already exists",
+            "plan_type": "personal",
+        }
+    )
+    result = await _dispatch(
+        store=store,
+        settings=_settings(mode="card"),
+        action=BrainAction(
+            name="update_goal",
+            payload={"new_title": "Buy 32GB RAM"},
+        ),
+        user_text="Rename my RAM goal to 32GB",
+        assistant_reply="32GB is a better target.",
+    )
+    assert result is not None
+    assert result["memory_changes"].get("write_proposals") in (None, [])
+    assert result["memory_changes"].get("confirmation_required", 0) == 0
+    assert plan["title"] == "Buy 16GB RAM"
+    assert other["title"] == "Buy 32GB RAM"
+    assert "need" in result["response"].lower() or "which goal" in result["response"].lower()
+
+
+@pytest.mark.asyncio
+async def test_update_goal_existing_title_plus_new_title_renames() -> None:
+    store = FakeMemoryService()
+    plan = await store.create_plan(
+        {
+            "title": "Buy 16GB RAM",
+            "description": "Old target",
+            "desired_outcome": "Old target",
+            "plan_type": "personal",
+        }
+    )
+    result = await _dispatch(
+        store=store,
+        settings=_settings(mode="card"),
+        action=BrainAction(
+            name="update_goal",
+            payload={
+                "existing_title": "Buy 16GB RAM",
+                "new_title": "Buy 32GB RAM",
+            },
+        ),
+        user_text="Rename my 16GB RAM goal to 32GB",
+        assistant_reply="32GB is a safer target.",
+    )
+    assert result is not None
+    proposal = result["memory_changes"]["write_proposals"][0]
+    assert proposal["write_kind"] == "update_plan"
+    assert plan["title"] == "Buy 16GB RAM"
+
+    durable = DurableWriteService(memory_service=store)
+    confirmed = await durable.try_handle_pending(
+        "yes",
+        pending_action=await store.get_conversation_pending_action("c1"),
+        conversation_id="c1",
+        user_message={"id": "u2", "content": "yes"},
+        write_confirmation={"proposal_id": proposal["id"]},
+    )
+    assert confirmed is not None
+    assert confirmed["memory_changes"]["updated"] == 1
+    assert plan["title"] == "Buy 32GB RAM"
+
+
+@pytest.mark.asyncio
 async def test_delete_goal_card_then_confirm() -> None:
     store = FakeMemoryService()
     plan = await store.create_plan(

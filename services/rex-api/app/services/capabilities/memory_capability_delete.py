@@ -66,6 +66,7 @@ async def handle_delete_knows_item(
     reply = continuing_reply_for_propose(
         assistant_reply,
         surface_client_cards=mode_plan.surface_client_cards,
+        surface="knows",
     )
     return await durable_write_service.propose_delete(
         resolved.match,

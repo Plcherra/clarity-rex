@@ -135,65 +135,6 @@ def response_claims_unconfirmed_success(response: str) -> bool:
     return not _contains_any(text, _CONFIRMATION_TERMS) and _contains_any(text, _SUCCESS_TERMS)
 
 
-_SAVED_MEMORY_CLAIM_TERMS = (
-    "saved memory",
-    "clarity knows",
-    "in knows",
-    "to knows",
-    "knows tab",
-    "in your knows",
-    "your mother's name",
-    "your mom's name",
-    "your mama's name",
-    "updated your mother",
-    "updated your mom",
-    "updated your mama",
-    "remembered that",
-    "i remembered",
-    "i've saved",
-    "i have saved",
-    "i've updated",
-    "i have updated",
-    "i updated",
-    "i saved",
-    # Multilingual / voice-natural success claims (language-agnostic guard).
-    "memoria guardada",
-    "lo guardé",
-    "lo he guardado",
-    "actualicé",
-    "he actualizado",
-    "je me souviens",
-    "j'ai sauvegardé",
-    "j'ai enregistré",
-    "ich habe gespeichert",
-    "ich habe aktualisiert",
-)
-
-
-def response_claims_saved_memory_success(response: str) -> bool:
-    """True when the reply claims a durable Knows/memory write succeeded."""
-    cleaned = response.strip()
-    if _is_canonical_truth_fallback(cleaned):
-        return False
-    text = _normalized(cleaned)
-    if _contains_any(text, _CONFIRMATION_TERMS):
-        return False
-    if not _contains_any(text, _SUCCESS_TERMS):
-        return False
-    if _contains_any(text, _SAVED_MEMORY_CLAIM_TERMS):
-        return True
-    # "Yes, saved: Marcella is my friend." style without Knows wording.
-    if re.search(r"\b(?:yes[, ]+)?saved\s*:", text):
-        return True
-    if re.search(r"\bi(?:'| a)?ll save\b.+\bas\b", text):
-        return True
-    # "Saved." / "Got it, I updated that:" style without pending confirm language.
-    if re.search(
-        r"\b(?:saved|updated|remembered)\b.{0,80}\b(?:memory|knows|fact|preference|friend|goal)\b",
-        text,
-    ):
-        return True
-    return False
 def response_claims_no_memory_result(response: str) -> bool: return _contains_any(_normalized(response), _NO_RESULT_TERMS)
 def response_claims_old_chat_search_result(response: str) -> bool:
     text = _normalized(response)
@@ -289,28 +230,6 @@ def safe_pending_action_response(response: str, proposals: list[dict]) -> str:
         )
     return (
         "I can prepare that, but nothing is saved until you tap confirm."
-    )
-def safe_unexecuted_memory_response(response: str) -> str:
-    cleaned = response.strip()
-    if not (
-        response_claims_saved_memory_success(cleaned)
-        or response_claims_unconfirmed_success(cleaned)
-    ):
-        return cleaned
-    return (
-        "I can help with that, but I don't have a confirmed saved change from this "
-        "turn. Tell me the exact fact to save or try again."
-    )
-
-
-def safe_unexecuted_saved_memory_claim_response(response: str) -> str:
-    """Language-agnostic guard: block Knows/memory success claims without a write."""
-    cleaned = response.strip()
-    if not response_claims_saved_memory_success(cleaned):
-        return cleaned
-    return (
-        "I can help with that, but I don't have a confirmed saved change from this "
-        "turn. Tell me the exact fact to save or try again."
     )
 def safe_unexecuted_delete_response(
     response: str,

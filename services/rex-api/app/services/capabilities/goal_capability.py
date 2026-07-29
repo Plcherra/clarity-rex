@@ -109,6 +109,7 @@ async def _handle_create_goal(
     reply = continuing_reply_for_propose(
         assistant_reply,
         surface_client_cards=mode_plan.surface_client_cards,
+        surface="goals",
     )
     return await durable_write_service.propose_goal(
         command,
@@ -185,6 +186,7 @@ async def _handle_update_goal(
     reply = continuing_reply_for_propose(
         assistant_reply,
         surface_client_cards=mode_plan.surface_client_cards,
+        surface="goals",
     )
     return await durable_write_service.propose_goal_update(
         plan_id=resolved.id,
@@ -261,6 +263,7 @@ async def _handle_delete_goal(
     reply = continuing_reply_for_propose(
         assistant_reply,
         surface_client_cards=mode_plan.surface_client_cards,
+        surface="goals",
     )
     return await durable_write_service.propose_delete(
         match,

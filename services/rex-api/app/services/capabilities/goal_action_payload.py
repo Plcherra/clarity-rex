@@ -70,19 +70,29 @@ def goal_command_from_payload(payload: dict[str, Any]) -> Optional[GoalCommand]:
 
 
 def update_goal_fields_from_payload(payload: dict[str, Any]) -> Optional[UpdateGoalFields]:
+    """Parse update_goal identity and rename fields.
+
+    Lookup (which goal): plan_id / reference / existing_title / target_title /
+    goal_title. Never use new_title alone as the find key for a rename.
+
+    Title-only without plan_id/reference: treat as “find goal with this title”
+    (existing behavior) — ``title`` is both the find key and the kept title.
+    """
     plan_id = _optional_str(
         payload.get("plan_id")
         or payload.get("goal_id")
         or payload.get("id")
         or payload.get("record_id")
     )
-    reference = _optional_str(
+    # Explicit find keys only — never new_title.
+    explicit_lookup = _optional_str(
         payload.get("reference")
         or payload.get("target_title")
         or payload.get("existing_title")
         or payload.get("goal_title")
     )
-    title = _optional_str(payload.get("title") or payload.get("new_title"))
+    title_field = _optional_str(payload.get("title"))
+    new_title_field = _optional_str(payload.get("new_title"))
     body = _optional_str(
         payload.get("description")
         or payload.get("body")
@@ -92,20 +102,31 @@ def update_goal_fields_from_payload(payload: dict[str, Any]) -> Optional[UpdateG
     target_date = _optional_str(payload.get("target_date") or payload.get("target_text"))
     status_raw = _optional_str(payload.get("status"))
     status = status_raw if status_raw in _VALID_STATUSES else None
-    if not plan_id and not reference and not title:
+
+    if plan_id or explicit_lookup:
+        lookup = explicit_lookup
+        rename_to = new_title_field or title_field
+    elif title_field and new_title_field:
+        # title finds the existing goal; new_title is the rename target.
+        lookup = title_field
+        rename_to = new_title_field
+    elif title_field:
+        # Title-only: find the goal with this title (no separate rename key).
+        lookup = title_field
+        rename_to = title_field
+    else:
+        # new_title alone (or empty identity) cannot identify which goal to update.
+        lookup = None
+        rename_to = new_title_field
+
+    if not plan_id and not lookup:
         return None
-    if not any((title, body, target_date, status, plan_id, reference)):
+    if not any((rename_to, body, target_date, status, plan_id, lookup)):
         return None
-    # Identity: plan_id or explicit reference/existing title only.
-    # Never treat a new title as the lookup key (rename would hit the wrong plan).
-    # Title-only updates without plan_id/reference mean "find the goal with this title".
-    lookup = reference
-    if not plan_id and not lookup and title:
-        lookup = title
     return UpdateGoalFields(
         plan_id=plan_id,
         reference=lookup,
-        title=title,
+        title=rename_to,
         body=body,
         target_date=target_date,
         status=status,

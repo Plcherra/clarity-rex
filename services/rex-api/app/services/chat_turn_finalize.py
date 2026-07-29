@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services.action_truth_policy import UNEXECUTED_GOAL_FALLBACK
 from app.services.action_truth_thread_mutation import (
     CONTINUING_THREAD_HELP_FALLBACK,
     UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
@@ -89,8 +90,12 @@ async def finalize_grok_turn(
                 )
         return {"proposed_turn": proposed}
 
-    if assistant_response.strip() == UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK:
-        # Keep conversation going — do not lecture about Off/Text/Card mode.
+    # Soft mutate dropped / no body write: never leave "I'll save it directly"
+    # or unexecuted-mutation denial copy in the user-visible reply.
+    if assistant_response.strip() in {
+        UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
+        UNEXECUTED_GOAL_FALLBACK,
+    }:
         assistant_response = CONTINUING_THREAD_HELP_FALLBACK
     memory_changes = clarity_action_parser.with_memory_changes(
         None,

@@ -12,13 +12,15 @@ from app.services.action_truth_policy import (
     safe_unexecuted_delete_response,
     safe_unexecuted_finance_response,
     safe_unexecuted_goal_response,
-    safe_unexecuted_memory_response,
     safe_unsupported_action_response,
+)
+from app.services.action_truth_memory import (
+    safe_unexecuted_memory_response,
 )
 
 
 def test_canonical_recall_fallbacks_are_not_saved_memory_success_claims():
-    from app.services.action_truth_policy import (
+    from app.services.action_truth_memory import (
         safe_unexecuted_saved_memory_claim_response,
     )
 
@@ -96,7 +98,7 @@ def test_unexecuted_memory_saving_claim_is_blocked():
 
 
 def test_saved_memory_claim_without_write_is_blocked_for_unknown_turns():
-    from app.services.action_truth_policy import (
+    from app.services.action_truth_memory import (
         response_claims_saved_memory_success,
         safe_unexecuted_saved_memory_claim_response,
     )
@@ -110,8 +112,31 @@ def test_saved_memory_claim_without_write_is_blocked_for_unknown_turns():
     )
 
 
+def test_past_tense_knows_claim_scrubbed_even_with_confirm_language():
+    from app.services.action_truth_memory import (
+        UNEXECUTED_MEMORY_FALLBACK,
+        response_claims_saved_memory_success,
+        safe_unexecuted_saved_memory_claim_response,
+    )
+
+    claim = "I've saved that in Knows. Want me to confirm?"
+    assert response_claims_saved_memory_success(claim) is True
+    assert safe_unexecuted_saved_memory_claim_response(claim) == UNEXECUTED_MEMORY_FALLBACK
+
+
+def test_confirm_only_ask_without_past_tense_is_not_memory_success_claim():
+    from app.services.action_truth_memory import (
+        response_claims_saved_memory_success,
+        safe_unexecuted_saved_memory_claim_response,
+    )
+
+    reply = "Want me to save that preference in Knows?"
+    assert response_claims_saved_memory_success(reply) is False
+    assert safe_unexecuted_saved_memory_claim_response(reply) == reply
+
+
 def test_yes_saved_shorthand_without_write_is_blocked():
-    from app.services.action_truth_policy import (
+    from app.services.action_truth_memory import (
         response_claims_saved_memory_success,
         safe_unexecuted_saved_memory_claim_response,
     )
@@ -132,7 +157,7 @@ def test_ill_save_as_goal_claim_is_success_term_for_pending_guard():
 
 
 def test_casual_success_without_memory_claim_is_not_blocked_by_saved_memory_guard():
-    from app.services.action_truth_policy import (
+    from app.services.action_truth_memory import (
         safe_unexecuted_saved_memory_claim_response,
     )
 
@@ -143,7 +168,7 @@ def test_casual_success_without_memory_claim_is_not_blocked_by_saved_memory_guar
 
 
 def test_spanish_saved_memory_claim_without_write_is_blocked():
-    from app.services.action_truth_policy import (
+    from app.services.action_truth_memory import (
         response_claims_saved_memory_success,
         safe_unexecuted_saved_memory_claim_response,
     )
@@ -163,20 +188,13 @@ def test_unexecuted_delete_success_claim_is_blocked():
     assert "don't have a confirmed backend delete" in response
 
 
-def test_unexecuted_delete_guard_skips_goals_inventory_questions():
-    history = [
-        {
-            "role": "assistant",
-            "content": (
-                "I couldn't find an active saved memory matching that, so I "
-                "didn't delete anything."
-            ),
-        }
-    ]
+def test_unexecuted_delete_guard_skips_non_delete_goals_questions():
+    # Inventory phrase detection is stubbed off (plan 04); guard must still
+    # leave honest Goals answers alone when the user is not asking to delete.
     response = safe_unexecuted_delete_response(
         "You have one active goal saved: Buy RAM.",
         user_message="What goals do we have saved?",
-        conversation_history=history,
+        conversation_history=None,
     )
 
     assert response == "You have one active goal saved: Buy RAM."

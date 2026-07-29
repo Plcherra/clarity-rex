@@ -29,6 +29,7 @@ def test_propose_scrubs_false_update_claim() -> None:
     )
     assert "i'll update" not in reply.lower()
     assert "confirm" in reply.lower()
+    assert "goals" in reply.lower()
 
 
 def test_propose_remaps_truth_unexecuted_fallback() -> None:
@@ -43,6 +44,20 @@ def test_propose_remaps_truth_unexecuted_fallback() -> None:
     assert "don't have a confirmed" not in reply.lower()
     assert "say yes" in reply.lower()
     assert "confirm" in reply.lower()
+    assert "goals" in reply.lower()
+
+
+def test_propose_remaps_memory_fallback_to_knows_surface() -> None:
+    from app.services.action_truth_memory import UNEXECUTED_MEMORY_FALLBACK
+
+    reply = continuing_reply_for_propose(
+        UNEXECUTED_MEMORY_FALLBACK,
+        surface_client_cards=True,
+        surface="knows",
+    )
+    assert "knows" in reply.lower()
+    assert "goals" not in reply.lower()
+    assert "don't have a confirmed" not in reply.lower()
 
 
 def test_apply_keeps_conversation_and_notes_goals() -> None:
