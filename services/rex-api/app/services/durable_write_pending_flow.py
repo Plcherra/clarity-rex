@@ -225,6 +225,8 @@ def saved_response(
             count = updated_count or len(payload.get("plans") or [])
             date_label = format_plan_target_date_label(target_date)
             return f"Updated target dates for {count} goals to {date_label}."
+        if snapshot_type == "plan_update":
+            return f"Updated goal in Goals: {proposal.title}"
     if proposal.write_kind == "plan":
         return f"Saved plan in Goals: {proposal.title}"
     if proposal.write_kind == "open_thread":

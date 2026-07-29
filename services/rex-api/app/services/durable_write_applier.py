@@ -9,14 +9,19 @@ from app.models.memory_discipline import (
     MemoryDisciplineDecision,
     MemoryRecordKind,
 )
-from app.models.plan import PlanCreateRequest, PlanUpdateRequest
+from app.models.open_thread import OpenThreadCreateRequest, OpenThreadUpdateRequest
 from app.services.confirmed_plan_write_applier import ConfirmedPlanWriteApplier
 from app.services.durable_write_apply_failures import apply_failure_result
+from app.services.durable_write_plan_apply import (
+    apply_bulk_plan_target_date,
+    apply_plan_create,
+    apply_plan_update,
+    preview_plan_merge_title,
+)
 from app.services.durable_write_proposal import DurableWriteProposal
 from app.services.memory_correction_types import CorrectionAffectedRecord
 from app.services.memory_correction_delete_applier import MemoryCorrectionDeleteApplier
 from app.services.memory_correction_repository_ops import MemoryCorrectionRepositoryOps
-from app.services.memory_discipline_confirmed_writes import CONFIRMED_PLAN_SERVICE_CHANNEL
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_discipline_writes import (
     MemoryWriteError,
@@ -24,10 +29,10 @@ from app.services.memory_discipline_writes import (
 )
 from app.services.memory_persist_orchestrator import MemoryPersistOrchestrator
 from app.services.open_thread_service import OpenThreadService
-from app.models.open_thread import OpenThreadCreateRequest, OpenThreadUpdateRequest
-from app.services.plan_errors import PlanServiceError
-from app.services.plan_merge_service import normalize_text
 from app.services.plan_service import PlanService
+
+# Re-export for durable_write_builders and existing imports.
+__all__ = ["DurableWriteApplier", "preview_plan_merge_title"]
 
 
 class DurableWriteApplier:
@@ -85,12 +90,15 @@ class DurableWriteApplier:
                 source_message_id=source_message_id,
             )
         if snapshot_type in {"plan", "create_plan"}:
-            return await self._apply_plan(
+            return await apply_plan_create(
+                self.plan_service,
                 snapshot,
                 conversation_id=conversation_id,
                 source_message_id=source_message_id,
                 merge_disclosed=proposal.merge_target_title,
             )
+        if snapshot_type == "plan_update":
+            return await apply_plan_update(self.plan_service, snapshot)
         if snapshot_type == "open_thread":
             return await self._apply_open_thread(
                 snapshot,
@@ -103,7 +111,7 @@ class DurableWriteApplier:
                 conversation_id=conversation_id,
             )
         if snapshot_type == "bulk_plan_target_date":
-            return await self._apply_bulk_plan_target_date(snapshot)
+            return await apply_bulk_plan_target_date(self.plan_service, snapshot)
         if snapshot_type == "record_delete":
             return await self._apply_record_delete(snapshot)
         if snapshot_type == "person_state_update":
@@ -211,47 +219,6 @@ class DurableWriteApplier:
         )
         return {"applied": True, "record": record, "merged": False}
 
-    async def _apply_plan(
-        self,
-        snapshot: dict[str, Any],
-        *,
-        conversation_id: str,
-        source_message_id: str | None,
-        merge_disclosed: str | None,
-    ) -> dict[str, Any]:
-        payload = dict(snapshot.get("payload") or {})
-        metadata = dict(payload.get("metadata") or {})
-        metadata.setdefault("source", "durable_write_confirmed")
-        metadata.setdefault("discipline_write_channel", CONFIRMED_PLAN_SERVICE_CHANNEL)
-        payload["metadata"] = metadata
-        if merge_disclosed:
-            metadata["merge_disclosed_to"] = merge_disclosed
-        try:
-            record = await self.plan_service.create_plan(
-                PlanCreateRequest(
-                    plan_type=payload.get("plan_type") or "personal",
-                    title=str(payload.get("title") or ""),
-                    description=payload.get("description"),
-                    desired_outcome=payload.get("desired_outcome"),
-                    source_conversation_id=conversation_id,
-                    source_message_id=source_message_id,
-                    target_date=payload.get("target_date"),
-                    priority=int(payload.get("priority") or 4),
-                    metadata=metadata,
-                )
-            )
-        except PlanServiceError as exc:
-            return apply_failure_result(
-                snapshot_type="plan",
-                error=exc,
-                conversation_id=conversation_id,
-            )
-        merged = bool(
-            merge_disclosed
-            or (record.get("metadata") or {}).get("merged_into_existing_plan_id")
-        )
-        return {"applied": True, "record": record, "merged": merged}
-
     async def _apply_open_thread(
         self,
         snapshot: dict[str, Any],
@@ -332,52 +299,6 @@ class DurableWriteApplier:
             "updated_count": 1,
         }
 
-    async def _apply_bulk_plan_target_date(
-        self,
-        snapshot: dict[str, Any],
-    ) -> dict[str, Any]:
-        payload = dict(snapshot.get("payload") or {})
-        target_date = str(payload.get("target_date") or "").strip()
-        raw_plans = payload.get("plans") or []
-        if not target_date or not isinstance(raw_plans, list):
-            return apply_failure_result(
-                snapshot_type="bulk_plan_target_date",
-                detail="invalid_payload",
-            )
-
-        updated_records: list[dict[str, Any]] = []
-        for item in raw_plans:
-            if not isinstance(item, dict):
-                continue
-            plan_id = str(item.get("id") or "").strip()
-            if not plan_id:
-                continue
-            try:
-                record = await self.plan_service.update_plan(
-                    plan_id,
-                    PlanUpdateRequest(target_date=target_date),
-                )
-            except PlanServiceError as exc:
-                return apply_failure_result(
-                    snapshot_type="bulk_plan_target_date",
-                    error=exc,
-                    extra={"records": updated_records},
-                )
-            updated_records.append(record)
-
-        if not updated_records:
-            return apply_failure_result(
-                snapshot_type="bulk_plan_target_date",
-                detail="no_plans_updated",
-            )
-        return {
-            "applied": True,
-            "record": updated_records[-1],
-            "records": updated_records,
-            "merged": False,
-            "updated_count": len(updated_records),
-        }
-
     async def _apply_record_delete(
         self,
         snapshot: dict[str, Any],
@@ -416,23 +337,6 @@ class DurableWriteApplier:
             "merged": False,
             "deleted": True,
         }
-
-
-async def preview_plan_merge_title(
-    plan_service: PlanService,
-    *,
-    plan_type: str,
-    title: str,
-) -> str | None:
-    try:
-        existing = await plan_service.list_plans(plan_type=plan_type, active=True, limit=100)
-    except Exception:
-        return None
-    normalized = normalize_text(title)
-    for plan in existing:
-        if normalize_text(plan.get("title")) == normalized:
-            return str(plan.get("title") or "")
-    return None
 
 
 def _decision_from_snapshot(snapshot: dict[str, Any]) -> MemoryDisciplineDecision | None:

@@ -86,6 +86,19 @@ _TOP_LEVEL_PAYLOAD_ALIASES: dict[str, str] = {
     "notes": "notes",
     "table": "table",
     "reference": "reference",
+    "goalId": "goal_id",
+    "goal_id": "goal_id",
+    "planId": "plan_id",
+    "plan_id": "plan_id",
+    "goalTitle": "goal_title",
+    "goal_title": "goal_title",
+    "planType": "plan_type",
+    "plan_type": "plan_type",
+    "desiredOutcome": "desired_outcome",
+    "desired_outcome": "desired_outcome",
+    "targetDate": "target_date",
+    "target_date": "target_date",
+    "status": "status",
 }
 
 

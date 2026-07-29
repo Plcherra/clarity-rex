@@ -27,7 +27,7 @@ def continuing_reply_for_propose(
         or text == UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK
     ):
         text = (
-            "Got it — I can update that open thread when you confirm. "
+            "Got it — I can save that in Goals when you confirm. "
             "Nothing is saved until then."
         )
     if surface_client_cards:
@@ -51,6 +51,33 @@ def continuing_reply_for_apply(grok_reply: str, *, title: str) -> str:
         return text
     return f"{text}\n\nUpdated in Goals."
 
+
+def continuing_reply_for_goal_apply(
+    grok_reply: str,
+    *,
+    title: str,
+    write_kind: str,
+) -> str:
+    """Keep Grok's voice after a goal create/update/delete apply."""
+    text = str(grok_reply or "").strip()
+    kind = str(write_kind or "").strip()
+    if kind == "delete":
+        if not text:
+            return f"Done — deleted from Goals: {title}."
+        lowered = text.lower()
+        if "goals" in lowered and "deleted" in lowered:
+            return text
+        return f"{text}\n\nDeleted from Goals."
+    if kind == "plan":
+        if not text:
+            return f"Done — saved in Goals: {title}."
+        lowered = text.lower()
+        if "goals" in lowered and (
+            "saved" in lowered or "updated" in lowered
+        ):
+            return text
+        return f"{text}\n\nSaved in Goals."
+    return continuing_reply_for_apply(grok_reply, title=title)
 
 def continuing_reply_for_knows_apply(grok_reply: str, *, title: str) -> str:
     """Keep Grok's voice after a Knows apply."""

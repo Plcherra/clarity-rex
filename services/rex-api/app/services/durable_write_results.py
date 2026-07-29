@@ -54,6 +54,7 @@ def applied_memory_changes(
                 "person_state_update",
                 "person_note_update",
                 "update_plan",
+                "plan_update",
                 "update_milestone",
                 "bulk_plan_target_date",
                 "open_thread_update",

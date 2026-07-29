@@ -6,6 +6,10 @@ from typing import Optional
 
 from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.auto_suggestions_gate import AutoSuggestionsGateResult
+from app.services.capabilities.goal_capability import (
+    handle_goal_action,
+    is_goal_action,
+)
 from app.services.capabilities.memory_capability import (
     handle_memory_action,
     is_memory_action,
@@ -55,6 +59,18 @@ async def dispatch_allowed_actions(
                 return result
         if is_memory_action(action):
             result = await handle_memory_action(
+                action,
+                durable_write_service=durable_write_service,
+                settings=settings,
+                conversation_id=conversation_id,
+                user_message=user_message,
+                conversation_messages=conversation_messages,
+                assistant_reply=assistant_reply,
+            )
+            if result is not None:
+                return result
+        if is_goal_action(action):
+            result = await handle_goal_action(
                 action,
                 durable_write_service=durable_write_service,
                 settings=settings,

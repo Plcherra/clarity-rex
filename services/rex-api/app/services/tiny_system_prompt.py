@@ -44,6 +44,9 @@ _ACTIONS_MUTATE = (
     "Prefer update_open_thread with a listed thread_id when changing an "
     "existing thread. Include summary when the user gives reminder details, "
     "the reason it matters, or a renamed purpose. "
+    "For achievement goals (not habits), use create_goal / update_goal / "
+    "delete_goal with a short title (and description when known). "
+    "Prefer plan_id or existing_title/reference when updating or deleting. "
     f"{_JSON_RULE} Keep talking; do not claim updated before confirm."
 )
 
@@ -55,6 +58,8 @@ _ACTIONS_MUTATE_CARD = (
     f"Payload MUST include a non-empty title. {_TITLE_RULE} "
     "Pre-fill both title and summary when known so the confirm card can edit "
     "both fields. "
+    "For achievement goals, append create_goal / update_goal / delete_goal "
+    "so a confirm card can appear — never only talk about saving a goal. "
     f"{_JSON_RULE} "
     "The body shows a confirm card — never only talk about updating in prose. "
     "Do not claim updated before they confirm on the card."
@@ -68,9 +73,13 @@ _ACTIONS_MUTATE_OFF = (
     "Then append ```rex_action``` with create_open_thread or update_open_thread, "
     f'payload with non-empty title (required; {_TITLE_RULE}), summary?, '
     'thread_id?, and "explicit":true. '
-    "Prefer update_open_thread with a listed id. Off mode applies only when "
+    "Prefer update_open_thread with a listed id. "
+    "Same for goals: create_goal / update_goal / delete_goal only on clear "
+    'commands, with "explicit":true. '
+    "Off mode applies only when "
     '"explicit":true is set — no confirm prompt or card — so only emit mutate '
-    "actions when the user truly wants the thread changed now. "
+    "actions when the user truly wants the thread or goal changed now. "
+    "Do not set auto:true on Off mutate actions. "
     f"{_JSON_RULE} "
     "Do not propose for vague desires without a concrete change "
     '(e.g. "I wish I woke earlier") — just keep talking. '

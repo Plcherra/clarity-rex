@@ -20,7 +20,6 @@ from app.services.conversation_pending_action import ConversationPendingActionSe
 from app.services.durable_write_applier import DurableWriteApplier
 from app.services.durable_write_builders import (
     proposal_from_discipline_decision,
-    proposal_from_goal_command,
     proposal_from_memory_update,
     proposal_from_open_thread,
     proposal_from_open_thread_update,
@@ -29,6 +28,7 @@ from app.services.durable_write_builders import (
     proposal_from_record_delete,
     proposal_from_simple_memory,
 )
+from app.services.durable_write_goal_propose import DurableWriteGoalProposeMixin
 from app.services.durable_write_pending import pending_action_for_durable_write
 from app.services.durable_write_pending_flow import DurableWritePendingFlowMixin
 from app.services.durable_write_proposal import DurableWriteProposal
@@ -44,7 +44,7 @@ from app.services.memory_discipline_writes import (
 from app.services.plan_service import PlanService
 
 
-class DurableWriteService(DurableWritePendingFlowMixin):
+class DurableWriteService(DurableWriteGoalProposeMixin, DurableWritePendingFlowMixin):
     def __init__(
         self,
         memory_service: Any,
@@ -158,27 +158,6 @@ class DurableWriteService(DurableWritePendingFlowMixin):
             response=response,
             proposal_settings=proposal_settings,
             surface_client_cards=surface_client_cards,
-        )
-
-    async def propose_goal(
-        self,
-        command: GoalCommand,
-        *,
-        conversation_id: str,
-        user_message: dict,
-        conversation_messages: Optional[list[dict]] = None,
-    ) -> dict:
-        proposal = await proposal_from_goal_command(
-            command,
-            plan_service=self.plan_service,
-            conversation_id=conversation_id,
-            source_message_id=str(user_message.get("id") or "") or None,
-        )
-        return await self._propose(
-            proposal,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_messages=conversation_messages,
         )
 
     async def propose_open_thread(

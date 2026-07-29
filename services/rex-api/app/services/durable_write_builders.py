@@ -15,7 +15,7 @@ from app.services.body_display_text import (
     goal_title,
     write_kind_for_action,
 )
-from app.services.durable_write_applier import preview_plan_merge_title
+from app.services.durable_write_plan_apply import preview_plan_merge_title
 from app.services.durable_write_proposal import DurableWriteProposal
 from app.services.memory_path_policy import direct_save_metadata
 from app.services.plan_service import PlanService
@@ -135,6 +135,42 @@ async def proposal_from_goal_command(
             "payload": payload,
             "conversation_id": conversation_id,
             "source_message_id": source_message_id,
+        },
+    )
+
+
+def proposal_from_goal_update(
+    *,
+    plan_id: str,
+    title: str,
+    body: str | None,
+    existing_title: str | None,
+    target_date: str | None = None,
+    status: str | None = None,
+) -> DurableWriteProposal:
+    safe_title = goal_title(title)
+    clean_body = (body or "").strip()
+    prior = (existing_title or "").strip()
+    payload: dict[str, Any] = {
+        "plan_id": plan_id,
+        "title": safe_title,
+        "description": clean_body or None,
+        "desired_outcome": clean_body or None,
+        "metadata": {"source": "durable_write_confirmed"},
+    }
+    if target_date:
+        payload["target_date"] = target_date
+    if status:
+        payload["status"] = status
+    return DurableWriteProposal(
+        write_kind="update_plan",
+        title=safe_title,
+        body=clean_body,
+        target_label=prior or None,
+        editable_fields=("title", "body"),
+        apply_snapshot={
+            "type": "plan_update",
+            "payload": payload,
         },
     )
 

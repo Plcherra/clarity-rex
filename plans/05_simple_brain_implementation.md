@@ -1,6 +1,6 @@
 # 05 — Simple brain implementation
 
-**Status:** Phase D complete (2026-07-28) on `plan/04-aggressive-deletion`. Phases A–C done.  
+**Status:** Phase E complete (2026-07-29) on `plan/04-aggressive-deletion`. Phases A–D done.  
 **Depends on:** [`04_aggressive_deletion.md`](04_aggressive_deletion.md) (complete)  
 **Vision reference:** [`01_vision_gap_and_token_budget.md`](01_vision_gap_and_token_budget.md)
 
@@ -180,8 +180,8 @@ Confirm cards and Truth remain mandatory for durable writes.
 
 ### Phase E — Goals
 
-- [ ] `create_goal` / `update_goal` / `delete_goal`
-- [ ] Goals tab shows result after confirm
+- [x] `create_goal` / `update_goal` / `delete_goal`
+- [x] Goals tab shows result after confirm
 
 **Manual tests:**
 
