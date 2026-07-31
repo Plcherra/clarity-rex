@@ -3,10 +3,10 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from app.services.chat_service import (
+from app.services.chat_financial_guard import (
     FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE,
-    ChatService,
 )
+from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.time_context_service import TimeContextService
 from chat_service_fakes import FakeAIService, FakeMemoryService
@@ -47,7 +47,14 @@ def _chat_service(ai_service, memory_service):
 @pytest.mark.asyncio
 async def test_voice_refuses_finance_answer_without_financial_context():
     async with async_voice_client() as client:
-        ai_service = FakeAIService(stream_tokens=["You spent ", "$42."])
+        ai_service = FakeAIService(
+            stream_tokens=[
+                "You spent $42. ",
+                "```rex_action\n",
+                '{"action":"fetch_spend_insight","payload":{"category":"Groceries"}}\n',
+                "```",
+            ]
+        )
         memory_service = FakeMemoryService()
         chat = _chat_service(ai_service, memory_service)
 
@@ -58,10 +65,12 @@ async def test_voice_refuses_finance_answer_without_financial_context():
         )
 
         assert done["response_text"] == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
+        # No grounded second pass without reliable Clarity finance data.
         assert ai_service.generate_calls == 0
-        assert ai_service.stream_calls == 0
+        assert ai_service.stream_calls == 1
         assert " ".join(tts.calls) == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
         assert "without guessing" in done["response_text"]
+        assert "$42" not in done["response_text"]
 
 
 @pytest.mark.asyncio

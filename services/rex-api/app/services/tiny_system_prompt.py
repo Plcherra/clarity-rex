@@ -95,6 +95,22 @@ _ACTIONS_MUTATE_OFF = (
 )
 
 
+_ACTIONS_FINANCE = (
+    "Money questions: append ```rex_action``` with fetch_spend_insight "
+    "(category?, merchant?, period?) or fetch_account_summary (account?), then "
+    "answer only from the fetched numbers — never invent amounts. "
+    "Finance changes use categorize_transaction, bulk_categorize, or "
+    "category/budget create-update-delete with the names and amounts you know; "
+    "the body resolves ids and confirms. Clarity cannot create transactions "
+    "outside Plaid or CSV."
+)
+
+_ACTIONS_FINANCE_OFF = (
+    f"{_ACTIONS_FINANCE} In off mode, finance changes need a clear command with "
+    '"explicit":true.'
+)
+
+
 def _mode_guidance(mode: str) -> str:
     if mode == AUTO_PROPOSALS_OFF:
         return (
@@ -111,10 +127,10 @@ def _mode_guidance(mode: str) -> str:
 
 def _actions_block(mode: str) -> str:
     if mode == AUTO_PROPOSALS_OFF:
-        return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE_OFF}"
+        return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE_OFF}\n{_ACTIONS_FINANCE_OFF}"
     if mode == AUTO_PROPOSALS_CARD:
-        return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE_CARD}"
-    return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE}"
+        return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE_CARD}\n{_ACTIONS_FINANCE}"
+    return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE}\n{_ACTIONS_FINANCE}"
 
 
 def build_tiny_system_prompt(

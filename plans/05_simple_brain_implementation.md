@@ -1,6 +1,6 @@
 # 05 — Simple brain implementation
 
-**Status:** Phase E2 complete (2026-07-29) on `plan/04-aggressive-deletion`. Phases A–E2 done.  
+**Status:** Phase F complete (2026-07-31) on `plan/04-aggressive-deletion`. Phases A–F done (manual device tests still pending).  
 **Depends on:** [`04_aggressive_deletion.md`](04_aggressive_deletion.md) (complete)  
 **Vision reference:** [`01_vision_gap_and_token_budget.md`](01_vision_gap_and_token_budget.md)
 
@@ -206,16 +206,17 @@ Fit: a **milestone** is a step under a **plan/goal** (not an Open Thread). Catal
 
 ### Phase F — Finance fetch + allowed mutates
 
-- [ ] `fetch_spend_insight` / `fetch_account_summary`
-- [ ] Categorize / categories / budgets per UI truth
-- [ ] No `create_transaction` if UI cannot
+- [x] `fetch_spend_insight` / `fetch_account_summary` — passthrough actions → capped fetch pack from the app-provided context → grounded second pass; unreliable context answers with the honest unavailable copy
+- [x] Categorize / categories / budgets per UI truth — Grok names the capability, the body maps it to a `ClarityControlService` action and surfaces a confirm proposal (`finance_edits_enabled` gates all of them)
+- [x] No `create_transaction` if UI cannot — not in the catalog and not dispatchable
 
-**Manual tests:**
+**Manual tests** (device smoke — chat and voice, since both share the fetch path):
 
 - [ ] “How much on coffee?” → fetch then number/range; no fake precision
 - [ ] “Summary of account X” → fetch
 - [ ] Recategorize with confirm when edits enabled
 - [ ] Edits disabled → no mutate proposals
+- [ ] Finance question with sync degraded/offline → honest unavailable copy, no numbers
 
 ### Phase G — Recall / inventory fetch
 

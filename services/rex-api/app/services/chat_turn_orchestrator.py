@@ -20,6 +20,7 @@ from app.services.chat_turn_orchestrator_support import (
     load_pending_action,
 )
 from app.services.chat_turn_finalize import finalize_grok_turn
+from app.services.chat_turn_finance_fetch import build_finance_fetch_runner
 from app.services.chat_turn_stream_finalize import (
     collect_buffered_grok_reply,
     iter_finalized_stream_events,
@@ -85,7 +86,6 @@ class ChatTurnOrchestrator:
         user_enabled_proactive_insights: bool = False,
     ) -> dict:
         _ = (
-            financial_context,
             response_instructions,
             user_requested_deep_thinking,
             user_enabled_proactive_insights,
@@ -178,6 +178,12 @@ class ChatTurnOrchestrator:
             conversation_history=history,
             turn_trace=turn_trace,
             ai_messages=ai_messages,
+            financial_context=financial_context,
+            finance_fetch_runner=self._finance_fetch_runner(
+                financial_context,
+                channel=channel,
+                max_tokens=resolved_max,
+            ),
         )
         if finalized.get("proposed_turn") is not None:
             proposed = finalized["proposed_turn"]
@@ -231,7 +237,6 @@ class ChatTurnOrchestrator:
         user_enabled_proactive_insights: bool = False,
     ) -> AsyncIterator[dict]:
         _ = (
-            financial_context,
             response_instructions,
             user_requested_deep_thinking,
             user_enabled_proactive_insights,
@@ -334,8 +339,30 @@ class ChatTurnOrchestrator:
             usage_recorder=self.usage_recorder,
             turn_started_at=turn_started_at,
             recent_public_messages=self._recent_public_messages,
+            financial_context=financial_context,
+            finance_fetch_runner=self._finance_fetch_runner(
+                financial_context,
+                channel=channel,
+                max_tokens=resolved_max,
+            ),
         ):
             yield event
+
+    def _finance_fetch_runner(
+        self,
+        financial_context: Optional[dict],
+        *,
+        channel: RexBrainChannel,
+        max_tokens: int,
+    ):
+        return build_finance_fetch_runner(
+            grok_turn_brain=self.grok_turn_brain,
+            financial_guard=self.financial_guard,
+            financial_context=financial_context,
+            usage_recorder=self.usage_recorder,
+            channel=channel,
+            max_tokens=max_tokens,
+        )
 
     async def _open_thread_titles_block(self) -> Optional[str]:
         packed = await load_open_threads_context(self.memory_service, "")

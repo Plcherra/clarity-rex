@@ -70,6 +70,8 @@ async def iter_finalized_stream_events(
     usage_recorder,
     turn_started_at: float,
     recent_public_messages,
+    financial_context: dict | None = None,
+    finance_fetch_runner=None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Finalize then emit a single token burst + done (stable reply)."""
     finalized = await finalize_grok_turn(
@@ -84,6 +86,8 @@ async def iter_finalized_stream_events(
         conversation_history=conversation_history,
         turn_trace=turn_trace,
         ai_messages=ai_messages,
+        financial_context=financial_context,
+        finance_fetch_runner=finance_fetch_runner,
     )
     if finalized.get("proposed_turn") is not None:
         proposed = finalized["proposed_turn"]

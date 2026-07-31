@@ -6,6 +6,9 @@ from typing import Optional
 
 from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.auto_suggestions_gate import AutoSuggestionsGateResult
+from app.services.capabilities.finance_capability import (
+    collect_finance_proposals,
+)
 from app.services.capabilities.goal_capability import (
     handle_goal_action,
     is_goal_action,
@@ -24,6 +27,22 @@ from app.services.capabilities.open_thread_capability import (
     is_delete_open_thread_action,
     is_open_thread_action,
 )
+
+
+def dispatch_finance_proposals(
+    *,
+    gate: AutoSuggestionsGateResult,
+    settings: AssistantProposalSettings,
+    clarity_action_parser,
+    financial_context: Optional[dict] = None,
+) -> list[dict]:
+    """Finance changes ride the clarity-actions confirm path, not durable write."""
+    return collect_finance_proposals(
+        (*gate.allowed_soft_actions, *gate.passthrough_actions),
+        settings=settings,
+        clarity_action_parser=clarity_action_parser,
+        financial_context=financial_context,
+    )
 
 
 async def dispatch_allowed_actions(

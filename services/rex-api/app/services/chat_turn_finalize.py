@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from app.services.action_truth_policy import UNEXECUTED_GOAL_FALLBACK
 from app.services.action_truth_thread_mutation import (
@@ -12,7 +12,10 @@ from app.services.action_truth_thread_mutation import (
 from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.auto_suggestions_gate import apply_auto_suggestions_gate
 from app.services.brain_action_schema import parse_brain_actions
-from app.services.capability_dispatcher import dispatch_allowed_actions
+from app.services.capability_dispatcher import (
+    dispatch_allowed_actions,
+    dispatch_finance_proposals,
+)
 
 
 async def finalize_grok_turn(
@@ -28,6 +31,8 @@ async def finalize_grok_turn(
     conversation_history: list[dict],
     turn_trace,
     ai_messages: list[dict],
+    financial_context: Optional[dict] = None,
+    finance_fetch_runner=None,
 ) -> dict[str, Any]:
     """Grok reply always continues; body may attach propose/apply beside it.
 
@@ -42,11 +47,24 @@ async def finalize_grok_turn(
     )
 
     fence_unsupported = clarity_action_parser.unsupported_actions(rex_response)
-    # Strip legacy finance fences from reply text; mutate dispatch is not live.
-    reply_text, _ignored_finance = clarity_action_parser.extract_proposals(
+    # Legacy ```clarity_action``` fences are not a capability — strip them and
+    # let Grok's rex_action finance capabilities drive proposals instead.
+    reply_text, _legacy_fences = clarity_action_parser.extract_proposals(
         brain.reply_text,
     )
-    finance_proposals: list[dict] = []
+    if finance_fetch_runner is not None:
+        fetched_reply = await finance_fetch_runner(
+            (*gate.allowed_soft_actions, *gate.passthrough_actions),
+            ai_messages,
+        )
+        if fetched_reply:
+            reply_text = fetched_reply
+    finance_proposals = dispatch_finance_proposals(
+        gate=gate,
+        settings=proposal_settings,
+        clarity_action_parser=clarity_action_parser,
+        financial_context=financial_context,
+    )
     unsupported = _merge_unsupported(gate.unsupported_hints, fence_unsupported)
     assistant_response = truth_service.truthful_generated_response(
         reply_text,
@@ -73,6 +91,11 @@ async def finalize_grok_turn(
         assistant_reply=assistant_response,
     )
     if proposed is not None:
+        if finance_proposals:
+            proposed["memory_changes"] = clarity_action_parser.with_memory_changes(
+                proposed.get("memory_changes"),
+                finance_proposals,
+            )
         if turn_trace is not None:
             record = getattr(turn_trace, "record_proposal_outcome", None)
             if callable(record):
