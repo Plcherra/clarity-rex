@@ -1,16 +1,19 @@
 /// Supabase Auth redirect targets for email links opened in the browser.
 ///
-/// Production web app lives on the root domain at `/app/` (see
-/// `docs/flutter-web/00_FLUTTER_WEB_MASTER.md`). Add `https://goclarity.app`
-/// to Supabase Auth redirect allow-list alongside marketing auth pages.
-/// Email confirmation and password-reset links continue to land on
-/// `goclarity.app/auth/*` pages served by `apps/web`.
+/// Production Flutter web lives at `/app/` on the root domain. Add
+/// `https://goclarity.app` (and `/app/**` if your allow-list is path-scoped)
+/// to Supabase Auth redirect URLs.
+///
+/// Email confirmation lands in the app so Supabase can establish the session.
+/// Password reset still uses the marketing `/auth/reset-password` page so the
+/// user can choose a new password in the browser.
+///
 /// Local web dev: add `http://localhost:<flutter-web-port>` to Supabase Auth
 /// site URL / redirect allow-list when testing sign-in in Chrome.
 class AuthConfig {
   static const String emailRedirectUrl = String.fromEnvironment(
     'SUPABASE_AUTH_REDIRECT_URL',
-    defaultValue: 'https://goclarity.app/auth/confirmed',
+    defaultValue: 'https://goclarity.app/app/',
   );
 
   static const String passwordResetRedirectUrl = String.fromEnvironment(

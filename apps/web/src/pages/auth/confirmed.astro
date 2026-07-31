@@ -2,13 +2,14 @@
 import AuthLayout from '@layouts/AuthLayout.astro';
 import { authLinks, product } from '@content/site';
 
+const appUrl = authLinks.signIn.href;
 const steps = [
   {
-    title: 'Open Clarity on web or phone',
-    body: 'Go to goclarity.app/app/ in your browser, or open the iPhone or Android app when you have it installed.',
+    title: 'Open Clarity',
+    body: 'You should be redirected into the app automatically. If not, use the button below.',
   },
   {
-    title: 'Choose Sign in',
+    title: 'Sign in if needed',
     body: 'Use the same email and password you used to create your account.',
   },
   {
@@ -20,7 +21,7 @@ const steps = [
 
 <AuthLayout
   title="Email confirmed - Clarity"
-  description="Your Clarity account email address is confirmed. Sign in on web or in the app."
+  description="Your Clarity account email address is confirmed. Continue in the Clarity app."
 >
   <section class="auth-card" aria-labelledby="auth-confirmed-title">
     <div class="auth-card__badge" aria-hidden="true">
@@ -28,8 +29,8 @@ const steps = [
     </div>
     <p class="eyebrow">Account verified</p>
     <h1 id="auth-confirmed-title">You are all set.</h1>
-    <p class="auth-card__lede">
-      Your email is confirmed for Clarity. You can close this page and sign in on web or in the app.
+    <p class="auth-card__lede" id="auth-confirmed-lede">
+      Your email is confirmed. Opening Clarity so you can continue…
     </p>
 
     <div id="auth-confirmed-error" class="auth-alert auth-alert--error" hidden>
@@ -39,7 +40,7 @@ const steps = [
       </p>
     </div>
 
-    <ol class="auth-steps">
+    <ol class="auth-steps" id="auth-confirmed-steps" hidden>
       {
         steps.map((step) => (
           <li>
@@ -50,15 +51,17 @@ const steps = [
       }
     </ol>
 
-    <div class="auth-card__actions">
-      <a class="button button--large" href={authLinks.signIn.href}>Open Clarity on web</a>
+    <div class="auth-card__actions" id="auth-confirmed-actions" hidden>
+      <a class="button button--large" id="auth-confirmed-open-app" href={appUrl}>
+        Open Clarity
+      </a>
       <a class="button button--secondary button--large" href={`mailto:${product.supportEmail}`}>
         Contact support
       </a>
     </div>
   </section>
 
-  <script is:inline>
+  <script is:inline define:vars={{ appUrl }}>
     (function () {
       var params = new URLSearchParams(window.location.search);
       var hash = window.location.hash.startsWith('#')
@@ -69,16 +72,55 @@ const steps = [
       var errorDescription =
         params.get('error_description') || hashParams.get('error_description');
 
-      if (!error) return;
-
       var panel = document.getElementById('auth-confirmed-error');
       var text = document.getElementById('auth-confirmed-error-text');
-      if (!panel || !text) return;
+      var steps = document.getElementById('auth-confirmed-steps');
+      var actions = document.getElementById('auth-confirmed-actions');
+      var lede = document.getElementById('auth-confirmed-lede');
+      var openApp = document.getElementById('auth-confirmed-open-app');
 
-      panel.hidden = false;
-      if (errorDescription) {
-        text.textContent = decodeURIComponent(errorDescription.replace(/\+/g, ' '));
+      function showManualContinue(message) {
+        if (lede) {
+          lede.textContent =
+            message ||
+            'Your email is confirmed for Clarity. Continue in the app to sign in.';
+        }
+        if (steps) steps.hidden = false;
+        if (actions) actions.hidden = false;
       }
+
+      if (error) {
+        if (panel) panel.hidden = false;
+        if (text && errorDescription) {
+          text.textContent = decodeURIComponent(
+            String(errorDescription).replace(/\+/g, ' '),
+          );
+        }
+        showManualContinue(
+          'We could not confirm this link automatically. Request a new confirmation email from the app, or contact support.',
+        );
+        return;
+      }
+
+      // Preserve query + hash so Flutter/Supabase can finish the auth session.
+      var target =
+        String(appUrl || 'https://goclarity.app/app/').replace(/\/?$/, '/') +
+        window.location.search +
+        window.location.hash;
+
+      if (openApp) openApp.setAttribute('href', target);
+
+      try {
+        window.location.replace(target);
+      } catch (_) {
+        showManualContinue();
+        return;
+      }
+
+      // If redirect is blocked, show the manual continue UI.
+      window.setTimeout(function () {
+        showManualContinue();
+      }, 1200);
     })();
   </script>
 </AuthLayout>

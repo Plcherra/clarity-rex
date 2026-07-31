@@ -4,6 +4,7 @@ import 'package:clarity/app/app.dart';
 import 'package:clarity/app/app_composition.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/auth/presentation/auth_screen.dart';
+import 'package:clarity/features/auth/presentation/email_confirmation_screen.dart';
 import 'package:clarity/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/features/profile/presentation/profile_screen.dart';
@@ -80,8 +81,35 @@ void main() {
     );
 
     expect(find.byType(AuthScreen), findsOneWidget);
+    expect(find.byType(EmailConfirmationScreen), findsNothing);
     expect(find.byType(OnboardingScreen), findsNothing);
     expect(find.byType(HomeShell), findsNothing);
+  });
+
+  testWidgets('pending email confirmation shows confirmation screen', (
+    tester,
+  ) async {
+    final app = AppComposition();
+    addTearDown(app.dispose);
+    app.authController.bindLocalizations(
+      lookupAppLocalizations(const Locale('en')),
+    );
+    app.authController.pendingConfirmationEmail = 'new@example.com';
+
+    await tester.pumpWidget(
+      ClarityApp(
+        ui: app.ui,
+        authController: app.authController,
+        profileController: app.profileController,
+        themeModeController: app.themeModeController,
+        localeController: app.localeController,
+      ),
+    );
+
+    expect(find.byType(EmailConfirmationScreen), findsOneWidget);
+    expect(find.byType(AuthScreen), findsNothing);
+    expect(find.text('Confirm your email'), findsOneWidget);
+    expect(find.text('Resend confirmation email'), findsOneWidget);
   });
 
   testWidgets('signed in users without profile see onboarding', (tester) async {

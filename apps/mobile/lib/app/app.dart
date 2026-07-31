@@ -6,6 +6,7 @@ import '../core/l10n/app_l10n.dart';
 import '../core/l10n/clarity_material_app.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/presentation/auth_screen.dart';
+import '../features/auth/presentation/email_confirmation_screen.dart';
 import '../features/auth/presentation/mfa_verification_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/profile/application/profile_controller.dart';
@@ -99,7 +100,13 @@ final class ClarityApp extends StatelessWidget {
       return const _AppLoadingScreen();
     }
     if (!authController.isAuthenticated) {
-      return AuthScreen(controller: authController);
+      if (authController.needsEmailConfirmation) {
+        return EmailConfirmationScreen(controller: authController);
+      }
+      return AuthScreen(
+        controller: authController,
+        localeController: localeController,
+      );
     }
     if (authController.isMfaRequired) {
       return MfaVerificationScreen(controller: authController);

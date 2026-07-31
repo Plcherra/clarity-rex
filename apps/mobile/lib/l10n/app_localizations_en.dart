@@ -86,6 +86,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter your email to reset your password.';
 
   @override
+  String get authLanguageLabel => 'Language';
+
+  @override
+  String get authConfirmEmailTitle => 'Confirm your email';
+
+  @override
+  String authConfirmEmailSubtitle(String email) {
+    return 'We sent a confirmation link to $email. Open it to confirm, then come back here and sign in.';
+  }
+
+  @override
+  String get authConfirmEmailHint =>
+      'Check spam or promotions if you do not see it within a few minutes.';
+
+  @override
+  String get authConfirmEmailResendButton => 'Resend confirmation email';
+
+  @override
+  String authConfirmEmailResent(String email) {
+    return 'Confirmation email sent again to $email.';
+  }
+
+  @override
+  String get authConfirmEmailBackToSignIn => 'Back to sign in';
+
+  @override
   String get profileAppearance => 'Appearance';
 
   @override
@@ -2588,7 +2614,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String authInfoConfirmationLinkSent(String email) {
-    return 'We sent a confirmation link to $email. Open it, then return here and sign in.';
+    return 'We sent a confirmation link to $email. Open it to confirm, then come back here and sign in.';
   }
 
   @override

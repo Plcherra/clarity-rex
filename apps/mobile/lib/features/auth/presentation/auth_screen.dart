@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/l10n/app_l10n.dart';
+import '../../../core/l10n/clarity_locale_catalog.dart';
 import '../../../theme/clarity_gradients.dart';
 import '../../../widgets/clarity_button.dart';
 import '../../../widgets/clarity_card.dart';
+import '../../profile/application/locale_controller.dart';
 import '../application/auth_controller.dart';
 
 final class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key, required this.controller});
+  const AuthScreen({
+    super.key,
+    required this.controller,
+    required this.localeController,
+  });
 
   final AuthController controller;
+  final LocaleController localeController;
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -73,15 +80,29 @@ final class _AuthScreenState extends State<AuthScreen> {
     await widget.controller.requestPasswordReset(email: email);
   }
 
+  Future<void> _onLanguageChanged(Locale? locale) async {
+    if (locale == null) return;
+    await widget.localeController.setLocale(locale, persistProfile: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: widget.controller,
+      listenable: Listenable.merge([
+        widget.controller,
+        widget.localeController,
+      ]),
       builder: (context, _) {
         final theme = Theme.of(context);
         final cs = theme.colorScheme;
         final l10n = context.l10n;
         final error = _localError ?? widget.controller.errorMessage;
+        final selectedLocale = widget.localeController.enabledLocales.firstWhere(
+          (locale) =>
+              ClarityLocaleCatalog.localeTagFor(locale) ==
+              widget.localeController.localeTag,
+          orElse: () => widget.localeController.enabledLocales.first,
+        );
         return Scaffold(
           body: DecoratedBox(
             decoration: const BoxDecoration(
@@ -127,7 +148,29 @@ final class _AuthScreenState extends State<AuthScreen> {
                               height: 1.35,
                             ),
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 20),
+                          DropdownButtonFormField<Locale>(
+                            key: ValueKey(widget.localeController.localeTag),
+                            initialValue: selectedLocale,
+                            decoration: InputDecoration(
+                              labelText: l10n.authLanguageLabel,
+                              prefixIcon: const Icon(Icons.translate_rounded),
+                            ),
+                            items: [
+                              for (final locale
+                                  in widget.localeController.enabledLocales)
+                                DropdownMenuItem(
+                                  value: locale,
+                                  child: Text(
+                                    widget.localeController.labelFor(locale),
+                                  ),
+                                ),
+                            ],
+                            onChanged: widget.controller.isLoading
+                                ? null
+                                : _onLanguageChanged,
+                          ),
+                          const SizedBox(height: 14),
                           if (_isSignUp) ...[
                             TextField(
                               controller: _fullNameController,

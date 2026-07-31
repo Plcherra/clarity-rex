@@ -26,6 +26,27 @@
   "authEnterEmailPassword": "Enter your email and password.",
   "authEnterName": "Enter your name to create a profile.",
   "authEnterEmailForReset": "Enter your email to reset your password.",
+  "authLanguageLabel": "Language",
+  "authConfirmEmailTitle": "Confirm your email",
+  "authConfirmEmailSubtitle": "We sent a confirmation link to {email}. Open it to confirm, then come back here and sign in.",
+  "@authConfirmEmailSubtitle": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authConfirmEmailHint": "Check spam or promotions if you do not see it within a few minutes.",
+  "authConfirmEmailResendButton": "Resend confirmation email",
+  "authConfirmEmailResent": "Confirmation email sent again to {email}.",
+  "@authConfirmEmailResent": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authConfirmEmailBackToSignIn": "Back to sign in",
   "profileAppearance": "Appearance",
   "profileLanguage": "Language",
   "profileLanguageUpdated": "Language set to {language}.",
@@ -1474,7 +1495,7 @@
   "authErrorNoAuthenticatorAvailable": "No verified authenticator app is available for this account.",
   "authErrorStartEnrollmentFirst": "Start MFA enrollment before verifying a code.",
   "authInfoAccountCreatedSignedIn": "Account created. You are signed in.",
-  "authInfoConfirmationLinkSent": "We sent a confirmation link to {email}. Open it, then return here and sign in.",
+  "authInfoConfirmationLinkSent": "We sent a confirmation link to {email}. Open it to confirm, then come back here and sign in.",
   "@authInfoConfirmationLinkSent": {
     "placeholders": {
       "email": {

@@ -16,7 +16,10 @@ Dashboard for the REX project (`oanwrprjpkfsyzxjlwer`).
 
 Logo URL used in emails: `https://goclarity.app/clarity-mark-96.png`
 
-Deploy the web app first so the logo and `/auth/confirmed` page are live.
+Deploy the web app first so the logo and auth pages are live.
+Confirmation emails should redirect to `https://goclarity.app/app/`
+(add that URL to Supabase Auth → Redirect URLs). Older links to
+`/auth/confirmed` still forward into the app.
 
 ## Variables
 

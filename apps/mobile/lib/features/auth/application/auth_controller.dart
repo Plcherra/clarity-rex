@@ -44,12 +44,17 @@ class AuthController extends ChangeNotifier {
   String? infoMessage;
   String? mfaErrorMessage;
   String? mfaInfoMessage;
+  String? pendingConfirmationEmail;
   MfaEnrollment? pendingMfaEnrollment;
   List<MfaFactorSummary> mfaFactors = const [];
 
   Session? get currentSession => _session;
   User? get currentUser => _session?.user ?? _authService.currentUser;
   bool get isAuthenticated => _authenticatedOverride || currentSession != null;
+  bool get needsEmailConfirmation =>
+      !isAuthenticated &&
+      pendingConfirmationEmail != null &&
+      pendingConfirmationEmail!.trim().isNotEmpty;
   bool get hasVerifiedTotpFactor => mfaFactors.isNotEmpty;
 
   AppLocalizations get l10n => _l10n();
@@ -59,6 +64,13 @@ class AuthController extends ChangeNotifier {
   }
 
   void clearAuthMessages() {
+    errorMessage = null;
+    infoMessage = null;
+    notifyListeners();
+  }
+
+  void clearPendingEmailConfirmation() {
+    pendingConfirmationEmail = null;
     errorMessage = null;
     infoMessage = null;
     notifyListeners();
@@ -79,13 +91,15 @@ class AuthController extends ChangeNotifier {
         case SignUpStatus.emailAlreadyRegistered:
           throw AuthException(l10n.authErrorAccountExists);
         case SignUpStatus.signedIn:
+          pendingConfirmationEmail = null;
           _session = response.session;
           _syncMfaRequirement();
           infoMessage = l10n.authInfoAccountCreatedSignedIn;
         case SignUpStatus.needsEmailConfirmation:
           _session = response.session;
           _syncMfaRequirement();
-          infoMessage = l10n.authInfoConfirmationLinkSent(email);
+          pendingConfirmationEmail = email.trim();
+          infoMessage = null;
       }
     });
   }
@@ -95,14 +109,25 @@ class AuthController extends ChangeNotifier {
     required String password,
   }) async {
     await _runAuthAction(() async {
-      final response = await _authService.signInWithEmail(
-        email: email,
-        password: password,
-      );
-      _session = response.session;
-      _syncMfaRequirement();
-      if (isMfaRequired) {
-        infoMessage = l10n.authInfoEnterAuthenticatorCode;
+      try {
+        final response = await _authService.signInWithEmail(
+          email: email,
+          password: password,
+        );
+        pendingConfirmationEmail = null;
+        _session = response.session;
+        _syncMfaRequirement();
+        if (isMfaRequired) {
+          infoMessage = l10n.authInfoEnterAuthenticatorCode;
+        }
+      } on AuthException catch (error) {
+        if (_isEmailNotConfirmedError(error)) {
+          pendingConfirmationEmail = email.trim();
+          errorMessage = null;
+          infoMessage = null;
+          return;
+        }
+        rethrow;
       }
     });
   }
@@ -111,6 +136,20 @@ class AuthController extends ChangeNotifier {
     await _runAuthAction(() async {
       await _authService.requestPasswordReset(email: email);
       infoMessage = l10n.authInfoPasswordResetSent(email);
+    });
+  }
+
+  Future<void> resendConfirmationEmail() async {
+    final email = pendingConfirmationEmail?.trim();
+    if (email == null || email.isEmpty) {
+      errorMessage = l10n.authEnterEmailForReset;
+      notifyListeners();
+      return;
+    }
+    await _runAuthAction(() async {
+      pendingConfirmationEmail = email;
+      await _authService.resendConfirmationEmail(email: email);
+      infoMessage = l10n.authConfirmEmailResent(email);
     });
   }
 
@@ -287,6 +326,12 @@ class AuthController extends ChangeNotifier {
     mfaFactors = const [];
     mfaErrorMessage = null;
     mfaInfoMessage = null;
+  }
+
+  bool _isEmailNotConfirmedError(AuthException error) {
+    final normalized = error.message.toLowerCase();
+    return normalized.contains('email not confirmed') ||
+        normalized.contains('confirm your email');
   }
 
   @override

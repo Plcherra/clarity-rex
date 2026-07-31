@@ -112,6 +112,14 @@ class AuthService {
     );
   }
 
+  Future<void> resendConfirmationEmail({required String email}) {
+    return _supabaseService.auth.resend(
+      type: OtpType.signup,
+      email: email.trim(),
+      emailRedirectTo: AuthConfig.emailRedirectUrl,
+    );
+  }
+
   AuthMFAGetAuthenticatorAssuranceLevelResponse
   getAuthenticatorAssuranceLevel() {
     return _supabaseService.auth.mfa.getAuthenticatorAssuranceLevel();

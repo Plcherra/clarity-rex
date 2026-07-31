@@ -248,6 +248,48 @@ abstract class AppLocalizations {
   /// **'Enter your email to reset your password.'**
   String get authEnterEmailForReset;
 
+  /// No description provided for @authLanguageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get authLanguageLabel;
+
+  /// No description provided for @authConfirmEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your email'**
+  String get authConfirmEmailTitle;
+
+  /// No description provided for @authConfirmEmailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a confirmation link to {email}. Open it to confirm, then come back here and sign in.'**
+  String authConfirmEmailSubtitle(String email);
+
+  /// No description provided for @authConfirmEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check spam or promotions if you do not see it within a few minutes.'**
+  String get authConfirmEmailHint;
+
+  /// No description provided for @authConfirmEmailResendButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend confirmation email'**
+  String get authConfirmEmailResendButton;
+
+  /// No description provided for @authConfirmEmailResent.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmation email sent again to {email}.'**
+  String authConfirmEmailResent(String email);
+
+  /// No description provided for @authConfirmEmailBackToSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to sign in'**
+  String get authConfirmEmailBackToSignIn;
+
   /// No description provided for @profileAppearance.
   ///
   /// In en, this message translates to:
@@ -4631,7 +4673,7 @@ abstract class AppLocalizations {
   /// No description provided for @authInfoConfirmationLinkSent.
   ///
   /// In en, this message translates to:
-  /// **'We sent a confirmation link to {email}. Open it, then return here and sign in.'**
+  /// **'We sent a confirmation link to {email}. Open it to confirm, then come back here and sign in.'**
   String authInfoConfirmationLinkSent(String email);
 
   /// No description provided for @authInfoEnterAuthenticatorCode.
