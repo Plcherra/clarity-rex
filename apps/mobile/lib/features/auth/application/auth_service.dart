@@ -121,6 +121,19 @@ class AuthService {
     );
   }
 
+  /// Re-reads the persisted session after an email deep link or app resume.
+  Future<Session?> refreshAuthSession() async {
+    if (!_supabaseService.isConfigured) return null;
+    final existing = _supabaseService.auth.currentSession;
+    if (existing == null) return null;
+    try {
+      final response = await _supabaseService.auth.refreshSession();
+      return response.session ?? _supabaseService.auth.currentSession;
+    } on Object {
+      return _supabaseService.auth.currentSession;
+    }
+  }
+
   AuthMFAGetAuthenticatorAssuranceLevelResponse
   getAuthenticatorAssuranceLevel() {
     return _supabaseService.auth.mfa.getAuthenticatorAssuranceLevel();

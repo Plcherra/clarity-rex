@@ -20,9 +20,10 @@ The confirm-signup template is bilingual (English / Spanish). Sign-up passes
 Logo URL used in emails: `https://goclarity.app/clarity-mark-96.png`
 
 Deploy the web app first so the logo and auth pages are live.
-Confirmation emails should redirect to `https://goclarity.app/auth/confirmed/`
-(add that URL and `https://goclarity.app/app/` to Supabase Auth → Redirect URLs).
-The confirmed page forwards into the Flutter app.
+Confirmation emails should redirect to `io.goclarity.clarity://login-callback`
+on native (opens Clarity) and `https://goclarity.app/app/` on web. Also allow
+`https://goclarity.app/auth/confirmed/` as a legacy handoff that opens the app.
+Add those URLs under Supabase Auth → Redirect URLs.
 
 ## Variables
 

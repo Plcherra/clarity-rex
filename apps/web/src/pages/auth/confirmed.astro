@@ -2,8 +2,10 @@
 import AuthLayout from '@layouts/AuthLayout.astro';
 import { product } from '@content/site';
 
-/** Absolute Flutter PWA URL — do not depend on env for this critical handoff. */
-const appUrl = 'https://goclarity.app/app/';
+/** Flutter web PWA — fallback when the native app is not installed. */
+const webAppUrl = 'https://goclarity.app/app/';
+/** Custom scheme registered in iOS/Android for Supabase auth callbacks. */
+const nativeAppUrl = 'io.goclarity.clarity://login-callback';
 const steps = [
   {
     title: 'Continue in Clarity',
@@ -53,7 +55,7 @@ const steps = [
     </ol>
 
     <div class="auth-card__actions" id="auth-confirmed-actions" hidden>
-      <a class="button button--large" id="auth-confirmed-open-app" href={appUrl}>
+      <a class="button button--large" id="auth-confirmed-open-app" href={webAppUrl}>
         Continue to Clarity
       </a>
       <a class="button button--secondary button--large" href={`mailto:${product.supportEmail}`}>
@@ -62,7 +64,7 @@ const steps = [
     </div>
   </section>
 
-  <script is:inline define:vars={{ appUrl }}>
+  <script is:inline define:vars={{ webAppUrl, nativeAppUrl }}>
     (function () {
       var params = new URLSearchParams(window.location.search);
       var hash = window.location.hash.startsWith('#')
@@ -79,6 +81,10 @@ const steps = [
       var actions = document.getElementById('auth-confirmed-actions');
       var lede = document.getElementById('auth-confirmed-lede');
       var openApp = document.getElementById('auth-confirmed-open-app');
+      var suffix = window.location.search + window.location.hash;
+      var nativeTarget = String(nativeAppUrl || 'io.goclarity.clarity://login-callback') + suffix;
+      var webTarget =
+        String(webAppUrl || 'https://goclarity.app/app/').replace(/\/?$/, '/') + suffix;
 
       function showManualContinue(message) {
         if (lede) {
@@ -88,6 +94,7 @@ const steps = [
         }
         if (steps) steps.hidden = false;
         if (actions) actions.hidden = false;
+        if (openApp) openApp.setAttribute('href', webTarget);
       }
 
       if (error) {
@@ -103,16 +110,19 @@ const steps = [
         return;
       }
 
-      // Preserve query + hash so Flutter/Supabase can finish the auth session.
-      var target =
-        String(appUrl || 'https://goclarity.app/app/').replace(/\/?$/, '/') +
-        window.location.search +
-        window.location.hash;
+      if (openApp) openApp.setAttribute('href', webTarget);
 
-      if (openApp) openApp.setAttribute('href', target);
-
+      // Prefer the installed native app; fall back to the web PWA.
+      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
       try {
-        window.location.replace(target);
+        if (isMobile) {
+          window.location.replace(nativeTarget);
+          window.setTimeout(function () {
+            window.location.replace(webTarget);
+          }, 900);
+        } else {
+          window.location.replace(webTarget);
+        }
       } catch (_) {
         showManualContinue();
         return;
@@ -120,7 +130,7 @@ const steps = [
 
       window.setTimeout(function () {
         showManualContinue();
-      }, 1200);
+      }, 1600);
     })();
   </script>
 </AuthLayout>

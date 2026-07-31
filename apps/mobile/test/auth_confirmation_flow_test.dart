@@ -6,6 +6,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+User _user(String id) {
+  return User(
+    id: id,
+    appMetadata: const {},
+    userMetadata: const {},
+    aud: 'authenticated',
+    createdAt: '2026-01-01T00:00:00Z',
+    identities: [
+      UserIdentity(
+        id: 'identity-$id',
+        userId: id,
+        identityData: const {},
+        identityId: 'identity-$id',
+        provider: 'email',
+        createdAt: '2026-01-01T00:00:00Z',
+        lastSignInAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+      ),
+    ],
+  );
+}
+
+AuthResponse _pendingSignUpResponse() => AuthResponse(user: _user('user-1'));
+
 void main() {
   late _FakeAuthService authService;
   late AuthController controller;
@@ -23,27 +47,7 @@ void main() {
   });
 
   test('signup without session shows email confirmation pending state', () async {
-    authService.signUpResponse = AuthResponse(
-      user: User(
-        id: 'user-1',
-        appMetadata: const {},
-        userMetadata: const {},
-        aud: 'authenticated',
-        createdAt: '2026-01-01T00:00:00Z',
-        identities: const [
-          UserIdentity(
-            id: 'identity-1',
-            userId: 'user-1',
-            identityData: {},
-            identityId: 'identity-1',
-            provider: 'email',
-            createdAt: '2026-01-01T00:00:00Z',
-            lastSignInAt: '2026-01-01T00:00:00Z',
-            updatedAt: '2026-01-01T00:00:00Z',
-          ),
-        ],
-      ),
-    );
+    authService.signUpResponse = _pendingSignUpResponse();
 
     await controller.signUpWithEmail(
       email: 'new@example.com',
@@ -108,6 +112,46 @@ void main() {
     );
   });
 
+  test('continueAfterEmailConfirmation signs in with pending password', () async {
+    authService.signUpResponse = _pendingSignUpResponse();
+    await controller.signUpWithEmail(
+      email: 'pending@example.com',
+      password: 'password123',
+    );
+
+    final user = _user('user-1');
+    authService.signInResponse = AuthResponse(
+      session: Session(
+        accessToken: 'access',
+        tokenType: 'bearer',
+        user: user,
+      ),
+    );
+
+    await controller.continueAfterEmailConfirmation();
+
+    expect(authService.signInCalls, 1);
+    expect(controller.needsEmailConfirmation, isFalse);
+    expect(controller.isAuthenticated, isTrue);
+  });
+
+  test('continueAfterEmailConfirmation keeps pending when still unconfirmed', () async {
+    authService.signUpResponse = _pendingSignUpResponse();
+    await controller.signUpWithEmail(
+      email: 'pending@example.com',
+      password: 'password123',
+    );
+    authService.signInError = const AuthException('Email not confirmed');
+
+    await controller.continueAfterEmailConfirmation();
+
+    expect(controller.needsEmailConfirmation, isTrue);
+    expect(
+      controller.infoMessage,
+      'Email is not confirmed yet. Open the link from your inbox, then try again.',
+    );
+  });
+
   test('deleteAccount clears local session state', () async {
     final deleteController = AuthController(
       authService: authService,
@@ -128,16 +172,19 @@ final class _FakeAuthService extends AuthService {
   _FakeAuthService() : super(supabaseService: const SupabaseService());
 
   AuthResponse? signUpResponse;
+  AuthResponse? signInResponse;
   AuthException? signInError;
+  Session? _session;
   int resendCalls = 0;
+  int signInCalls = 0;
   int deleteAccountCalls = 0;
   String? lastResendEmail;
 
   @override
-  Session? get currentSession => null;
+  Session? get currentSession => _session;
 
   @override
-  User? get currentUser => null;
+  User? get currentUser => _session?.user;
 
   @override
   Stream<AuthState> get authStateChanges => const Stream.empty();
@@ -159,10 +206,16 @@ final class _FakeAuthService extends AuthService {
     required String email,
     required String password,
   }) async {
+    signInCalls += 1;
     final error = signInError;
     if (error != null) throw error;
-    return AuthResponse();
+    final response = signInResponse ?? AuthResponse();
+    _session = response.session;
+    return response;
   }
+
+  @override
+  Future<Session?> refreshAuthSession() async => _session;
 
   @override
   Future<void> resendConfirmationEmail({required String email}) async {
@@ -173,11 +226,14 @@ final class _FakeAuthService extends AuthService {
   @override
   Future<void> deleteAccount() async {
     deleteAccountCalls += 1;
+    _session = null;
   }
 
   @override
   Future<void> requestPasswordReset({required String email}) async {}
 
   @override
-  Future<void> signOut() async {}
+  Future<void> signOut() async {
+    _session = null;
+  }
 }

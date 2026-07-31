@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/l10n/app_l10n.dart';
@@ -39,7 +41,7 @@ final class _EmailConfirmationScreenState extends State<EmailConfirmationScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      widget.controller.prepareSignInAfterEmailConfirmation();
+      unawaited(widget.controller.continueAfterEmailConfirmation());
     }
   }
 
@@ -129,9 +131,10 @@ final class _EmailConfirmationScreenState extends State<EmailConfirmationScreen>
                             label: l10n.authConfirmEmailContinueButton,
                             onPressed: widget.controller.isLoading
                                 ? null
-                                : widget
-                                      .controller
-                                      .prepareSignInAfterEmailConfirmation,
+                                : () => unawaited(
+                                    widget.controller
+                                        .continueAfterEmailConfirmation(),
+                                  ),
                             expanded: true,
                           ),
                           const SizedBox(height: 12),

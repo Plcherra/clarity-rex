@@ -8,6 +8,8 @@ import 'auth_error_messages.dart';
 import 'auth_service.dart';
 import 'auth_signup.dart';
 
+part 'auth_controller_email_confirmation.dart';
+
 class AuthController extends ChangeNotifier {
   AuthController({
     required AuthService authService,
@@ -23,6 +25,7 @@ class AuthController extends ChangeNotifier {
       _authenticatedOverride = false;
       if (_session != null) {
         pendingConfirmationEmail = null;
+        _pendingConfirmationPassword = null;
       }
       _syncMfaRequirement();
       notifyListeners();
@@ -49,6 +52,8 @@ class AuthController extends ChangeNotifier {
   String? mfaInfoMessage;
   String? pendingConfirmationEmail;
   String? prefillEmail;
+  /// Held only while waiting for email confirm so "I've confirmed" can sign in.
+  String? _pendingConfirmationPassword;
   MfaEnrollment? pendingMfaEnrollment;
   List<MfaFactorSummary> mfaFactors = const [];
 
@@ -70,29 +75,6 @@ class AuthController extends ChangeNotifier {
   void clearAuthMessages() {
     errorMessage = null;
     infoMessage = null;
-    notifyListeners();
-  }
-
-  void clearPendingEmailConfirmation() {
-    pendingConfirmationEmail = null;
-    errorMessage = null;
-    infoMessage = null;
-    notifyListeners();
-  }
-
-  /// Leaves the confirm-email screen and returns to sign-in with email ready.
-  ///
-  /// Called when the app resumes after the user opens the confirmation link,
-  /// or when they tap "I've confirmed".
-  void prepareSignInAfterEmailConfirmation() {
-    if (!needsEmailConfirmation) return;
-    final email = pendingConfirmationEmail?.trim();
-    pendingConfirmationEmail = null;
-    if (email != null && email.isNotEmpty) {
-      prefillEmail = email;
-    }
-    errorMessage = null;
-    infoMessage = l10n.authInfoEmailConfirmedSignIn;
     notifyListeners();
   }
 
@@ -119,6 +101,7 @@ class AuthController extends ChangeNotifier {
           throw AuthException(l10n.authErrorAccountExists);
         case SignUpStatus.signedIn:
           pendingConfirmationEmail = null;
+          _pendingConfirmationPassword = null;
           _session = response.session;
           _syncMfaRequirement();
           infoMessage = l10n.authInfoAccountCreatedSignedIn;
@@ -126,6 +109,7 @@ class AuthController extends ChangeNotifier {
           _session = response.session;
           _syncMfaRequirement();
           pendingConfirmationEmail = email.trim();
+          _pendingConfirmationPassword = password;
           infoMessage = null;
       }
     });
@@ -142,6 +126,7 @@ class AuthController extends ChangeNotifier {
           password: password,
         );
         pendingConfirmationEmail = null;
+        _pendingConfirmationPassword = null;
         _session = response.session;
         _syncMfaRequirement();
         if (isMfaRequired) {
@@ -186,6 +171,7 @@ class AuthController extends ChangeNotifier {
       _session = null;
       _authenticatedOverride = false;
       pendingConfirmationEmail = null;
+      _pendingConfirmationPassword = null;
       _clearMfaState();
     });
   }
@@ -196,6 +182,7 @@ class AuthController extends ChangeNotifier {
       _session = null;
       _authenticatedOverride = false;
       pendingConfirmationEmail = null;
+      _pendingConfirmationPassword = null;
       _clearMfaState();
     });
   }

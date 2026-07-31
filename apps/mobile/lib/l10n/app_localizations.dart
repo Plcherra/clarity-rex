@@ -284,6 +284,12 @@ abstract class AppLocalizations {
   /// **'I\'ve confirmed — continue'**
   String get authConfirmEmailContinueButton;
 
+  /// No description provided for @authConfirmEmailStillPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Email is not confirmed yet. Open the link from your inbox, then try again.'**
+  String get authConfirmEmailStillPending;
+
   /// No description provided for @authConfirmEmailResent.
   ///
   /// In en, this message translates to:

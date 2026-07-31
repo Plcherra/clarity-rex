@@ -95,7 +95,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String authConfirmEmailSubtitle(String email) {
-    return 'Enviamos un enlace de confirmación a $email. Ábrelo para confirmar, luego vuelve aquí e inicia sesión.';
+    return 'Enviamos un enlace de confirmación a $email. Ábrelo — Clarity debería reabrirse y continuar. O toca abajo cuando hayas confirmado.';
   }
 
   @override
@@ -107,6 +107,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get authConfirmEmailContinueButton => 'Ya confirmé — continuar';
+
+  @override
+  String get authConfirmEmailStillPending =>
+      'El correo aún no está confirmado. Abre el enlace de tu bandeja e inténtalo de nuevo.';
 
   @override
   String authConfirmEmailResent(String email) {

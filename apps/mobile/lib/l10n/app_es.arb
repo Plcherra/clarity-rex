@@ -283,7 +283,8 @@
       }
     }
   },
-  "authConfirmEmailSubtitle": "Enviamos un enlace de confirmación a {email}. Ábrelo para confirmar, luego vuelve aquí e inicia sesión.",
+  "authConfirmEmailStillPending": "El correo aún no está confirmado. Abre el enlace de tu bandeja e inténtalo de nuevo.",
+  "authConfirmEmailSubtitle": "Enviamos un enlace de confirmación a {email}. Ábrelo — Clarity debería reabrirse y continuar. O toca abajo cuando hayas confirmado.",
   "@authConfirmEmailSubtitle": {
     "placeholders": {
       "email": {

@@ -37,7 +37,7 @@ if (-not $CloudVoice) { $CloudVoice = "true" }
 $StreamingVoice = Get-DotEnvValue "REX_STREAMING_VOICE_ENABLED"
 if (-not $StreamingVoice) { $StreamingVoice = "true" }
 $AuthRedirect = Get-DotEnvValue "SUPABASE_AUTH_REDIRECT_URL"
-if (-not $AuthRedirect) { $AuthRedirect = "https://goclarity.app/auth/confirmed/" }
+if (-not $AuthRedirect) { $AuthRedirect = "https://goclarity.app/app/" }
 
 if (-not $SupabaseUrl -or -not $SupabaseAnonKey) {
   Write-Error "Missing SUPABASE_URL or SUPABASE_ANON_KEY in apps/mobile/.env"
