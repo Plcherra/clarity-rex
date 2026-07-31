@@ -6,8 +6,9 @@ const appStoreUrl =
 const playStoreUrl =
   import.meta.env.PUBLIC_PLAY_STORE_URL?.trim() ||
   'https://play.google.com/store/apps/details?id=com.clarity.clarity';
-const webLoginUrl =
-  import.meta.env.PUBLIC_WEB_LOGIN_URL?.trim() || 'https://goclarity.app/app/';
+const webLoginUrl = (
+  import.meta.env.PUBLIC_WEB_LOGIN_URL?.trim() || 'https://goclarity.app/app/'
+).replace(/\/?$/, '/');
 
 export const product = {
   name: 'Clarity',
@@ -153,11 +154,11 @@ export const footerLinks = publicRoutes.filter((route) => route.footerRequired);
 
 export const authLinks = {
   signIn: {
-    label: 'Sign in',
+    label: 'Log in',
     href: downloadLinks.webLogin,
   },
   createAccount: {
-    label: 'Open Clarity on web',
+    label: 'Create account',
     href: downloadLinks.webLogin,
   },
 } as const;
@@ -188,7 +189,7 @@ export const subscriptionValue = {
 
 export const howItWorksSteps = [
   {
-    title: 'Create your account on web',
+    title: 'Create your account',
     body: 'Sign up at goclarity.app in minutes. Download on iPhone or Android when store links are live — same login.',
   },
   {

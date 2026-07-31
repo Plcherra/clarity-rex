@@ -38,6 +38,7 @@
   },
   "authConfirmEmailHint": "Check spam or promotions if you do not see it within a few minutes.",
   "authConfirmEmailResendButton": "Resend confirmation email",
+  "authConfirmEmailContinueButton": "I've confirmed — continue",
   "authConfirmEmailResent": "Confirmation email sent again to {email}.",
   "@authConfirmEmailResent": {
     "placeholders": {
@@ -47,6 +48,7 @@
     }
   },
   "authConfirmEmailBackToSignIn": "Back to sign in",
+  "authInfoEmailConfirmedSignIn": "Email confirmed. Sign in with your password to continue.",
   "profileAppearance": "Appearance",
   "profileLanguage": "Language",
   "profileLanguageUpdated": "Language set to {language}.",

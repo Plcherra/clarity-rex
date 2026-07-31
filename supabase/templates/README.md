@@ -11,15 +11,18 @@ Dashboard for the REX project (`oanwrprjpkfsyzxjlwer`).
 
 | Template | Subject line | File |
 |----------|--------------|------|
-| Confirm signup | `Confirm your Clarity account` | `confirm-signup.html` |
+| Confirm signup | `{{ if eq .Data.language "es" }}Confirma tu cuenta Clarity{{ else }}Confirm your Clarity account{{ end }}` | `confirm-signup.html` |
 | Reset password | `Reset your Clarity password` | `reset-password.html` |
+
+The confirm-signup template is bilingual (English / Spanish). Sign-up passes
+`language` in user metadata from the app locale (`en` or `es`).
 
 Logo URL used in emails: `https://goclarity.app/clarity-mark-96.png`
 
 Deploy the web app first so the logo and auth pages are live.
-Confirmation emails should redirect to `https://goclarity.app/app/`
-(add that URL to Supabase Auth → Redirect URLs). Older links to
-`/auth/confirmed` still forward into the app.
+Confirmation emails should redirect to `https://goclarity.app/auth/confirmed/`
+(add that URL and `https://goclarity.app/app/` to Supabase Auth → Redirect URLs).
+The confirmed page forwards into the Flutter app.
 
 ## Variables
 

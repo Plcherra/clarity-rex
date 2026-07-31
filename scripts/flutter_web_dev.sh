@@ -88,7 +88,7 @@ if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
 fi
 
 if [ -z "${SUPABASE_AUTH_REDIRECT_URL:-}" ]; then
-  SUPABASE_AUTH_REDIRECT_URL="https://goclarity.app/app/"
+  SUPABASE_AUTH_REDIRECT_URL="https://goclarity.app/auth/confirmed/"
 fi
 
 SENTRY_ENVIRONMENT="${SENTRY_ENVIRONMENT:-development}"

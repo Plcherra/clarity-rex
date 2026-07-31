@@ -21,6 +21,9 @@ class AuthController extends ChangeNotifier {
     _subscription = _authService.authStateChanges.listen((state) {
       _session = state.session;
       _authenticatedOverride = false;
+      if (_session != null) {
+        pendingConfirmationEmail = null;
+      }
       _syncMfaRequirement();
       notifyListeners();
     });
@@ -45,6 +48,7 @@ class AuthController extends ChangeNotifier {
   String? mfaErrorMessage;
   String? mfaInfoMessage;
   String? pendingConfirmationEmail;
+  String? prefillEmail;
   MfaEnrollment? pendingMfaEnrollment;
   List<MfaFactorSummary> mfaFactors = const [];
 
@@ -76,16 +80,39 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Leaves the confirm-email screen and returns to sign-in with email ready.
+  ///
+  /// Called when the app resumes after the user opens the confirmation link,
+  /// or when they tap "I've confirmed".
+  void prepareSignInAfterEmailConfirmation() {
+    if (!needsEmailConfirmation) return;
+    final email = pendingConfirmationEmail?.trim();
+    pendingConfirmationEmail = null;
+    if (email != null && email.isNotEmpty) {
+      prefillEmail = email;
+    }
+    errorMessage = null;
+    infoMessage = l10n.authInfoEmailConfirmedSignIn;
+    notifyListeners();
+  }
+
+  String? takePrefillEmail() {
+    final email = prefillEmail?.trim();
+    prefillEmail = null;
+    if (email == null || email.isEmpty) return null;
+    return email;
+  }
+
   Future<void> signUpWithEmail({
     required String email,
     required String password,
-    String? fullName,
+    String? language,
   }) async {
     await _runAuthAction(() async {
       final response = await _authService.signUpWithEmail(
         email: email,
         password: password,
-        fullName: fullName,
+        language: language,
       );
       switch (signUpStatus(response)) {
         case SignUpStatus.emailAlreadyRegistered:

@@ -106,12 +106,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authConfirmEmailResendButton => 'Reenviar correo de confirmación';
 
   @override
+  String get authConfirmEmailContinueButton => 'Ya confirmé — continuar';
+
+  @override
   String authConfirmEmailResent(String email) {
     return 'Se envió de nuevo el correo de confirmación a $email.';
   }
 
   @override
   String get authConfirmEmailBackToSignIn => 'Volver a iniciar sesión';
+
+  @override
+  String get authInfoEmailConfirmedSignIn =>
+      'Correo confirmado. Inicia sesión con tu contraseña para continuar.';
 
   @override
   String get profileAppearance => 'Apariencia';

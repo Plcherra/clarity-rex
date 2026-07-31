@@ -78,15 +78,16 @@ class AuthService {
   Future<AuthResponse> signUpWithEmail({
     required String email,
     required String password,
-    String? fullName,
+    String? language,
   }) {
+    final normalizedLanguage = language?.trim().toLowerCase();
     return _supabaseService.auth.signUp(
       email: email.trim(),
       password: password,
       emailRedirectTo: AuthConfig.emailRedirectUrl,
       data: {
-        if (fullName != null && fullName.trim().isNotEmpty)
-          'full_name': fullName.trim(),
+        if (normalizedLanguage != null && normalizedLanguage.isNotEmpty)
+          'language': normalizedLanguage,
       },
     );
   }

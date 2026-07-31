@@ -4,7 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
-    <title>Confirm your Clarity account</title>
+    <title>
+      {{ if eq .Data.language "es" }}Confirma tu cuenta Clarity{{ else }}Confirm your Clarity account{{ end }}
+    </title>
   </head>
   <body style="margin:0;padding:0;background:#f5f9fd;color:#17202a;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f9fd;padding:32px 16px;">
@@ -14,12 +16,26 @@
             <tr>
               <td style="padding:28px 32px 18px;text-align:center;background:linear-gradient(180deg,#f7fbff 0%,#ffffff 100%);">
                 <img src="https://goclarity.app/clarity-mark-96.png" width="56" height="56" alt="Clarity" style="display:block;margin:0 auto 14px;border-radius:10px;" />
+                {{ if eq .Data.language "es" }}
+                <p style="margin:0;color:#887900;font-size:12px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;">Bienvenido a Clarity</p>
+                <h1 style="margin:10px 0 0;color:#081827;font-size:28px;line-height:1.15;font-weight:900;">Confirma tu correo</h1>
+                {{ else }}
                 <p style="margin:0;color:#887900;font-size:12px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;">Welcome to Clarity</p>
                 <h1 style="margin:10px 0 0;color:#081827;font-size:28px;line-height:1.15;font-weight:900;">Confirm your email</h1>
+                {{ end }}
               </td>
             </tr>
             <tr>
               <td style="padding:8px 32px 0;">
+                {{ if eq .Data.language "es" }}
+                <p style="margin:0 0 16px;color:#667085;font-size:16px;line-height:1.65;">
+                  Gracias por crear una cuenta en Clarity. Toca el botón de abajo para verificar
+                  <strong style="color:#344054;">{{ .Email }}</strong> y terminar la configuración.
+                </p>
+                <p style="margin:0 0 24px;color:#667085;font-size:16px;line-height:1.65;">
+                  Después de confirmar, Clarity se abre para que puedas iniciar sesión con el mismo correo y contraseña.
+                </p>
+                {{ else }}
                 <p style="margin:0 0 16px;color:#667085;font-size:16px;line-height:1.65;">
                   Thanks for creating a Clarity account. Tap the button below to verify
                   <strong style="color:#344054;">{{ .Email }}</strong> and finish setup.
@@ -27,12 +43,13 @@
                 <p style="margin:0 0 24px;color:#667085;font-size:16px;line-height:1.65;">
                   After confirming, Clarity opens so you can sign in with the same email and password.
                 </p>
+                {{ end }}
               </td>
             </tr>
             <tr>
               <td style="padding:0 32px 28px;text-align:center;">
                 <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#081827;color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;line-height:1;padding:15px 28px;border-radius:8px;box-shadow:0 12px 26px rgba(8,24,39,0.14);">
-                  Confirm email address
+                  {{ if eq .Data.language "es" }}Confirmar correo electrónico{{ else }}Confirm email address{{ end }}
                 </a>
               </td>
             </tr>
@@ -41,10 +58,17 @@
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#e8f7f1;border:1px solid rgba(15,125,104,0.18);border-radius:8px;">
                   <tr>
                     <td style="padding:16px 18px;">
+                      {{ if eq .Data.language "es" }}
+                      <p style="margin:0 0 6px;color:#0f7d68;font-size:12px;font-weight:900;text-transform:uppercase;">Lo que sigue</p>
+                      <p style="margin:0;color:#244b43;font-size:14px;line-height:1.55;">
+                        Conecta cuentas, sigue tus gastos, crea presupuestos y habla con Rex — tu asistente dentro de Clarity.
+                      </p>
+                      {{ else }}
                       <p style="margin:0 0 6px;color:#0f7d68;font-size:12px;font-weight:900;text-transform:uppercase;">What you get next</p>
                       <p style="margin:0;color:#244b43;font-size:14px;line-height:1.55;">
                         Connect accounts, track spending, set budgets, and talk with Rex — your assistant inside Clarity.
                       </p>
+                      {{ end }}
                     </td>
                   </tr>
                 </table>
@@ -52,9 +76,15 @@
             </tr>
             <tr>
               <td style="padding:0 32px 28px;">
+                {{ if eq .Data.language "es" }}
+                <p style="margin:0 0 10px;color:#667085;font-size:13px;line-height:1.6;">
+                  Si el botón no funciona, copia y pega este enlace en tu navegador:
+                </p>
+                {{ else }}
                 <p style="margin:0 0 10px;color:#667085;font-size:13px;line-height:1.6;">
                   If the button does not work, copy and paste this link into your browser:
                 </p>
+                {{ end }}
                 <p style="margin:0;word-break:break-all;">
                   <a href="{{ .ConfirmationURL }}" style="color:#1d4ed8;font-size:13px;line-height:1.5;">{{ .ConfirmationURL }}</a>
                 </p>
@@ -62,6 +92,15 @@
             </tr>
             <tr>
               <td style="padding:20px 32px 24px;border-top:1px solid #dbe3ea;background:#fbfaf6;">
+                {{ if eq .Data.language "es" }}
+                <p style="margin:0 0 8px;color:#667085;font-size:12px;line-height:1.55;">
+                  Si no creaste una cuenta de Clarity, puedes ignorar este correo.
+                </p>
+                <p style="margin:0;color:#667085;font-size:12px;line-height:1.55;">
+                  ¿Preguntas? Escríbenos a
+                  <a href="mailto:clarity.rex@gmail.com" style="color:#1d4ed8;text-decoration:none;">clarity.rex@gmail.com</a>
+                </p>
+                {{ else }}
                 <p style="margin:0 0 8px;color:#667085;font-size:12px;line-height:1.55;">
                   If you did not create a Clarity account, you can ignore this email.
                 </p>
@@ -69,6 +108,7 @@
                   Questions? Contact us at
                   <a href="mailto:clarity.rex@gmail.com" style="color:#1d4ed8;text-decoration:none;">clarity.rex@gmail.com</a>
                 </p>
+                {{ end }}
               </td>
             </tr>
           </table>

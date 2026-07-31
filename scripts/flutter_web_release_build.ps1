@@ -31,7 +31,7 @@ if (-not $RexBackendUrl) {
   if (-not $RexBackendUrl) { $RexBackendUrl = "https://api.goclarity.app" }
 }
 $AuthRedirect = Get-DotEnvValue "SUPABASE_AUTH_REDIRECT_URL"
-if (-not $AuthRedirect) { $AuthRedirect = "https://goclarity.app/app/" }
+if (-not $AuthRedirect) { $AuthRedirect = "https://goclarity.app/auth/confirmed/" }
 
 if (-not $SupabaseUrl -or -not $SupabaseAnonKey) {
   Write-Error "Missing SUPABASE_URL or SUPABASE_ANON_KEY in apps/mobile/.env"

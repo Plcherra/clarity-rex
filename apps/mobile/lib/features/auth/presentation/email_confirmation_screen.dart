@@ -16,12 +16,31 @@ final class EmailConfirmationScreen extends StatefulWidget {
       _EmailConfirmationScreenState();
 }
 
-final class _EmailConfirmationScreenState
-    extends State<EmailConfirmationScreen> {
+final class _EmailConfirmationScreenState extends State<EmailConfirmationScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     widget.controller.bindLocalizations(context.l10n);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      widget.controller.prepareSignInAfterEmailConfirmation();
+    }
   }
 
   @override
@@ -107,17 +126,30 @@ final class _EmailConfirmationScreenState
                           ],
                           const SizedBox(height: 22),
                           ClarityButton.filled(
-                            label: l10n.authConfirmEmailResendButton,
-                            onPressed: widget.controller.resendConfirmationEmail,
-                            isLoading: widget.controller.isLoading,
+                            label: l10n.authConfirmEmailContinueButton,
+                            onPressed: widget.controller.isLoading
+                                ? null
+                                : widget
+                                      .controller
+                                      .prepareSignInAfterEmailConfirmation,
                             expanded: true,
                           ),
                           const SizedBox(height: 12),
                           ClarityButton.text(
+                            label: l10n.authConfirmEmailResendButton,
+                            onPressed: widget.controller.isLoading
+                                ? null
+                                : widget.controller.resendConfirmationEmail,
+                            expanded: true,
+                          ),
+                          const SizedBox(height: 4),
+                          ClarityButton.text(
                             label: l10n.authConfirmEmailBackToSignIn,
                             onPressed: widget.controller.isLoading
                                 ? null
-                                : widget.controller.clearPendingEmailConfirmation,
+                                : widget
+                                      .controller
+                                      .clearPendingEmailConfirmation,
                             expanded: true,
                           ),
                         ],

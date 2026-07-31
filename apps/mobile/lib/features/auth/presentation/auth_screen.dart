@@ -25,7 +25,6 @@ final class AuthScreen extends StatefulWidget {
 final class _AuthScreenState extends State<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _fullNameController = TextEditingController();
   bool _isSignUp = false;
   bool _obscurePassword = true;
   String? _localError;
@@ -34,7 +33,6 @@ final class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _fullNameController.dispose();
     super.dispose();
   }
 
@@ -42,20 +40,26 @@ final class _AuthScreenState extends State<AuthScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     widget.controller.bindLocalizations(context.l10n);
+    _applyPrefillEmail();
+  }
+
+  void _applyPrefillEmail() {
+    final email = widget.controller.takePrefillEmail();
+    if (email == null) return;
+    _emailController.text = email;
+    setState(() {
+      _isSignUp = false;
+      _localError = null;
+    });
   }
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    final fullName = _fullNameController.text.trim();
 
     setState(() => _localError = null);
     if (email.isEmpty || password.isEmpty) {
       setState(() => _localError = context.l10n.authEnterEmailPassword);
-      return;
-    }
-    if (_isSignUp && fullName.isEmpty) {
-      setState(() => _localError = context.l10n.authEnterName);
       return;
     }
 
@@ -63,7 +67,7 @@ final class _AuthScreenState extends State<AuthScreen> {
       await widget.controller.signUpWithEmail(
         email: email,
         password: password,
-        fullName: fullName,
+        language: widget.localeController.languageCode,
       );
     } else {
       await widget.controller.signInWithEmail(email: email, password: password);
@@ -150,16 +154,6 @@ final class _AuthScreenState extends State<AuthScreen> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          if (_isSignUp) ...[
-                            TextField(
-                              controller: _fullNameController,
-                              textInputAction: TextInputAction.next,
-                              decoration: InputDecoration(
-                                labelText: l10n.authFullNameLabel,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                          ],
                           TextField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,

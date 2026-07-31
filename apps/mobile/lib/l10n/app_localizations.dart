@@ -278,6 +278,12 @@ abstract class AppLocalizations {
   /// **'Resend confirmation email'**
   String get authConfirmEmailResendButton;
 
+  /// No description provided for @authConfirmEmailContinueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ve confirmed — continue'**
+  String get authConfirmEmailContinueButton;
+
   /// No description provided for @authConfirmEmailResent.
   ///
   /// In en, this message translates to:
@@ -289,6 +295,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to sign in'**
   String get authConfirmEmailBackToSignIn;
+
+  /// No description provided for @authInfoEmailConfirmedSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Email confirmed. Sign in with your password to continue.'**
+  String get authInfoEmailConfirmedSignIn;
 
   /// No description provided for @profileAppearance.
   ///

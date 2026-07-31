@@ -1,15 +1,16 @@
 ---
 import AuthLayout from '@layouts/AuthLayout.astro';
-import { authLinks, product } from '@content/site';
+import { product } from '@content/site';
 
-const appUrl = authLinks.signIn.href;
+/** Absolute Flutter PWA URL — do not depend on env for this critical handoff. */
+const appUrl = 'https://goclarity.app/app/';
 const steps = [
   {
-    title: 'Open Clarity',
+    title: 'Continue in Clarity',
     body: 'You should be redirected into the app automatically. If not, use the button below.',
   },
   {
-    title: 'Sign in if needed',
+    title: 'Log in if needed',
     body: 'Use the same email and password you used to create your account.',
   },
   {
@@ -53,7 +54,7 @@ const steps = [
 
     <div class="auth-card__actions" id="auth-confirmed-actions" hidden>
       <a class="button button--large" id="auth-confirmed-open-app" href={appUrl}>
-        Open Clarity
+        Continue to Clarity
       </a>
       <a class="button button--secondary button--large" href={`mailto:${product.supportEmail}`}>
         Contact support
@@ -117,7 +118,6 @@ const steps = [
         return;
       }
 
-      // If redirect is blocked, show the manual continue UI.
       window.setTimeout(function () {
         showManualContinue();
       }, 1200);

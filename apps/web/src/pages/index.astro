@@ -77,7 +77,7 @@ const productScreens = [
       <p class="eyebrow">Clarity</p>
       <h1>{product.tagline}</h1>
       <p class="landing-hero__lede">{product.heroLede}</p>
-      <DownloadActions layout="hero" showGhostLink primaryLabel="Open Clarity on web" />
+      <DownloadActions layout="hero" showGhostLink />
       <p class="hero-trust-line" aria-label="Trust highlights">
         {heroTrustLine.join(' · ')}
       </p>
@@ -200,11 +200,11 @@ const productScreens = [
     <div class="final-cta__inner">
       <h2 id="final-cta-heading">Ready to see your money clearly?</h2>
       <p class="final-cta__lede">
-        Open Clarity on web — same login on iPhone and Android when you download.
+        Create your account and start on web — same login on iPhone and Android when you download.
       </p>
       <DownloadActions layout="footer" showStoreBadges />
       <p class="final-cta__note">
-        Already have an account? <a href={authLinks.signIn.href}>Sign in</a>
+        Already have an account? <a href={authLinks.signIn.href}>Log in</a>
       </p>
     </div>
   </section>

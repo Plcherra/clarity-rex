@@ -48,7 +48,6 @@ void main() {
     await controller.signUpWithEmail(
       email: 'new@example.com',
       password: 'password123',
-      fullName: 'New User',
     );
 
     expect(controller.needsEmailConfirmation, isTrue);
@@ -96,6 +95,19 @@ void main() {
     expect(controller.infoMessage, isNull);
   });
 
+  test('prepareSignInAfterEmailConfirmation prefills sign-in', () {
+    controller.pendingConfirmationEmail = 'pending@example.com';
+
+    controller.prepareSignInAfterEmailConfirmation();
+
+    expect(controller.needsEmailConfirmation, isFalse);
+    expect(controller.takePrefillEmail(), 'pending@example.com');
+    expect(
+      controller.infoMessage,
+      'Email confirmed. Sign in with your password to continue.',
+    );
+  });
+
   test('deleteAccount clears local session state', () async {
     final deleteController = AuthController(
       authService: authService,
@@ -137,7 +149,7 @@ final class _FakeAuthService extends AuthService {
   Future<AuthResponse> signUpWithEmail({
     required String email,
     required String password,
-    String? fullName,
+    String? language,
   }) async {
     return signUpResponse!;
   }

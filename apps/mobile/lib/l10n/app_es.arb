@@ -272,6 +272,7 @@
   "attachmentSheetTitle": "Adjuntar",
   "authCreateAccountButton": "Crear una cuenta",
   "authConfirmEmailBackToSignIn": "Volver a iniciar sesión",
+  "authConfirmEmailContinueButton": "Ya confirmé — continuar",
   "authConfirmEmailHint": "Revisa spam o promociones si no lo ves en unos minutos.",
   "authConfirmEmailResendButton": "Reenviar correo de confirmación",
   "authConfirmEmailResent": "Se envió de nuevo el correo de confirmación a {email}.",
@@ -319,6 +320,7 @@
       }
     }
   },
+  "authInfoEmailConfirmedSignIn": "Correo confirmado. Inicia sesión con tu contraseña para continuar.",
   "authInfoEnterAuthenticatorCode": "Ingrese su código de autenticación para terminar de iniciar sesión.",
   "authInfoMfaAlreadyOff": "El MFA ya está en marcha.",
   "authInfoMfaDisabledEmailFailed": "El MFA está desactivado. El correo electrónico de confirmación no se pudo enviar en este momento.",
