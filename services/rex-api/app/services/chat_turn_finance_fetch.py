@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import Awaitable, Callable, Iterable, Optional
 
@@ -14,6 +15,8 @@ from app.services.chat_financial_guard import (
     FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE,
     ChatFinancialGuard,
 )
+
+LOGGER = logging.getLogger("clarity.finance_fetch")
 
 FinanceFetchRunner = Callable[
     [Iterable[BrainAction], list[dict]],
@@ -71,7 +74,13 @@ async def run_finance_fetch(
     requests = finance_fetch_requests(actions)
     if not requests:
         return None
-    if not financial_guard.is_reliable(financial_context):
+    unreliable_reason = financial_guard.unreliable_reason(financial_context)
+    if unreliable_reason is not None:
+        LOGGER.warning(
+            "finance_fetch_unavailable actions=%s reason=%s",
+            ",".join(request.name for request in requests),
+            unreliable_reason,
+        )
         return FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
 
     packs = [
@@ -83,6 +92,7 @@ async def run_finance_fetch(
         if pack
     ]
     if not packs:
+        LOGGER.warning("finance_fetch_unavailable reason=empty_pack")
         return FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
 
     messages = [*ai_messages, {"role": "system", "content": _fetch_prompt(packs)}]

@@ -1,8 +1,10 @@
 """Chat request validation and oversized finance-context recovery."""
 
+import json
+
 from pydantic import ValidationError
 
-from app.models.chat import ChatRequest
+from app.models.chat import FINANCIAL_CONTEXT_MAX_CHARS, ChatRequest
 from app.services.chat_request_validation import (
     chat_request_dropping_oversized_financial_context,
     is_only_financial_context_size_error,
@@ -51,6 +53,22 @@ def test_drop_oversized_financial_context_recovers_request():
         assert recovered.financial_context is None
         return
     raise AssertionError("expected ValidationError")
+
+
+def test_context_sized_against_json_length_is_kept():
+    """The app trims against jsonEncode; a Python repr must not shrink the cap."""
+    context = {
+        "transactions": [
+            {"id": f"tx-{index}", "merchant": "Coffee Shop", "amount": 5.25}
+            for index in range(560)
+        ]
+    }
+    encoded = json.dumps(context, separators=(",", ":"))
+    assert len(encoded) <= FINANCIAL_CONTEXT_MAX_CHARS
+    assert len(str(context)) > FINANCIAL_CONTEXT_MAX_CHARS
+
+    request = ChatRequest(message="How much on coffee?", financial_context=context)
+    assert request.financial_context == context
 
 
 def test_drop_helper_ignores_unrelated_validation_errors():

@@ -76,6 +76,30 @@ def find_account(
     )
 
 
+def transaction_coverage(financial_context: Optional[dict]) -> Optional[str]:
+    """Describe missing transaction detail, or None when the pack holds it all.
+
+    The app sends recent and query-matched rows rather than every transaction,
+    and trims further when the pack would exceed the request size limit. Saying
+    so keeps "nothing matched" from reading as "you never spent that".
+    """
+    integration = context_dict(financial_context, "integration")
+    period = context_dict(financial_context, "period")
+    included = _count(period.get("included_transaction_count"))
+    total = _count(period.get("transaction_count"))
+    parts: list[str] = []
+    if included is not None and total is not None and included < total:
+        parts.append(f"{included} of {total} transactions this period")
+    elif str(integration.get("raw_transactions_included")).lower() == "false":
+        parts.append("recent and matching rows only")
+    if str(integration.get("size_capped")).lower() == "true":
+        reason = str(integration.get("size_cap_reason") or "size limit").strip()
+        parts.append(f"trimmed to fit the request size limit ({reason})")
+    if not parts:
+        return None
+    return "; ".join(parts)
+
+
 def matching_transactions(
     financial_context: Optional[dict],
     *,
@@ -150,6 +174,15 @@ def _all_transactions(financial_context: Optional[dict]) -> list[dict]:
             continue
         rows.append(row)
     return rows
+
+
+def _count(value: Any) -> Optional[int]:
+    if value is None or isinstance(value, (list, dict, bool)):
+        return None
+    try:
+        return int(float(str(value)))
+    except ValueError:
+        return None
 
 
 def _amount(row: dict) -> Optional[float]:

@@ -16,6 +16,7 @@ from app.services.capabilities.finance_context_lookup import (
     find_account,
     matching_transactions,
     spend_total,
+    transaction_coverage,
     transaction_line,
 )
 
@@ -50,6 +51,7 @@ def _spend_insight_lines(
     lines.extend(_category_lines(request, financial_context))
     lines.extend(_transaction_lines(request, financial_context))
     lines.extend(_budget_lines(financial_context))
+    lines.extend(_coverage_lines(financial_context))
     return lines
 
 
@@ -171,6 +173,13 @@ def _transaction_lines(
         # needs the explicit "nothing matched" line.
         if not request.merchant:
             return []
+        coverage = transaction_coverage(financial_context)
+        if coverage:
+            return [
+                f"- No rows match \"{needle}\" in the transaction detail Clarity "
+                f"sent, and that detail is partial ({coverage}), so say the "
+                "detail is incomplete rather than that nothing was spent."
+            ]
         return [f"- No transactions in this context match \"{needle}\"."]
     total = spend_total(rows)
     header = f"- Matching transactions for \"{needle}\": count={len(rows)}"
@@ -185,6 +194,16 @@ def _transaction_lines(
             f"  - (+{len(rows) - _MAX_TRANSACTION_ROWS} more rows not listed)"
         )
     return lines
+
+
+def _coverage_lines(financial_context: dict) -> list[str]:
+    coverage = transaction_coverage(financial_context)
+    if not coverage:
+        return []
+    return [
+        f"- Transaction detail coverage: {coverage}. Category and cash-flow "
+        "totals above are Clarity's own totals and stay usable."
+    ]
 
 
 def _budget_lines(financial_context: dict) -> list[str]:

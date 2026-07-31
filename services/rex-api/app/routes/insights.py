@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.auth.supabase_auth import AuthenticatedUser, get_current_user
 from app.dependencies import get_insight_sync_service
+from app.models.chat import serialized_payload_length
 from app.services.insight_sync_service import InsightSyncResult, InsightSyncService
 from app.services.memory_errors import MemoryServiceError
 
@@ -40,7 +41,7 @@ class InsightSyncRequest(BaseModel):
     def _cap_financial_context(cls, value: Optional[dict[str, Any]]):
         if value is None:
             return None
-        if len(str(value)) > 32_000:
+        if serialized_payload_length(value) > 32_000:
             raise ValueError("financial_context exceeds maximum size of 32000 characters.")
         return value
 
@@ -49,7 +50,7 @@ class InsightSyncRequest(BaseModel):
     def _cap_accountability_signals(cls, value: Optional[list[dict[str, Any]]]):
         if value is None:
             return None
-        if len(str(value)) > 16_000:
+        if serialized_payload_length(value) > 16_000:
             raise ValueError(
                 "accountability_signals exceeds maximum size of 16000 characters."
             )

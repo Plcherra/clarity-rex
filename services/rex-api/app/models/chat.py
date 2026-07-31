@@ -1,3 +1,4 @@
+import json
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -46,6 +47,19 @@ class ChatResponse(BaseModel):
     memory_changes: Optional[dict] = None
 
 
+def serialized_payload_length(value: Any) -> int:
+    """Measure a payload the way the client does, so caps agree on both sides.
+
+    The app trims its finance pack against `jsonEncode` length. Measuring a
+    Python repr here instead would reject packs the app had already sized to
+    fit, and the turn would silently lose its finance data.
+    """
+    try:
+        return len(json.dumps(value, separators=(",", ":"), default=str))
+    except (TypeError, ValueError):
+        return len(str(value))
+
+
 def _reject_oversized_mapping(
     value: Optional[dict[str, Any]],
     *,
@@ -54,7 +68,6 @@ def _reject_oversized_mapping(
 ) -> Optional[dict[str, Any]]:
     if value is None:
         return None
-    serialized = str(value)
-    if len(serialized) > limit:
+    if serialized_payload_length(value) > limit:
         raise ValueError(f"{label} exceeds maximum size of {limit} characters.")
     return value

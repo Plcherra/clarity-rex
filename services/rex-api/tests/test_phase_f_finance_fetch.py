@@ -101,6 +101,55 @@ async def test_fetch_with_degraded_context_is_honest() -> None:
     assert brain.calls == []
 
 
+def _size_capped_context(**overrides) -> dict:
+    return financial_context(
+        integration={
+            "full_financial_context_included": False,
+            "raw_transactions_included": False,
+            "size_capped": True,
+            "size_cap_reason": "shrunk_transaction_lists",
+        },
+        period={
+            "reference_month": "2026-07",
+            "transaction_count": 312,
+            "included_transaction_count": 40,
+        },
+        **overrides,
+    )
+
+
+@pytest.mark.asyncio
+async def test_size_capped_pack_still_answers_and_declares_what_is_missing() -> None:
+    brain = FakeGrokBrain("Coffee is at $42.50 so far this month.")
+    finalized = await finalize_finance_turn(
+        rex_action("fetch_spend_insight", {"category": "Coffee"}),
+        settings=CARD,
+        context=_size_capped_context(),
+        brain=brain,
+    )
+    assert finalized["response"] == "Coffee is at $42.50 so far this month."
+    pack = brain.last_fetch_pack
+    assert "Category Coffee: spent=42.5" in pack
+    assert "Transaction detail coverage: 40 of 312 transactions this period" in pack
+    assert "shrunk_transaction_lists" in pack
+
+
+@pytest.mark.asyncio
+async def test_trimmed_pack_never_reports_a_merchant_as_zero_spend() -> None:
+    brain = FakeGrokBrain("I only see part of the detail.")
+    await finalize_finance_turn(
+        rex_action("fetch_spend_insight", {"merchant": "Blue Bottle"}),
+        settings=CARD,
+        context=_size_capped_context(),
+        user_text="How much at Blue Bottle?",
+        brain=brain,
+    )
+    pack = brain.last_fetch_pack
+    assert "detail is partial" in pack
+    assert "rather than that nothing was spent" in pack
+    assert 'No transactions in this context match "Blue Bottle".' not in pack
+
+
 @pytest.mark.asyncio
 async def test_fetch_account_summary_focuses_named_account() -> None:
     brain = FakeGrokBrain("Everyday Checking is at $2,210.55.")
