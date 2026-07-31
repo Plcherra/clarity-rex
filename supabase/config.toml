@@ -3,3 +3,9 @@ verify_jwt = true
 
 [functions.categorize-transactions]
 verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true
+
+[functions.send-mfa-security-email]
+verify_jwt = true

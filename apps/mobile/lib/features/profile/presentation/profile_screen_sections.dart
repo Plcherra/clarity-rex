@@ -20,6 +20,7 @@ class ProfileDesktopSections extends StatelessWidget {
     required this.onOpenMfa,
     required this.onOpenUsage,
     this.onSignOut,
+    this.onDeleteAccount,
   });
 
   final ProfileController profileController;
@@ -30,6 +31,7 @@ class ProfileDesktopSections extends StatelessWidget {
   final VoidCallback onOpenMfa;
   final VoidCallback onOpenUsage;
   final VoidCallback? onSignOut;
+  final VoidCallback? onDeleteAccount;
 
   @override
   Widget build(BuildContext context) {
@@ -76,19 +78,28 @@ class ProfileDesktopSections extends StatelessWidget {
                 ],
               ),
               const OwnerUsageProfileEntry(),
-              if (onSignOut != null) ...[
+              if (onSignOut != null || onDeleteAccount != null) ...[
                 const SizedBox(height: 18),
                 ProfileSectionLabel(l10n.profileSessionSection),
                 const SizedBox(height: 8),
                 ProfileActionGroup(
                   children: [
-                    ProfileActionTile(
-                      icon: Icons.logout_rounded,
-                      title: l10n.commonSignOut,
-                      subtitle: l10n.profileSignOutSubtitle,
-                      destructive: true,
-                      onTap: onSignOut!,
-                    ),
+                    if (onSignOut != null)
+                      ProfileActionTile(
+                        icon: Icons.logout_rounded,
+                        title: l10n.commonSignOut,
+                        subtitle: l10n.profileSignOutSubtitle,
+                        destructive: true,
+                        onTap: onSignOut!,
+                      ),
+                    if (onDeleteAccount != null)
+                      ProfileActionTile(
+                        icon: Icons.delete_forever_outlined,
+                        title: l10n.profileDeleteAccountConfirm,
+                        subtitle: l10n.profileDeleteAccountSubtitle,
+                        destructive: true,
+                        onTap: onDeleteAccount!,
+                      ),
                   ],
                 ),
               ],
@@ -159,6 +170,7 @@ class ProfileCompactSections extends StatelessWidget {
     required this.onOpenAppearance,
     required this.onOpenLanguage,
     this.onSignOut,
+    this.onDeleteAccount,
   });
 
   final ProfileController profileController;
@@ -171,6 +183,7 @@ class ProfileCompactSections extends StatelessWidget {
   final VoidCallback onOpenAppearance;
   final VoidCallback onOpenLanguage;
   final VoidCallback? onSignOut;
+  final VoidCallback? onDeleteAccount;
 
   @override
   Widget build(BuildContext context) {
@@ -269,17 +282,26 @@ class ProfileCompactSections extends StatelessWidget {
             ),
           ],
         ),
-        if (onSignOut != null) ...[
+        if (onSignOut != null || onDeleteAccount != null) ...[
           SizedBox(height: sectionGap),
           ProfileActionGroup(
             children: [
-              ProfileActionTile(
-                icon: Icons.logout_rounded,
-                title: l10n.commonSignOut,
-                subtitle: l10n.profileSignOutSubtitle,
-                destructive: true,
-                onTap: onSignOut!,
-              ),
+              if (onSignOut != null)
+                ProfileActionTile(
+                  icon: Icons.logout_rounded,
+                  title: l10n.commonSignOut,
+                  subtitle: l10n.profileSignOutSubtitle,
+                  destructive: true,
+                  onTap: onSignOut!,
+                ),
+              if (onDeleteAccount != null)
+                ProfileActionTile(
+                  icon: Icons.delete_forever_outlined,
+                  title: l10n.profileDeleteAccountConfirm,
+                  subtitle: l10n.profileDeleteAccountSubtitle,
+                  destructive: true,
+                  onTap: onDeleteAccount!,
+                ),
             ],
           ),
         ],

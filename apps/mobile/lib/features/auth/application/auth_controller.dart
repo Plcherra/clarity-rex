@@ -158,6 +158,17 @@ class AuthController extends ChangeNotifier {
       await _authService.signOut();
       _session = null;
       _authenticatedOverride = false;
+      pendingConfirmationEmail = null;
+      _clearMfaState();
+    });
+  }
+
+  Future<void> deleteAccount() async {
+    await _runAuthAction(() async {
+      await _authService.deleteAccount();
+      _session = null;
+      _authenticatedOverride = false;
+      pendingConfirmationEmail = null;
       _clearMfaState();
     });
   }

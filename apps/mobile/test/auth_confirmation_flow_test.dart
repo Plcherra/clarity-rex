@@ -95,6 +95,21 @@ void main() {
     expect(controller.pendingConfirmationEmail, isNull);
     expect(controller.infoMessage, isNull);
   });
+
+  test('deleteAccount clears local session state', () async {
+    final deleteController = AuthController(
+      authService: authService,
+      initialAuthenticated: true,
+      l10n: () => lookupAppLocalizations(const Locale('en')),
+    );
+    addTearDown(deleteController.dispose);
+
+    await deleteController.deleteAccount();
+
+    expect(authService.deleteAccountCalls, 1);
+    expect(deleteController.isAuthenticated, isFalse);
+    expect(deleteController.errorMessage, isNull);
+  });
 }
 
 final class _FakeAuthService extends AuthService {
@@ -103,6 +118,7 @@ final class _FakeAuthService extends AuthService {
   AuthResponse? signUpResponse;
   AuthException? signInError;
   int resendCalls = 0;
+  int deleteAccountCalls = 0;
   String? lastResendEmail;
 
   @override
@@ -140,6 +156,11 @@ final class _FakeAuthService extends AuthService {
   Future<void> resendConfirmationEmail({required String email}) async {
     resendCalls += 1;
     lastResendEmail = email;
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    deleteAccountCalls += 1;
   }
 
   @override

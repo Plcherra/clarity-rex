@@ -189,8 +189,36 @@ class AuthService {
       return false;
     }
   }
+
+  Future<void> deleteAccount() async {
+    if (!_supabaseService.isConfigured || currentSession == null) {
+      throw const AuthException('You must be signed in to delete your account.');
+    }
+    final response = await _supabaseService.functions.invoke('delete-account');
+    if (response.status < 200 || response.status >= 300) {
+      throw AuthException(
+        _functionErrorMessage(response.data) ??
+            'Could not delete your account. Try again or contact support.',
+      );
+    }
+    try {
+      await signOut();
+    } on Object {
+      // Auth user is already deleted; ignore remote sign-out failures.
+    }
+  }
 }
 
 String _digitsOnly(String value) {
   return value.replaceAll(RegExp(r'\D'), '');
+}
+
+String? _functionErrorMessage(Object? data) {
+  if (data is Map) {
+    final error = data['error'];
+    if (error is String && error.trim().isNotEmpty) {
+      return error.trim();
+    }
+  }
+  return null;
 }

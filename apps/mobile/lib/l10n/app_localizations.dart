@@ -1340,6 +1340,36 @@ abstract class AppLocalizations {
   /// **'Leave this device signed out of Clarity'**
   String get profileSignOutSubtitle;
 
+  /// No description provided for @profileDeleteAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account?'**
+  String get profileDeleteAccountTitle;
+
+  /// No description provided for @profileDeleteAccountBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes your Clarity account and saved data. Bank connections will be removed. This cannot be undone.'**
+  String get profileDeleteAccountBody;
+
+  /// No description provided for @profileDeleteAccountConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get profileDeleteAccountConfirm;
+
+  /// No description provided for @profileDeleteAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently remove your Clarity account and data'**
+  String get profileDeleteAccountSubtitle;
+
+  /// No description provided for @profileDeleteAccountFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete your account. Try again or contact support.'**
+  String get profileDeleteAccountFailed;
+
   /// No description provided for @profileHeaderLabel.
   ///
   /// In en, this message translates to:

@@ -690,6 +690,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Leave this device signed out of Clarity';
 
   @override
+  String get profileDeleteAccountTitle => 'Delete account?';
+
+  @override
+  String get profileDeleteAccountBody =>
+      'This permanently deletes your Clarity account and saved data. Bank connections will be removed. This cannot be undone.';
+
+  @override
+  String get profileDeleteAccountConfirm => 'Delete account';
+
+  @override
+  String get profileDeleteAccountSubtitle =>
+      'Permanently remove your Clarity account and data';
+
+  @override
+  String get profileDeleteAccountFailed =>
+      'Could not delete your account. Try again or contact support.';
+
+  @override
   String get profileHeaderLabel => 'Clarity profile';
 
   @override

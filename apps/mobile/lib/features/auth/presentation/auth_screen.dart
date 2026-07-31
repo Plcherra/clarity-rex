@@ -80,8 +80,7 @@ final class _AuthScreenState extends State<AuthScreen> {
     await widget.controller.requestPasswordReset(email: email);
   }
 
-  Future<void> _onLanguageChanged(Locale? locale) async {
-    if (locale == null) return;
+  Future<void> _onLanguageChanged(Locale locale) async {
     await widget.localeController.setLocale(locale, persistProfile: false);
   }
 
@@ -97,12 +96,6 @@ final class _AuthScreenState extends State<AuthScreen> {
         final cs = theme.colorScheme;
         final l10n = context.l10n;
         final error = _localError ?? widget.controller.errorMessage;
-        final selectedLocale = widget.localeController.enabledLocales.firstWhere(
-          (locale) =>
-              ClarityLocaleCatalog.localeTagFor(locale) ==
-              widget.localeController.localeTag,
-          orElse: () => widget.localeController.enabledLocales.first,
-        );
         return Scaffold(
           body: DecoratedBox(
             decoration: const BoxDecoration(
@@ -120,15 +113,23 @@ final class _AuthScreenState extends State<AuthScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Image.asset(
-                              'assets/brand/clarity_mark.png',
-                              width: 72,
-                              height: 72,
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Image.asset(
+                                'assets/brand/clarity_mark.png',
+                                width: 56,
+                                height: 56,
+                              ),
+                              const Spacer(),
+                              _AuthLanguageChooser(
+                                localeController: widget.localeController,
+                                enabled: !widget.controller.isLoading,
+                                onChanged: _onLanguageChanged,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 20),
                           Text(
                             _isSignUp
                                 ? l10n.authSignUpTitle
@@ -148,29 +149,7 @@ final class _AuthScreenState extends State<AuthScreen> {
                               height: 1.35,
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          DropdownButtonFormField<Locale>(
-                            key: ValueKey(widget.localeController.localeTag),
-                            initialValue: selectedLocale,
-                            decoration: InputDecoration(
-                              labelText: l10n.authLanguageLabel,
-                              prefixIcon: const Icon(Icons.translate_rounded),
-                            ),
-                            items: [
-                              for (final locale
-                                  in widget.localeController.enabledLocales)
-                                DropdownMenuItem(
-                                  value: locale,
-                                  child: Text(
-                                    widget.localeController.labelFor(locale),
-                                  ),
-                                ),
-                            ],
-                            onChanged: widget.controller.isLoading
-                                ? null
-                                : _onLanguageChanged,
-                          ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 24),
                           if (_isSignUp) ...[
                             TextField(
                               controller: _fullNameController,
@@ -280,6 +259,102 @@ final class _AuthScreenState extends State<AuthScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+final class _AuthLanguageChooser extends StatelessWidget {
+  const _AuthLanguageChooser({
+    required this.localeController,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final LocaleController localeController;
+  final bool enabled;
+  final ValueChanged<Locale> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final selectedTag = localeController.localeTag;
+
+    return Semantics(
+      label: context.l10n.authLanguageLabel,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.7)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final locale in localeController.enabledLocales)
+                _AuthLanguageChip(
+                  label: _shortLanguageLabel(locale),
+                  selected:
+                      ClarityLocaleCatalog.localeTagFor(locale) == selectedTag,
+                  enabled: enabled,
+                  onTap: () => onChanged(locale),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _shortLanguageLabel(Locale locale) {
+    return switch (locale.languageCode) {
+      'es' => 'ES',
+      'en' => 'EN',
+      _ => locale.languageCode.toUpperCase(),
+    };
+  }
+}
+
+final class _AuthLanguageChip extends StatelessWidget {
+  const _AuthLanguageChip({
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Material(
+      color: selected ? cs.surface : Colors.transparent,
+      borderRadius: BorderRadius.circular(999),
+      elevation: selected ? 0.5 : 0,
+      shadowColor: cs.shadow.withValues(alpha: 0.2),
+      child: InkWell(
+        onTap: enabled && !selected ? onTap : null,
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+              letterSpacing: 0.2,
+              color: selected ? cs.onSurface : cs.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

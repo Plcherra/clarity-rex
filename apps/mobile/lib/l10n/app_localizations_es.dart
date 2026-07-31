@@ -695,6 +695,24 @@ class AppLocalizationsEs extends AppLocalizations {
       'Dejar este dispositivo fuera de Clarity';
 
   @override
+  String get profileDeleteAccountTitle => '¿Eliminar cuenta?';
+
+  @override
+  String get profileDeleteAccountBody =>
+      'Esto elimina permanentemente tu cuenta de Clarity y los datos guardados. Se quitarán las conexiones bancarias. No se puede deshacer.';
+
+  @override
+  String get profileDeleteAccountConfirm => 'Eliminar cuenta';
+
+  @override
+  String get profileDeleteAccountSubtitle =>
+      'Eliminar permanentemente tu cuenta y datos de Clarity';
+
+  @override
+  String get profileDeleteAccountFailed =>
+      'No se pudo eliminar tu cuenta. Inténtalo de nuevo o contacta con soporte.';
+
+  @override
   String get profileHeaderLabel => 'Perfil de claridad';
 
   @override

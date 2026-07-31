@@ -249,6 +249,44 @@ final class ProfileScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => wrapWebCenteredDialog(
+        dialogContext,
+        AlertDialog(
+          title: Text(l10n.profileDeleteAccountTitle),
+          content: Text(l10n.profileDeleteAccountBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.commonCancel),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.profileDeleteAccountConfirm),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    await authController.deleteAccount();
+    if (!context.mounted) return;
+    final error = authController.errorMessage;
+    if (error != null && error.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -298,6 +336,7 @@ final class ProfileScreen extends StatelessWidget {
                     onOpenUsage: () => _openUsage(context),
                     onSignOut:
                         signOut == null ? null : () => _confirmSignOut(context),
+                    onDeleteAccount: () => _confirmDeleteAccount(context),
                   )
                 else
                   ProfileCompactSections(
@@ -312,6 +351,7 @@ final class ProfileScreen extends StatelessWidget {
                     onOpenLanguage: () => _openLanguage(context),
                     onSignOut:
                         signOut == null ? null : () => _confirmSignOut(context),
+                    onDeleteAccount: () => _confirmDeleteAccount(context),
                   ),
               ],
             ),
