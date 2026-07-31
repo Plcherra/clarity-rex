@@ -8,7 +8,10 @@ from typing import Any, Optional
 from app.services.body_display_text import SimpleMemoryIntent
 from app.services.memory_delete_resolver import MEMORY_DELETE_SCOPE
 from app.services.memory_reference_models import KnowsReferenceMatch
-from app.services.person_card_constants import PERSON_RELATIONSHIPS
+from app.services.person_card_constants import (
+    PERSON_CARD_MIN_IMPORTANCE,
+    PERSON_RELATIONSHIPS,
+)
 
 
 _MEMORY_TYPES = frozenset({"fact", "preference", "context", "correction"})
@@ -84,7 +87,7 @@ def simple_memory_intent_from_payload(
         return SimpleMemoryIntent(
             memory_type="fact",
             content=content,
-            importance=_importance(payload),
+            importance=max(_importance(payload) or 0, PERSON_CARD_MIN_IMPORTANCE),
             source="brain_save_person",
             metadata=metadata,
         )
@@ -149,12 +152,15 @@ def delete_id_from_payload(payload: dict[str, Any]) -> tuple[Optional[str], Opti
     return record_id, table
 
 
-def _importance(payload: dict[str, Any]) -> int:
+def _importance(payload: dict[str, Any]) -> Optional[int]:
+    """The importance Grok actually rated, or None when it said nothing."""
+    raw = payload.get("importance")
+    if raw is None:
+        return None
     try:
-        value = int(payload.get("importance") or 3)
+        return max(1, min(5, int(raw)))
     except (TypeError, ValueError):
-        return 3
-    return max(1, min(5, value))
+        return None
 
 
 def _canonical_relationship(value: object) -> str:

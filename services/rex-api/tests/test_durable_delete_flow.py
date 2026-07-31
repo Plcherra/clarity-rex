@@ -1,38 +1,47 @@
-"""Durable delete confirmation cards with permanent removal."""
+"""Durable delete confirmation cards with permanent removal.
 
-from datetime import datetime
-from zoneinfo import ZoneInfo
+A delete only happens when the brain asks for it and the user confirms the
+high-risk card; open-thread deletes are not body-wired, so Rex says so
+instead of quietly removing the thread.
+"""
+
+from __future__ import annotations
 
 import pytest
 
-from chat_service_fakes import FakeAIService, FakeMemoryService
-from durable_write_test_helpers import confirm_durable_write
-from app.services.chat_service import ChatService
-from app.services.file_service import FileService
-from app.services.time_context_service import TimeContextService
+from chat_service_fakes import FakeMemoryService
+from durable_write_brain_scripts import (
+    confirm_proposal,
+    only_proposal,
+    scripted_chat_service,
+)
+from scripted_brain_fakes import reply_with_action
+
+DELETE_BRAIN = {
+    "tonight": reply_with_action(
+        "I can remove that tonight plan.",
+        "delete_knows_item",
+        {
+            "id": "memory-tonight-plan",
+            "table": "long_term_memory",
+            "title": "User plans to watch it tonight.",
+        },
+    ),
+    "goal": reply_with_action(
+        "I can delete that goal.",
+        "delete_goal",
+        {"plan_id": "plan-junk", "title": "Buy dumbbells"},
+    ),
+    "thread": reply_with_action(
+        "Let me look at that thread.",
+        "delete_open_thread",
+        {"title": "Morning routine"},
+    ),
+}
 
 
-def _fixed_time_context_service():
-    return TimeContextService(
-        timezone_name="America/New_York",
-        now_provider=lambda: datetime(
-            2026,
-            6,
-            1,
-            12,
-            0,
-            tzinfo=ZoneInfo("America/New_York"),
-        ),
-    )
-
-
-def _chat_service(memory_service: FakeMemoryService) -> ChatService:
-    return ChatService(
-        FakeAIService(response="Rex normal response"),
-        FileService(),
-        memory_service,
-        time_context_service=_fixed_time_context_service(),
-    )
+def _chat_service(memory_service: FakeMemoryService):
+    return scripted_chat_service(DELETE_BRAIN, memory_service)
 
 
 @pytest.mark.asyncio
@@ -50,16 +59,17 @@ async def test_delete_memory_proposes_high_risk_card_and_hard_deletes():
     )
     chat_service = _chat_service(memory_service)
 
-    proposed = await chat_service.send_message("Can you delete that tonight plan?")
+    proposed = await chat_service.send_message("Delete the tonight plan you saved")
 
     assert proposed["memory_changes"]["confirmation_required"] == 1
-    proposal = proposed["memory_changes"]["write_proposals"][0]
+    proposal = only_proposal(proposed)
     assert proposal["write_kind"] == "delete"
     assert proposal["risk_level"] == "high"
+    assert proposal["delete_table"] == "long_term_memory"
     assert "cannot be undone" in proposal["confirmation_text"].lower()
     assert len(memory_service.long_term_memory) == 1
 
-    confirmed = await confirm_durable_write(chat_service, proposed)
+    confirmed = await confirm_proposal(chat_service, proposed)
 
     assert "Permanently deleted" in confirmed["response"]
     assert confirmed["memory_changes"]["archived"] == 1
@@ -83,17 +93,19 @@ async def test_delete_goal_uses_same_card_flow():
     proposed = await chat_service.send_message("Delete the goal Buy dumbbells")
 
     assert proposed["memory_changes"]["confirmation_required"] == 1
-    proposal = proposed["memory_changes"]["write_proposals"][0]
+    proposal = only_proposal(proposed)
     assert proposal["write_kind"] == "delete"
     assert proposal["delete_table"] == "plans"
+    assert len(memory_service.plans) == 1
 
-    confirmed = await confirm_durable_write(chat_service, proposed)
+    confirmed = await confirm_proposal(chat_service, proposed)
+
     assert confirmed["memory_changes"]["archived"] == 1
     assert memory_service.plans == []
 
 
 @pytest.mark.asyncio
-async def test_delete_open_thread_proposes_card():
+async def test_delete_open_thread_is_refused_instead_of_silently_dropped():
     memory_service = FakeMemoryService()
     memory_service.open_threads.append(
         {
@@ -105,14 +117,19 @@ async def test_delete_open_thread_proposes_card():
     )
     chat_service = _chat_service(memory_service)
 
-    proposed = await chat_service.send_message(
-        'Delete the open thread "Morning routine"'
-    )
+    turn = await chat_service.send_message('Delete the open thread "Morning routine"')
 
-    assert proposed["memory_changes"]["confirmation_required"] == 1
-    proposal = proposed["memory_changes"]["write_proposals"][0]
-    assert proposal["write_kind"] == "delete"
-    assert proposal["delete_table"] == "open_threads"
-
-    confirmed = await confirm_durable_write(chat_service, proposed)
-    assert memory_service.open_threads == []
+    changes = turn["memory_changes"]
+    assert changes["confirmation_required"] == 0
+    assert changes.get("write_proposals") in (None, [])
+    assert "can't delete an open thread from chat yet" in turn["response"].lower()
+    assert "goals" in turn["response"].lower()
+    assert memory_service.open_threads == [
+        {
+            "id": "thread-1",
+            "title": "Morning routine",
+            "summary": "Follow up on morning routine",
+            "status": "active",
+        }
+    ]
+    assert memory_service.pending_actions == {}

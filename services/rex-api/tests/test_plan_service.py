@@ -434,24 +434,22 @@ async def test_plan_service_failure_paths_do_not_call_supabase():
 
 
 @pytest.mark.asyncio
-async def test_plan_service_splits_numbered_compound_goal_into_separate_plans():
+async def test_plan_service_saves_one_goal_per_request():
+    """Splitting a compound ask is the brain's job — the body saves what it is given."""
     memory = FakePlanMemoryService()
     service = PlanService(memory)
 
     row = await service.create_plan(
         PlanCreateRequest(
             plan_type="personal",
-            title="2 goals. 1 buy 32-64gb ram. 2 buy 1-2tb storage",
-            description="2 goals. 1 buy 32-64gb ram. 2 buy 1-2tb storage",
-            desired_outcome="2 goals. 1 buy 32-64gb ram. 2 buy 1-2tb storage",
+            title="Buy 32-64gb ram",
+            description="Buy 32-64gb ram",
+            desired_outcome="Upgraded memory",
             priority=4,
             metadata={"source": "goals_tab"},
         )
     )
 
-    assert len(memory.plans) == 2
-    titles = [plan["title"].casefold() for plan in memory.plans]
-    assert any("ram" in title for title in titles)
-    assert any("storage" in title or "tb" in title for title in titles)
-    assert all("2 goals" not in title for title in titles)
-    assert row["metadata"]["split_from_compound"] is True
+    assert len(memory.plans) == 1
+    assert row["title"] == "Buy 32-64gb ram"
+    assert "split_from_compound" not in (row.get("metadata") or {})

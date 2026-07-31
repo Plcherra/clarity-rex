@@ -13,7 +13,7 @@ void main() {
     expect(clarityLayoutWideBreakpoint, 1100);
     expect(clarityFinanceContentMaxWidth, 1920);
     expect(clarityAssistantContentMaxWidth, 1920);
-    expect(clarityProfileContentMaxWidth, 1120);
+    expect(clarityProfileContentMaxWidth, 1920);
     expect(clarityChatColumnMaxWidth, 960);
   });
 

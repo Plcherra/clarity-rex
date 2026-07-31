@@ -9,11 +9,6 @@ from app.models.plan import (
     PlanUpdateRequest,
 )
 from app.models.memory_discipline import MemoryRecordKind
-from app.services.body_display_text import (
-    expand_goal_save_items,
-    goal_title,
-    normalize_equipment_goal_title,
-)
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_discipline_confirmed_writes import (
@@ -52,39 +47,6 @@ class PlanService:
 
     async def create_plan(self, request: PlanCreateRequest) -> dict[str, Any]:
         payload = _payload(request)
-        metadata = dict(payload.get("metadata") or {})
-        if not metadata.get("already_split"):
-            split_items = expand_goal_save_items(
-                title=payload.get("title"),
-                description=payload.get("description"),
-                desired_outcome=payload.get("desired_outcome"),
-            )
-            if len(split_items) >= 2:
-                created: list[dict[str, Any]] = []
-                wrong_names = correction_wrong_names(payload)
-                for index, item in enumerate(split_items):
-                    item_payload = {
-                        **payload,
-                        "title": goal_title(normalize_equipment_goal_title(item)),
-                        "description": item,
-                        "desired_outcome": item,
-                        "metadata": {
-                            **metadata,
-                            "already_split": True,
-                            "prevent_related_merge": True,
-                            "split_from_compound": True,
-                            "split_index": index,
-                            "split_total": len(split_items),
-                        },
-                    }
-                    created.append(
-                        await self._create_plan_once(
-                            item_payload,
-                            wrong_names=wrong_names,
-                        )
-                    )
-                return created[-1]
-
         payload["title"] = clean_required(payload.get("title"), "title")
         if "description" in payload:
             payload["description"] = clean_optional(payload["description"])

@@ -18,7 +18,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('What should Clarity remember?'), findsOneWidget);
-    await tester.tap(find.text('Fact'));
+    await tester.tap(find.widgetWithText(ListTile, 'Fact'));
     await tester.pumpAndSettle();
 
     expect(find.text('Add a fact'), findsOneWidget);
@@ -45,7 +45,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Add saved information'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Person'));
+    await tester.tap(find.widgetWithText(ListTile, 'Person'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Clara');

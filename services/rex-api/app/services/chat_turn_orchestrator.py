@@ -138,6 +138,8 @@ class ChatTurnOrchestrator:
             proposal_settings=turn_context.proposal_settings,
             open_thread_titles_block=thread_block,
             locale=locale,
+            time_context=turn_context.time_context,
+            attachment_context=turn_context.attachment_context,
         )
         resolved_max = max_response_tokens or _DEFAULT_MAX_TOKENS
         log_grok_prompt_messages(
@@ -307,6 +309,8 @@ class ChatTurnOrchestrator:
             proposal_settings=turn_context.proposal_settings,
             open_thread_titles_block=thread_block,
             locale=locale,
+            time_context=turn_context.time_context,
+            attachment_context=turn_context.attachment_context,
         )
         resolved_max = max_response_tokens or _DEFAULT_MAX_TOKENS
         log_grok_prompt_messages(

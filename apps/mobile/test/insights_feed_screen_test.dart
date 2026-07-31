@@ -24,7 +24,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('No saved insights yet'), findsOneWidget);
+    expect(find.textContaining('No current signals right now'), findsOneWidget);
+    expect(find.textContaining('No saved alerts yet'), findsOneWidget);
   });
 
   testWidgets('InsightsFeedScreen degrades when storage unavailable', (
@@ -48,8 +49,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Supabase memory'), findsNothing);
-    expect(find.textContaining('Saved insights are not available yet'), findsOneWidget);
-    expect(find.textContaining('No saved insights yet'), findsOneWidget);
+    expect(
+      find.textContaining('Saved insights storage is not available yet'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('No saved alerts yet'), findsOneWidget);
   });
 }
 

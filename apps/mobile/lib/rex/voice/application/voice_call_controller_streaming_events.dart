@@ -160,7 +160,6 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
                 );
               }
               unawaited(_activeStreamingCaptureService?.cancel());
-              unawaited(_preparePlaybackAudioSession());
             } else if (state.phase == VoiceCallPhase.listening) {
               updateTranscript(
                 event.transcript ?? state.currentTranscript,

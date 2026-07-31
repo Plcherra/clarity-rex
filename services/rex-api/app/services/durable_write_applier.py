@@ -210,7 +210,9 @@ class DurableWriteApplier:
                 memory_id,
                 memory_type=payload.get("memory_type"),
                 content=str(payload.get("content") or payload.get("body") or ""),
-                importance=int(payload.get("importance") or 3),
+                # An edit the user did not ask for must not demote the record:
+                # a dropped importance would quietly pull it out of Knows.
+                importance=_optional_importance(payload.get("importance")),
                 active=True,
                 metadata=metadata,
             )
@@ -348,6 +350,16 @@ class DurableWriteApplier:
             "merged": False,
             "deleted": True,
         }
+
+
+def _optional_importance(value: Any) -> Optional[int]:
+    """None means "leave the stored importance alone"."""
+    if value is None:
+        return None
+    try:
+        return max(1, min(5, int(value)))
+    except (TypeError, ValueError):
+        return None
 
 
 def _decision_from_snapshot(snapshot: dict[str, Any]) -> MemoryDisciplineDecision | None:

@@ -18,7 +18,9 @@ from app.models.memory_discipline import (
 class SimpleMemoryIntent:
     memory_type: str
     content: str
-    importance: int
+    # None when the brain did not rate the fact: a create defaults it, an
+    # update leaves whatever importance the record already carries.
+    importance: Optional[int]
     source: str = "simple_memory_intent"
     metadata: dict = field(default_factory=dict)
 
@@ -68,16 +70,6 @@ def plan_type(text: str) -> str:
 def normalize_equipment_goal_title(text: str) -> str:
     cleaned = clean_goal_text(text)
     return cleaned or "Untitled"
-
-
-def expand_goal_save_items(
-    *,
-    title: str | None = None,
-    description: str | None = None,
-    desired_outcome: str | None = None,
-) -> list[str]:
-    _ = (title, description, desired_outcome)
-    return []
 
 
 def is_goals_inventory_query(message: str) -> bool:

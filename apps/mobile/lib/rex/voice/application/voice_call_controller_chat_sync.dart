@@ -127,5 +127,8 @@ extension VoiceCallControllerChatSync on VoiceCallController {
       turnSequence,
       transcript: text,
     );
+    // Route audio out to the speaker while Rex thinks, whichever endpoint closed
+    // the utterance, so the first assistant words are never clipped or earpieced.
+    unawaited(_preparePlaybackAudioSession());
   }
 }

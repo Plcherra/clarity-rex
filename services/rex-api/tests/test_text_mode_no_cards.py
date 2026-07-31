@@ -1,6 +1,7 @@
-"""Text mode still proposes durable writes with confirm cards.
+"""Auto Suggestions modes change how a write is confirmed, never whether it is.
 
-Confirm cards are the truth path — text mode must not hide them.
+Text mode asks in prose and Card mode sends a confirm card, but neither may
+save before the user agrees.
 """
 
 from __future__ import annotations
@@ -15,8 +16,22 @@ from app.services.durable_write_results import pending_memory_changes
 from app.services.durable_write_proposal import DurableWriteProposal
 from app.services.file_service import FileService
 from app.services.time_context_service import TimeContextService
-from chat_service_fakes import FakeAIService, FakeMemoryService
+from chat_service_fakes import FakeMemoryService
 from durable_write_test_helpers import confirm_durable_write
+from scripted_brain_fakes import ScriptedAIService, reply_with_action
+
+SAVE_BRAIN = {
+    "mom's birthday": reply_with_action(
+        "June 18 — good to know.",
+        "save_memory",
+        {"content": "User's mom's birthday is June 18.", "memory_type": "fact"},
+    ),
+    "mom's name": reply_with_action(
+        "I can save Ariadyna as your mom.",
+        "save_person",
+        {"display_name": "Ariadyna", "relationship": "mom"},
+    ),
+}
 
 
 def _fixed_time_context_service():
@@ -31,6 +46,27 @@ def _fixed_time_context_service():
             tzinfo=ZoneInfo("America/New_York"),
         ),
     )
+
+
+def _chat_service(memory_service: FakeMemoryService) -> ChatService:
+    return ChatService(
+        ScriptedAIService(SAVE_BRAIN),
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+
+@pytest.fixture
+def proposals_mode(monkeypatch):
+    from app.config import get_settings
+
+    def _set(mode: str) -> None:
+        monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", mode)
+        get_settings.cache_clear()
+
+    yield _set
+    get_settings.cache_clear()
 
 
 def test_pending_memory_changes_can_omit_client_cards():
@@ -50,69 +86,60 @@ def test_pending_memory_changes_can_omit_client_cards():
 
 
 @pytest.mark.asyncio
-async def test_text_mode_memory_propose_still_includes_write_proposals(monkeypatch):
-    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "text")
-    from app.config import get_settings
+async def test_text_mode_asks_in_prose_and_sends_no_cards(proposals_mode):
+    proposals_mode("text")
+    memory_service = FakeMemoryService()
+    chat_service = _chat_service(memory_service)
 
-    get_settings.cache_clear()
-    chat_service = ChatService(
-        FakeAIService(),
-        FileService(),
-        FakeMemoryService(),
-        time_context_service=_fixed_time_context_service(),
-    )
     proposed = await chat_service.send_message("My mom's birthday is June 18")
     changes = proposed["memory_changes"]
     assert changes["confirmation_required"] == 1
-    assert changes.get("write_proposals")
-    assert changes.get("text_confirmation_pending") is not True
+    assert changes["write_proposals"] == []
+    assert changes["text_confirmation_pending"] is True
+    assert changes["pending_proposal_id"]
+    assert memory_service.long_term_memory == []
+    assert "say yes" in proposed["response"].casefold()
 
+
+@pytest.mark.asyncio
+async def test_text_mode_confirmation_still_saves(proposals_mode):
+    proposals_mode("text")
+    memory_service = FakeMemoryService()
+    chat_service = _chat_service(memory_service)
+
+    proposed = await chat_service.send_message("My mom's birthday is June 18")
     saved = await confirm_durable_write(chat_service, proposed)
-    assert saved["memory_changes"]["created"] == 1 or saved["memory_changes"].get(
-        "updated", 0
-    ) >= 1
-    get_settings.cache_clear()
+
+    changes = saved["memory_changes"]
+    assert changes["confirmation_required"] == 0
+    assert changes["created"] + changes.get("updated", 0) >= 1
+    assert memory_service.long_term_memory or memory_service.entities
 
 
 @pytest.mark.asyncio
-async def test_card_mode_memory_propose_includes_write_proposals(monkeypatch):
-    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "card")
-    from app.config import get_settings
+async def test_card_mode_sends_a_confirm_card(proposals_mode):
+    proposals_mode("card")
+    memory_service = FakeMemoryService()
+    chat_service = _chat_service(memory_service)
 
-    get_settings.cache_clear()
-    chat_service = ChatService(
-        FakeAIService(),
-        FileService(),
-        FakeMemoryService(),
-        time_context_service=_fixed_time_context_service(),
-    )
     proposed = await chat_service.send_message("My mom's birthday is June 18")
-    assert proposed["memory_changes"]["confirmation_required"] == 1
-    assert proposed["memory_changes"]["write_proposals"]
-    get_settings.cache_clear()
-
-
-@pytest.mark.asyncio
-async def test_text_mode_relationship_propose_includes_person_card(monkeypatch):
-    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "text")
-    from app.config import get_settings
-
-    get_settings.cache_clear()
-    chat_service = ChatService(
-        FakeAIService(),
-        FileService(),
-        FakeMemoryService(),
-        time_context_service=_fixed_time_context_service(),
-    )
-    proposed = await chat_service.send_message(
-        "Can you save my mom's name as Ariadyna?"
-    )
     changes = proposed["memory_changes"]
     assert changes["confirmation_required"] == 1
-    assert changes.get("write_proposals")
-    assert "person_card" in str(changes).casefold() or any(
-        (proposal.get("write_kind") == "person" or "person" in str(proposal).casefold())
-        for proposal in (changes.get("write_proposals") or [])
-        if isinstance(proposal, dict)
-    )
-    get_settings.cache_clear()
+    assert changes["write_proposals"]
+    assert changes["write_proposals"][0]["write_kind"] == "memory"
+    assert memory_service.long_term_memory == []
+
+
+@pytest.mark.asyncio
+async def test_card_mode_person_proposal_carries_the_person_card(proposals_mode):
+    proposals_mode("card")
+    memory_service = FakeMemoryService()
+    chat_service = _chat_service(memory_service)
+
+    proposed = await chat_service.send_message("Can you save my mom's name as Ariadyna?")
+    proposal = proposed["memory_changes"]["write_proposals"][0]
+    person_card = proposal.get("person_card") or {}
+
+    assert person_card.get("display_name") == "Ariadyna"
+    assert person_card.get("relationship") == "mother"
+    assert memory_service.entities == []

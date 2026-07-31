@@ -4,8 +4,9 @@ from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.rex_channel import RexBrainChannel
 from app.services.time_context_service import TimeContextService
-from durable_write_test_helpers import assert_companion_continuation_response, confirm_durable_write
+from durable_write_test_helpers import confirm_durable_write
 from chat_service_fakes import FakeAIService, FakeMemoryService
+from scripted_brain_fakes import ScriptedAIService, reply_with_action
 
 
 class FakeUsageTrackingService:
@@ -48,20 +49,33 @@ async def test_send_message_records_one_llm_usage_event_for_normal_chat_turn():
 
 
 @pytest.mark.asyncio
-async def test_send_message_records_llm_usage_after_confirmed_memory_save():
+async def test_confirming_a_memory_save_adds_no_second_llm_usage_event():
     usage = FakeUsageTrackingService()
-    ai = FakeAIService(response="Companion follow-up.")
-    chat = _chat_service(ai_service=ai, usage_service=usage)
+    ai = ScriptedAIService(
+        {
+            "mom's birthday": reply_with_action(
+                "June 18 — good to know.",
+                "save_memory",
+                {"content": "User's mom's birthday is June 18.", "memory_type": "fact"},
+            )
+        }
+    )
+    memory = FakeMemoryService()
+    chat = _chat_service(ai_service=ai, memory_service=memory, usage_service=usage)
 
     proposed = await chat.send_message(
         "My mom's birthday is June 18",
         channel=RexBrainChannel.CHAT,
     )
     assert proposed["memory_changes"]["confirmation_required"] == 1
-    assert usage.llm_turns == []
+    # The proposing turn is a normal brain turn, so it is billed once.
+    assert len(usage.llm_turns) == 1
+
     result = await confirm_durable_write(chat, proposed)
 
-    assert_companion_continuation_response(result, expected_response="Companion follow-up.")
+    # Confirming runs the body only — no extra brain call, no extra usage row.
+    assert result["memory_changes"]["created"] == 1
+    assert "Saved to Clarity Knows" in result["response"]
     assert ai.generate_calls == 1
     assert len(usage.llm_turns) == 1
 

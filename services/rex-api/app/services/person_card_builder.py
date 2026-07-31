@@ -2,6 +2,7 @@ from typing import Any, Optional
 
 from app.services.person_card_builder_text import PersonCardBuilderText
 from app.services.person_card_constants import (
+    PERSON_CARD_MIN_IMPORTANCE,
     PERSON_RELATIONSHIPS,
     SELF_DISPLAY_FALLBACK,
 )
@@ -13,7 +14,7 @@ class PersonCardBuilder(PersonCardBuilderText):
     def person_card_from_memory(self, memory: dict) -> Optional[dict[str, Any]]:
         if str(memory.get("memory_type") or "") != "fact":
             return None
-        if int(memory.get("importance") or 0) < 4:
+        if int(memory.get("importance") or 0) < PERSON_CARD_MIN_IMPORTANCE:
             return None
 
         metadata = memory.get("metadata")
@@ -98,11 +99,20 @@ class PersonCardBuilder(PersonCardBuilderText):
             return None
 
         display_name = self._display_name(label)
+        attributes: dict[str, Any] = {"relationship_to_user": relationship}
+        summary = f"{relationship.title()}: {display_name}."
+        # The card is the only place a confirmed person save stays visible, so
+        # every attribute the user confirmed has to land on it.
+        birthday = self._clean_text(metadata.get("normalized_date"))
+        if birthday:
+            attributes["birthday"] = birthday
+            summary = f"{summary} Birthday: {birthday}."
+        notes = self._clean_text(metadata.get("notes"))
+        if notes:
+            attributes["notes"] = notes
         metadata_payload = {
             "person_card_version": 1,
-            "attributes": {
-                "relationship_to_user": relationship,
-            },
+            "attributes": attributes,
             "source_memory_ids": [memory_id] if memory_id else [],
             "materialized_from": "long_term_memory",
         }
@@ -112,7 +122,7 @@ class PersonCardBuilder(PersonCardBuilderText):
             "normalized_name": self._normalize_name(label),
             "aliases": self._aliases_for(label, relationship, display_name),
             "relationship": relationship,
-            "summary": f"{relationship.title()}: {display_name}.",
+            "summary": summary,
             "source_conversation_id": memory.get("source_conversation_id"),
             "source_message_id": memory.get("source_message_id"),
             "source_memory_id": memory_id,

@@ -7,7 +7,6 @@ from typing import Optional
 from app.services.chat_turn_observability import ChatTurnObserver, ChatTurnTrace
 from app.services.chat_usage_recorder import ChatUsageRecorder
 from app.services.conversation_pending_action import ConversationPendingActionService
-from app.services.file_service import AttachmentContext
 from app.services.rex_channel import RexBrainChannel
 from app.services.transcript_normalizer import TranscriptNormalizer
 
@@ -155,37 +154,6 @@ def turn_trace_event(intent: str, channel: RexBrainChannel) -> dict:
         "channel": channel.value,
         "loaded_context": {},
     }
-
-
-def messages_with_attachment(
-    messages: list[dict],
-    attachment_context: Optional[AttachmentContext],
-) -> list[dict]:
-    if attachment_context is None or attachment_context.kind != "image":
-        return messages
-    if not attachment_context.data_url:
-        return messages
-
-    updated_messages = [dict(message) for message in messages]
-    for index in range(len(updated_messages) - 1, -1, -1):
-        if updated_messages[index].get("role") != "user":
-            continue
-        content = updated_messages[index].get("content", "")
-        text = content if isinstance(content, str) else str(content)
-        if not text.strip():
-            text = "Please look at this image."
-        updated_messages[index]["content"] = [
-            {"type": "text", "text": text},
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": attachment_context.data_url,
-                    "detail": "auto",
-                },
-            },
-        ]
-        return updated_messages
-    return updated_messages
 
 
 def financial_context_for_prompt(

@@ -1,260 +1,90 @@
-"""Durable write proposal flow — propose, confirm, apply from frozen snapshot."""
+"""Durable write proposal flow — propose, confirm, apply from frozen snapshot.
 
-from datetime import datetime
-from zoneinfo import ZoneInfo
+Grok decides that a turn saves something; the body only proposes and applies.
+Each test scripts the brain action and asserts the propose → confirm → apply
+contract, including that nothing lands in Knows before the user confirms.
+"""
+
+from __future__ import annotations
 
 import pytest
 
-from chat_service_fakes import FakeAIService, FakeMemoryService
+from chat_service_fakes import FakeMemoryService
+from durable_write_brain_scripts import (
+    confirm_proposal,
+    only_proposal,
+    pending_apply_snapshot,
+    scripted_chat_service,
+)
 from memory_persist_assertions import assert_person_card_covers
-from app.services.chat_service import ChatService
-from app.services.durable_write_pending import pending_action_for_durable_write
-from app.services.durable_write_proposal import DurableWriteProposal
-from app.services.file_service import FileService
-from app.services.time_context_service import TimeContextService
+from scripted_brain_fakes import reply_with_action
 
+MOM_BIRTHDAY_CONTENT = "User's mom's birthday is June 18."
 
-def _fixed_time_context_service():
-    return TimeContextService(
-        timezone_name="America/New_York",
-        now_provider=lambda: datetime(
-            2026,
-            6,
-            1,
-            12,
-            0,
-            tzinfo=ZoneInfo("America/New_York"),
-        ),
-    )
-
-
-def _chat_service(memory_service: FakeMemoryService | None = None) -> ChatService:
-    return ChatService(
-        FakeAIService(),
-        FileService(),
-        memory_service or FakeMemoryService(),
-        time_context_service=_fixed_time_context_service(),
-    )
-
-
-@pytest.mark.asyncio
-async def test_simple_memory_requires_confirmation_before_save():
-    memory_service = FakeMemoryService()
-    chat_service = _chat_service(memory_service)
-
-    proposed = await chat_service.send_message("My mom's birthday is on the 18th")
-
-    assert proposed["memory_changes"]["confirmation_required"] == 1
-    assert proposed["memory_changes"]["created"] == 0
-    assert len(proposed["memory_changes"]["write_proposals"]) == 1
-    assert proposed["memory_changes"]["write_proposals"][0]["write_kind"] == "memory"
-    assert "Tap confirm to save" in proposed["response"]
-    assert "nothing is saved until you confirm" in proposed["response"]
-    assert memory_service.long_term_memory == []
-    assert chat_service.ai_service.messages == []
-
-
-@pytest.mark.asyncio
-async def test_simple_memory_confirm_applies_frozen_snapshot():
-    memory_service = FakeMemoryService()
-    chat_service = _chat_service(memory_service)
-
-    proposed = await chat_service.send_message("My mom's birthday is on the 18th")
-    conversation_id = proposed["conversation_id"]
-    proposal = proposed["memory_changes"]["write_proposals"][0]
-
-    confirmed = await chat_service.send_message(
-        "Yes",
-        conversation_id=conversation_id,
-        write_confirmation={
-            "proposal_id": proposal["id"],
-            "edits": {"title": proposal["title"], "body": proposal["body"]},
+SAVE_BRAIN = {
+    "mom's birthday": reply_with_action(
+        "June 18 — good to know.",
+        "save_memory",
+        {"content": MOM_BIRTHDAY_CONTENT, "memory_type": "fact"},
+    ),
+    "mom's name": reply_with_action(
+        "I can save Ariadyna as your mom.",
+        "save_person",
+        {
+            "display_name": "Ariadyna",
+            "relationship": "mom",
+            "birthday": "June 18",
+            "importance": 5,
         },
-    )
+    ),
+}
 
-    assert confirmed["memory_changes"]["created"] == 1
-    assert confirmed["memory_changes"]["confirmation_required"] == 0
-    assert_person_card_covers(
-        memory_service,
-        relationship="mother",
-        attribute_contains={"birthday": "June 18"},
-        flat_content_gone="mom's birthday",
-    )
+
+def _chat_service(memory_service: FakeMemoryService):
+    return scripted_chat_service(SAVE_BRAIN, memory_service)
 
 
 @pytest.mark.asyncio
-async def test_confirm_merges_duplicate_created_between_propose_and_apply():
+async def test_save_memory_action_requires_confirmation_before_save():
     memory_service = FakeMemoryService()
-    chat_service = _chat_service(memory_service)
-
-    proposed = await chat_service.send_message("My mom's birthday is on the 18th")
-    conversation_id = proposed["conversation_id"]
-    proposal = proposed["memory_changes"]["write_proposals"][0]
-
-    # Simulate another save landing before the user confirms.
-    await memory_service.save_long_term_memory(
-        memory_type="fact",
-        content=proposal["body"],
-        importance=3,
-        metadata={"source": "parallel_save"},
-    )
-    assert len(memory_service.long_term_memory) == 1
-
-    confirmed = await chat_service.send_message(
-        "Yes",
-        conversation_id=conversation_id,
-        write_confirmation={
-            "proposal_id": proposal["id"],
-            "edits": {"title": proposal["title"], "body": proposal["body"]},
-        },
-    )
-
-    assert confirmed["memory_changes"]["write_proposals"][0]["status"] == "applied"
-    assert_person_card_covers(
-        memory_service,
-        relationship="mother",
-        attribute_contains={"birthday": "June 18"},
-    )
-
-
-@pytest.mark.asyncio
-async def test_propose_simple_memory_routes_semantic_duplicate_to_update():
-    memory_service = FakeMemoryService()
-    await memory_service.save_long_term_memory(
-        memory_type="fact",
-        content="Mom's birthday is June 18",
-        importance=3,
-        metadata={"fact_kind": "birthday"},
-    )
     chat_service = _chat_service(memory_service)
 
     proposed = await chat_service.send_message("My mom's birthday is June 18")
 
-    assert proposed["memory_changes"]["confirmation_required"] == 1
-    proposal = proposed["memory_changes"]["write_proposals"][0]
-    assert proposal["status"] == "pending"
+    changes = proposed["memory_changes"]
+    assert changes["confirmation_required"] == 1
+    assert changes["created"] == 0
+    proposal = only_proposal(proposed)
     assert proposal["write_kind"] == "memory"
-    pending = memory_service.pending_actions.get(proposed["conversation_id"])
-    raw = (pending.get("context") or {}).get("durable_write_proposal") or {}
-    snapshot_type = (raw.get("apply_snapshot") or {}).get("type")
-    assert snapshot_type == "memory_update"
-    assert len(memory_service.long_term_memory) == 1
+    assert proposal["status"] == "pending"
+    assert "Save to Clarity Knows" in proposal["confirmation_text"]
+    assert memory_service.long_term_memory == []
+    # The brain runs every turn now — the body never infers a save on its own.
+    assert chat_service.ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio
-async def test_explicit_goal_requires_confirmation_before_save():
-    memory_service = FakeMemoryService()
-    chat_service = _chat_service(memory_service)
-
-    proposed = await chat_service.send_message(
-        "Track save $5000 by August as a goal"
-    )
-
-    assert proposed["memory_changes"]["confirmation_required"] == 1
-    assert proposed["memory_changes"]["write_proposals"][0]["write_kind"] == "plan"
-    assert memory_service.plans == []
-
-
-@pytest.mark.asyncio
-async def test_explicit_goal_confirm_creates_plan():
-    memory_service = FakeMemoryService()
-    chat_service = _chat_service(memory_service)
-
-    proposed = await chat_service.send_message(
-        "Track save $5000 by August as a goal"
-    )
-    conversation_id = proposed["conversation_id"]
-    proposal = proposed["memory_changes"]["write_proposals"][0]
-
-    confirmed = await chat_service.send_message(
-        "Yes",
-        conversation_id=conversation_id,
-        write_confirmation={"proposal_id": proposal["id"]},
-    )
-
-    assert confirmed["memory_changes"]["created"] == 1
-    assert len(memory_service.plans) == 1
-
-
-@pytest.mark.asyncio
-async def test_durable_write_reject_does_not_save():
+async def test_confirm_applies_the_frozen_snapshot():
     memory_service = FakeMemoryService()
     chat_service = _chat_service(memory_service)
 
     proposed = await chat_service.send_message("My mom's birthday is June 18")
-    conversation_id = proposed["conversation_id"]
+    snapshot = pending_apply_snapshot(memory_service, proposed["conversation_id"])
+    assert snapshot["type"] == "memory"
 
-    rejected = await chat_service.send_message("No", conversation_id=conversation_id)
+    confirmed = await confirm_proposal(chat_service, proposed)
 
-    assert rejected["memory_changes"]["skipped"] == 1
-    assert memory_service.long_term_memory == []
-
-
-@pytest.mark.asyncio
-async def test_birthday_with_it_is_requires_confirmation():
-    memory_service = FakeMemoryService()
-    chat_service = _chat_service(memory_service)
-
-    proposed = await chat_service.send_message(
-        "Can you remember my mom's birthday it's June 18?"
-    )
-
-    assert proposed["memory_changes"]["confirmation_required"] == 1
-    assert proposed["memory_changes"]["created"] == 0
-    assert memory_service.long_term_memory == []
-
-
-@pytest.mark.asyncio
-async def test_new_save_supersedes_stale_pending_proposal():
-    memory_service = FakeMemoryService()
-    chat_service = _chat_service(memory_service)
-
-    first = await chat_service.send_message("My mom's birthday is June 18")
-    conversation_id = first["conversation_id"]
-
-    second = await chat_service.send_message(
-        "Save that I have an Omen 45L PC",
-        conversation_id=conversation_id,
-    )
-
-    assert second["memory_changes"]["confirmation_required"] == 1
-    proposal = second["memory_changes"]["write_proposals"][0]
-    assert "Omen" in proposal["body"] or "PC" in proposal["body"]
-    assert "mom" not in proposal["body"].lower()
-
-
-@pytest.mark.asyncio
-async def test_yes_after_recall_save_offer_proposes_pc():
-    memory_service = FakeMemoryService()
-    chat_service = _chat_service(memory_service)
-
-    conversation_id = await memory_service.create_conversation()
-    await memory_service.save_message(conversation_id, "user", "Can you save my PC model?")
-    await memory_service.save_message(
-        conversation_id,
-        "assistant",
-        "Sure, what's the model?",
-    )
-    await memory_service.save_message(
-        conversation_id,
-        "user",
-        "Search into our old chats",
-    )
-    await memory_service.save_message(
-        conversation_id,
-        "assistant",
-        (
-            "From our old chats, you mentioned having an Omen 45L PC. "
-            "Want me to save that to Clarity Knows?"
-        ),
-    )
-
-    proposed = await chat_service.send_message("Yes", conversation_id=conversation_id)
-
-    assert proposed["memory_changes"]["confirmation_required"] == 1
-    proposal = proposed["memory_changes"]["write_proposals"][0]
-    assert "Omen" in proposal["body"] or "PC" in proposal["body"]
-    assert memory_service.long_term_memory == []
+    changes = confirmed["memory_changes"]
+    assert changes["created"] == 1
+    assert changes["confirmation_required"] == 0
+    applied = changes["write_proposals"][0]
+    assert applied["status"] == "applied"
+    assert applied["result"][0]["action"] == "direct_saved"
+    assert len(memory_service.long_term_memory) == 1
+    saved = memory_service.long_term_memory[0]
+    assert saved["content"] == snapshot["payload"]["content"]
+    assert saved["memory_type"] == snapshot["payload"]["memory_type"]
+    assert "Saved to Clarity Knows" in confirmed["response"]
 
 
 @pytest.mark.asyncio
@@ -263,177 +93,97 @@ async def test_confirm_with_edits_applies_edited_body():
     chat_service = _chat_service(memory_service)
 
     proposed = await chat_service.send_message("My mom's birthday is June 18")
-    conversation_id = proposed["conversation_id"]
-    proposal = proposed["memory_changes"]["write_proposals"][0]
-
-    confirmed = await chat_service.send_message(
-        "Yes",
-        conversation_id=conversation_id,
-        write_confirmation={
-            "proposal_id": proposal["id"],
-            "edits": {
-                "title": "Mom's birthday",
-                "body": "User's mom's birthday is June 18.",
-            },
+    confirmed = await confirm_proposal(
+        chat_service,
+        proposed,
+        edits={
+            "title": "Mom's birthday",
+            "body": "User's mom's birthday is June 18 (confirmed by user).",
         },
     )
+
+    assert confirmed["memory_changes"]["created"] == 1
+    applied = confirmed["memory_changes"]["write_proposals"][0]
+    assert applied["status"] == "applied"
+    assert applied["result"][0]["action"] == "direct_saved"
+    assert len(memory_service.long_term_memory) == 1
+    assert (
+        memory_service.long_term_memory[0]["content"]
+        == "User's mom's birthday is June 18 (confirmed by user)."
+    )
+
+
+@pytest.mark.asyncio
+async def test_confirm_person_proposal_creates_the_person_card():
+    memory_service = FakeMemoryService()
+    chat_service = _chat_service(memory_service)
+
+    proposed = await chat_service.send_message("Save my mom's name as Ariadyna")
+    proposal = only_proposal(proposed)
+    assert (proposal.get("person_card") or {}).get("relationship") == "mother"
+    assert memory_service.entities == []
+
+    confirmed = await confirm_proposal(chat_service, proposed)
 
     assert confirmed["memory_changes"]["created"] == 1
     assert_person_card_covers(
         memory_service,
         relationship="mother",
-        attribute_contains={"birthday": "June 18"},
-        flat_content_gone="mom's birthday",
+        display_name_contains="Ariadyna",
+        flat_content_gone="Ariadyna",
     )
-    applied = confirmed["memory_changes"]["write_proposals"][0]
-    assert applied["status"] == "applied"
-    assert applied["result"]
-    assert applied["result"][0]["action"] == "direct_saved"
-
-
-async def _seed_recall_pc_save_offer(memory_service: FakeMemoryService) -> str:
-    conversation_id = await memory_service.create_conversation()
-    await memory_service.save_message(conversation_id, "user", "Can you save my PC model?")
-    await memory_service.save_message(
-        conversation_id,
-        "assistant",
-        "Sure, what's the model?",
-    )
-    await memory_service.save_message(
-        conversation_id,
-        "user",
-        "Search into our old chats",
-    )
-    await memory_service.save_message(
-        conversation_id,
-        "assistant",
-        (
-            "From our old chats, you mentioned having an Omen 45L PC. "
-            "Want me to save that to Clarity Knows?"
-        ),
-    )
-    return conversation_id
 
 
 @pytest.mark.asyncio
-async def test_yes_after_recall_supersedes_stale_pending():
+async def test_propose_routes_semantic_duplicate_to_update():
     memory_service = FakeMemoryService()
+    await memory_service.save_long_term_memory(
+        memory_type="fact",
+        content=MOM_BIRTHDAY_CONTENT,
+        importance=3,
+        metadata={"fact_kind": "birthday"},
+    )
     chat_service = _chat_service(memory_service)
 
-    first = await chat_service.send_message("My mom's birthday is June 18")
-    conversation_id = first["conversation_id"]
-    assert first["memory_changes"]["confirmation_required"] == 1
-    assert memory_service.pending_actions
-
-    await memory_service.save_message(
-        conversation_id,
-        "user",
-        "Search into our old chats",
-    )
-    await memory_service.save_message(
-        conversation_id,
-        "assistant",
-        (
-            "From our old chats, you mentioned having an Omen 45L PC. "
-            "Want me to save that to Clarity Knows?"
-        ),
-    )
-
-    proposed = await chat_service.send_message("Yes", conversation_id=conversation_id)
+    proposed = await chat_service.send_message("My mom's birthday is June 18")
 
     assert proposed["memory_changes"]["confirmation_required"] == 1
-    proposal = proposed["memory_changes"]["write_proposals"][0]
-    assert "Omen" in proposal["body"] or "PC" in proposal["body"]
-    assert "mom" not in proposal["body"].lower()
-    assert memory_service.long_term_memory == []
+    proposal = only_proposal(proposed)
+    assert proposal["status"] == "pending"
+    assert proposal["write_kind"] == "memory"
+    snapshot = pending_apply_snapshot(memory_service, proposed["conversation_id"])
+    assert snapshot["type"] == "memory_update"
+    assert snapshot["payload"]["memory_id"] == "memory-1"
+    assert len(memory_service.long_term_memory) == 1
+
+    confirmed = await confirm_proposal(chat_service, proposed)
+
+    assert confirmed["memory_changes"]["updated"] == 1
+    assert confirmed["memory_changes"]["created"] == 0
+    assert len(memory_service.long_term_memory) == 1
 
 
 @pytest.mark.asyncio
-async def test_save_that_after_recall_offer_proposes_card():
-    memory_service = FakeMemoryService()
-    chat_service = _chat_service(memory_service)
-
-    conversation_id = await _seed_recall_pc_save_offer(memory_service)
-
-    proposed = await chat_service.send_message("save that", conversation_id=conversation_id)
-
-    assert proposed["memory_changes"]["confirmation_required"] == 1
-    proposal = proposed["memory_changes"]["write_proposals"][0]
-    assert "Omen" in proposal["body"] or "PC" in proposal["body"]
-    assert memory_service.long_term_memory == []
-
-
-@pytest.mark.asyncio
-async def test_write_confirmation_id_mismatch_returns_failure():
+async def test_confirm_merges_duplicate_created_between_propose_and_apply():
     memory_service = FakeMemoryService()
     chat_service = _chat_service(memory_service)
 
     proposed = await chat_service.send_message("My mom's birthday is June 18")
-    conversation_id = proposed["conversation_id"]
-    current_proposal = DurableWriteProposal(
-        write_kind="memory",
-        title="User has an Omen 45L PC",
-        body="User has an Omen 45L PC.",
-        proposal_id="write-current",
-        apply_snapshot={
-            "type": "memory",
-            "payload": {
-                "memory_type": "fact",
-                "content": "User has an Omen 45L PC.",
-                "importance": 4,
-                "metadata": {},
-            },
-        },
+    proposal = only_proposal(proposed)
+
+    # Another save of the same fact lands before the user confirms.
+    await memory_service.save_long_term_memory(
+        memory_type="fact",
+        content=proposal["body"],
+        importance=3,
+        metadata={"source": "parallel_save"},
     )
-    memory_service.pending_actions[conversation_id] = pending_action_for_durable_write(
-        proposal=current_proposal,
-    ).to_dict()
+    assert len(memory_service.long_term_memory) == 1
 
-    failed = await chat_service.send_message(
-        "Yes",
-        conversation_id=conversation_id,
-        write_confirmation={"proposal_id": "write-stale"},
-    )
+    confirmed = await confirm_proposal(chat_service, proposed)
 
-    assert "no longer current" in failed["response"].lower()
-    assert failed["memory_changes"]["write_proposals"][0]["status"] == "failed"
-    assert memory_service.long_term_memory == []
-    assert conversation_id not in memory_service.pending_actions
-
-
-@pytest.mark.asyncio
-async def test_write_confirmation_empty_dict_does_not_confirm():
-    from app.services.durable_write_service import DurableWriteService
-
-    memory_service = FakeMemoryService()
-    durable = DurableWriteService(memory_service=memory_service)
-    current_proposal = DurableWriteProposal(
-        write_kind="memory",
-        title="Wake early",
-        body="Wake early",
-        proposal_id="write-current",
-        apply_snapshot={
-            "type": "memory",
-            "payload": {
-                "memory_type": "fact",
-                "content": "Wake early",
-                "importance": 3,
-                "metadata": {},
-            },
-        },
-    )
-    conversation_id = "conversation-empty-confirm"
-    pending = pending_action_for_durable_write(proposal=current_proposal).to_dict()
-    memory_service.pending_actions[conversation_id] = pending
-
-    result = await durable.try_handle_pending(
-        "What time is it?",
-        pending_action=pending,
-        conversation_id=conversation_id,
-        user_message={"id": "u1", "content": "What time is it?"},
-        write_confirmation={},
-    )
-
-    assert result is None
-    assert conversation_id in memory_service.pending_actions
-    assert memory_service.long_term_memory == []
+    changes = confirmed["memory_changes"]
+    assert changes["write_proposals"][0]["status"] == "applied"
+    assert changes["created"] == 0
+    assert changes["merged"] + changes["updated"] == 1
+    assert len(memory_service.long_term_memory) == 1

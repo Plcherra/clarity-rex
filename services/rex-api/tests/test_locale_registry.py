@@ -26,8 +26,12 @@ def test_resolve_language_only_portuguese_defaults_to_brazil():
 
 
 def test_resolve_regional_spanish_falls_back_to_language_spec():
-    assert resolve_locale_tag("es-MX").stt_code == "es-US"
-    assert resolve_locale_tag("es-MX").prompt_label == "Spanish"
+    spec = resolve_locale_tag("es-MX")
+    assert spec.tag == "es"
+    assert spec.prompt_label == "Spanish"
+    # Spanish voice runs on Deepgram Aura-2, which takes the bare language code.
+    assert spec.stt_code == "es"
+    assert spec.tts_code == "es"
 
 
 def test_resolve_unknown_locale_falls_back_to_english():
