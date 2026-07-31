@@ -132,7 +132,15 @@ def _category_lines(
     if not spend:
         top = context_list(financial_context, "top_spending_categories")
         if not top:
-            return []
+            if not request.category:
+                return []
+            # Saying nothing here reads as "you spent nothing": the answer then
+            # leans on sampled rows and invents a total out of them.
+            return [
+                "- Clarity sent no category totals this turn, so the period "
+                f"total for \"{request.category}\" is unknown. Say the totals "
+                "are missing instead of adding up the rows below."
+            ]
         summary = "; ".join(
             f"{item.get('category')}={item.get('spent')}"
             for item in top[:_MAX_CATEGORIES]

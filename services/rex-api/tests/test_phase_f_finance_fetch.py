@@ -186,6 +186,24 @@ async def test_merchant_answer_uses_the_period_rollup_not_the_sampled_rows() -> 
 
 
 @pytest.mark.asyncio
+async def test_missing_category_totals_are_named_not_replaced_by_row_math() -> None:
+    """Without totals the answer used to add up sampled rows and call it spend."""
+    brain = FakeGrokBrain("I don't have your coffee total for this month.")
+    context = _size_capped_context()
+    context.pop("category_spend_this_month")
+    await finalize_finance_turn(
+        rex_action("fetch_spend_insight", {"category": "Coffee"}),
+        settings=CARD,
+        context=context,
+        user_text="How much did I spend on coffee this month?",
+        brain=brain,
+    )
+    pack = brain.last_fetch_pack
+    assert "Clarity sent no category totals this turn" in pack
+    assert "instead of adding up the rows below" in pack
+
+
+@pytest.mark.asyncio
 async def test_a_mixed_category_arrives_broken_down_by_merchant() -> None:
     """A category label is the user's bucket, so the answer needs the parts."""
     brain = FakeGrokBrain("Actual coffee shops are about $124 of that.")
