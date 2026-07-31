@@ -166,6 +166,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String chatActionMatchedNothing(String action) {
+    return 'Nothing matched, so the $action change did not touch any records.';
+  }
+
+  @override
   String get commonCancel => 'Cancel';
 
   @override
@@ -1018,7 +1023,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantAutoProposalsModeOffHint =>
-      'Chat only. Rex does not propose saves.';
+      'Rex never offers saves on its own. It still does what you ask.';
 
   @override
   String get assistantAutoProposalsModeTextHint =>

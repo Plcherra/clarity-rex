@@ -9,6 +9,7 @@ from app.services.auto_suggestions_gate import AutoSuggestionsGateResult
 from app.services.capabilities.finance_capability import (
     collect_finance_proposals,
 )
+from app.services.capabilities.finance_mutate_outcome import FinanceMutateOutcome
 from app.services.capabilities.goal_capability import (
     handle_goal_action,
     is_goal_action,
@@ -35,7 +36,7 @@ def dispatch_finance_proposals(
     settings: AssistantProposalSettings,
     clarity_action_parser,
     financial_context: Optional[dict] = None,
-) -> list[dict]:
+) -> FinanceMutateOutcome:
     """Finance changes ride the clarity-actions confirm path, not durable write."""
     return collect_finance_proposals(
         (*gate.allowed_soft_actions, *gate.passthrough_actions),

@@ -89,6 +89,11 @@ _SUCCESS_TERMS = tuple(
     "sauvegardé|enregistré|souviens|"
     "gespeichert|aktualisiert".split("|")
 )
+_COMMITMENT_PATTERN = re.compile(
+    r"\b(i'?ll|i will|i'?m going to|i am going to|let me)\b[^.!?]{0,60}?"
+    r"\b(creat\w*|renam\w*|re-?categoriz\w*|mov\w*|updat\w*|chang\w*|"
+    r"delet\w*|remov\w*|split\w*|merg\w*|set)\b"
+)
 _CONFIRMATION_TERMS = tuple(
     "confirm|approve|should i|want me to|before i|pending|proposal|"
     "would you like me to".split("|")
@@ -127,12 +132,26 @@ def _chat_search_statuses(memory_status: object) -> list[dict]:
         status for status in statuses
         if isinstance(status, dict) and status.get("source") == "chat_search"
     ]
+def response_promises_unconfirmed_action(response: str) -> bool:
+    """A first-person promise to mutate ("I'll rename it", "let me move those").
+
+    Promising a change the body never executed strands the user waiting for
+    something that will never happen, so a promise counts as a claim unless the
+    reply is asking the user to confirm.
+    """
+    return _COMMITMENT_PATTERN.search(_normalized(response)) is not None
+
+
 def response_claims_unconfirmed_success(response: str) -> bool:
     cleaned = response.strip()
     if _is_canonical_truth_fallback(cleaned):
         return False
     text = _normalized(cleaned)
-    return not _contains_any(text, _CONFIRMATION_TERMS) and _contains_any(text, _SUCCESS_TERMS)
+    if _contains_any(text, _CONFIRMATION_TERMS):
+        return False
+    return _contains_any(text, _SUCCESS_TERMS) or response_promises_unconfirmed_action(
+        cleaned
+    )
 
 
 def response_claims_no_memory_result(response: str) -> bool: return _contains_any(_normalized(response), _NO_RESULT_TERMS)
@@ -162,7 +181,7 @@ def request_asks_finance_write(message: str) -> bool:
         return True
     if "categor" in text and _contains_any(
         text,
-        (" move ", " change ", " update ", " set ", " put "),
+        (" move ", " change ", " update ", " set ", " put ", " rename ", " split "),
     ):
         return True
     if re.search(r"\bmove\b.+\bto\b", text):

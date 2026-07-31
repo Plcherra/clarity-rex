@@ -102,6 +102,14 @@
       }
     }
   },
+  "chatActionMatchedNothing": "Nothing matched, so the {action} change did not touch any records.",
+  "@chatActionMatchedNothing": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
   "commonCancel": "Cancel",
   "commonSave": "Save",
   "commonDelete": "Delete",
@@ -564,7 +572,7 @@
   "assistantAutoProposalsModeOff": "Off",
   "assistantAutoProposalsModeText": "Text only",
   "assistantAutoProposalsModeCard": "Confirm card",
-  "assistantAutoProposalsModeOffHint": "Chat only. Rex does not propose saves.",
+  "assistantAutoProposalsModeOffHint": "Rex never offers saves on its own. It still does what you ask.",
   "assistantAutoProposalsModeTextHint": "Rex asks in chat (say yes to save). No confirm card.",
   "assistantAutoProposalsModeCardHint": "Rex shows an editable confirm card before saving.",
   "assistantAutoProposalsTypeThreads": "Open threads (habits & check-ins)",

@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from app.services.action_truth_policy import UNEXECUTED_GOAL_FALLBACK
+from app.services.action_truth_policy import (
+    UNEXECUTED_GOAL_FALLBACK,
+    response_claims_unconfirmed_success,
+)
 from app.services.action_truth_thread_mutation import (
     CONTINUING_THREAD_HELP_FALLBACK,
     UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
@@ -59,12 +62,19 @@ async def finalize_grok_turn(
         )
         if fetched_reply:
             reply_text = fetched_reply
-    finance_proposals = dispatch_finance_proposals(
+    finance = dispatch_finance_proposals(
         gate=gate,
         settings=proposal_settings,
         clarity_action_parser=clarity_action_parser,
         financial_context=financial_context,
     )
+    finance_proposals = finance.proposals
+    if finance.has_blocked_changes:
+        reply_text = _with_blocked_finance_reason(
+            reply_text,
+            finance.blocked_message(),
+            has_proposals=bool(finance_proposals),
+        )
     unsupported = _merge_unsupported(gate.unsupported_hints, fence_unsupported)
     assistant_response = truth_service.truthful_generated_response(
         reply_text,
@@ -129,6 +139,29 @@ async def finalize_grok_turn(
         "response": assistant_response,
         "memory_changes": memory_changes,
     }
+
+
+def _with_blocked_finance_reason(
+    reply_text: str,
+    reason: str,
+    *,
+    has_proposals: bool,
+) -> str:
+    """Say why a finance change is not happening, keeping any real answer.
+
+    When nothing was prepared, a reply that claims or promises the change has
+    to go and the reason takes its place. Otherwise — an answer, a question, or
+    a turn where other changes did become cards — the reason rides alongside so
+    the dropped piece is never silent.
+    """
+    if not reason:
+        return reply_text
+    cleaned = reply_text.strip()
+    if not cleaned:
+        return reason
+    if not has_proposals and response_claims_unconfirmed_success(cleaned):
+        return reason
+    return f"{cleaned} {reason}"
 
 
 def _merge_unsupported(brain_hints: list[str], fence_actions: list[str]) -> list[str]:

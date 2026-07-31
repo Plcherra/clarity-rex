@@ -263,7 +263,7 @@ abstract class AppLocalizations {
   /// No description provided for @authConfirmEmailSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'We sent a confirmation link to {email}. Open it to confirm, then come back here and sign in.'**
+  /// **'We sent a confirmation link to {email}. Open it on this phone — Clarity should reopen and continue automatically.'**
   String authConfirmEmailSubtitle(String email);
 
   /// No description provided for @authConfirmEmailHint.
@@ -373,6 +373,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done. I applied the {action} change to 1 record.'**
   String chatActionDoneMultipleOne(String action);
+
+  /// No description provided for @chatActionMatchedNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matched, so the {action} change did not touch any records.'**
+  String chatActionMatchedNothing(String action);
 
   /// No description provided for @commonCancel.
   ///
@@ -1884,7 +1890,7 @@ abstract class AppLocalizations {
   /// No description provided for @assistantAutoProposalsModeOffHint.
   ///
   /// In en, this message translates to:
-  /// **'Chat only. Rex does not propose saves.'**
+  /// **'Rex never offers saves on its own. It still does what you ask.'**
   String get assistantAutoProposalsModeOffHint;
 
   /// No description provided for @assistantAutoProposalsModeTextHint.

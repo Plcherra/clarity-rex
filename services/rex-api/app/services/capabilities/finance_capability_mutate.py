@@ -8,6 +8,7 @@ applies only after the user confirms.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from app.services.assistant_proposal_settings import (
@@ -26,13 +27,20 @@ from app.services.capabilities.finance_action_payload import (
 from app.services.capabilities.finance_context_lookup import (
     find_budget,
     find_category,
-    matching_transactions,
-    transaction_ids,
     value_or_none,
 )
 
 DEFAULT_CATEGORY_TYPE = "expense"
 DEFAULT_BUDGET_PERIOD = "monthly"
+
+
+@dataclass(frozen=True)
+class _CategoryTarget:
+    """Where rows are going: an existing category, or one the body will create."""
+
+    payload: dict[str, Any]
+    label: str
+    creating: bool
 
 _RISK_BY_ACTION = {
     "update_transaction": "low",
@@ -50,10 +58,15 @@ def finance_mutate_allowed(
     action: BrainAction,
     settings: AssistantProposalSettings,
 ) -> bool:
-    """Off mode surfaces finance changes only on explicit user commands."""
+    """Off silences Rex's own offers, not the change the user asked for.
+
+    Auto Suggestions governs unprompted suggestions. A finance change is still a
+    confirm card the user has to tap, so Off only drops actions Grok flagged as
+    its own idea.
+    """
     if settings.mode != AUTO_PROPOSALS_OFF:
         return True
-    return action.explicit
+    return not action.auto
 
 
 def clarity_proposal_for_action(
@@ -93,35 +106,56 @@ def _categorize(
     fields: CategorizeFields,
     financial_context: Optional[dict],
 ) -> Optional[dict]:
+    target = _category_target(fields, financial_context)
+    if target is None:
+        return None
     ids = list(fields.transaction_ids)
-    if not ids and fields.merchant:
-        ids = transaction_ids(
-            matching_transactions(financial_context, merchant=fields.merchant)
-        )
-    if not ids:
-        return None
-    category = find_category(financial_context, fields.category_name)
-    category_id = fields.category_id or value_or_none(
-        (category or {}).get("id")
-    )
-    if not category_id:
-        return None
-    label = (
-        value_or_none((category or {}).get("name"))
-        or fields.category_name
-        or category_id
-    )
-    scope = f" matching {fields.merchant}" if fields.merchant else ""
-    if fields.force_bulk or len(ids) > 1:
+    if ids and not target.creating and not fields.force_bulk and len(ids) == 1:
         return _proposal(
-            "bulk_update_transaction_category",
-            {"ids": ids, "category_id": category_id},
-            f"Move {len(ids)} transactions{scope} to {label}?",
+            "update_transaction",
+            {"id": ids[0], **target.payload},
+            f"Move 1 transaction to {target.label}?",
         )
-    return _proposal(
-        "update_transaction",
-        {"id": ids[0], "category_id": category_id},
-        f"Move 1 transaction{scope} to {label}?",
+    if ids:
+        payload: dict[str, Any] = {"ids": ids}
+        scope = f"{len(ids)} transaction{'s' if len(ids) > 1 else ''}"
+    elif fields.merchant:
+        # Merchant scope is applied when the user confirms, so rows the context
+        # pack never carried are recategorised too.
+        payload = {"merchant": fields.merchant}
+        scope = f"every transaction matching {fields.merchant}"
+    else:
+        return None
+    payload.update(target.payload)
+    confirmation = (
+        f"Create the {target.label} category and move {scope} into it?"
+        if target.creating
+        else f"Move {scope} to {target.label}?"
+    )
+    return _proposal("bulk_update_transaction_category", payload, confirmation)
+
+
+def _category_target(
+    fields: CategorizeFields,
+    financial_context: Optional[dict],
+) -> Optional[_CategoryTarget]:
+    category = find_category(financial_context, fields.category_name)
+    category_id = fields.category_id or value_or_none((category or {}).get("id"))
+    if category_id:
+        label = (
+            value_or_none((category or {}).get("name"))
+            or fields.category_name
+            or category_id
+        )
+        return _CategoryTarget({"category_id": category_id}, label, creating=False)
+    if not fields.category_name:
+        return None
+    # The body reuses an existing category under the same name, so naming one
+    # Clarity did not send is a create rather than a duplicate.
+    return _CategoryTarget(
+        {"new_category": {"name": fields.category_name, "type": DEFAULT_CATEGORY_TYPE}},
+        fields.category_name,
+        creating=True,
     )
 
 

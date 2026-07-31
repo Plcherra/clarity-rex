@@ -139,23 +139,26 @@ async def test_off_mode_explicit_command_applies_without_confirmation() -> None:
     assert "updated in goals" in result["response"].lower()
 
 
-def test_off_mode_drops_command_shaped_message_without_explicit_flag() -> None:
+def test_off_mode_drops_only_the_change_rex_thought_of_itself() -> None:
+    """Off stops unprompted offers; a change the user asked for still runs."""
     settings = AssistantProposalSettings(mode="off", threads=True)
-    action = BrainAction(
-        name="update_open_thread",
-        payload={
-            "thread_id": "thread-wake",
-            "title": "Wake at 5am",
-        },
-        explicit=False,
+    payload = {"thread_id": "thread-wake", "title": "Wake at 5am"}
+
+    offered = apply_auto_suggestions_gate(
+        [BrainAction(name="update_open_thread", payload=payload, auto=True)],
+        settings,
+        user_message="Mornings have been rough lately",
     )
-    gate = apply_auto_suggestions_gate(
-        [action],
+    assert offered.dropped_soft_actions
+    assert not offered.allowed_soft_actions
+
+    asked_for = apply_auto_suggestions_gate(
+        [BrainAction(name="update_open_thread", payload=payload)],
         settings,
         user_message="Can you update my wake thread to 5am?",
     )
-    assert gate.dropped_soft_actions
-    assert not gate.allowed_soft_actions
+    assert asked_for.allowed_soft_actions
+    assert not asked_for.dropped_soft_actions
 
 
 @pytest.mark.asyncio

@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clarity/features/budgets/domain/budget_models.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_snapshot.dart';
 import 'package:clarity/features/finance/application/assistant_financial_context_builder.dart';
+import 'package:clarity/features/finance/application/assistant_financial_context_records.dart';
 import 'package:clarity/features/finance/application/assistant_financial_context_size.dart';
 import 'package:clarity/features/finance/application/financial_read_model_service.dart';
 
 export 'assistant_financial_context_intent.dart';
 export 'assistant_financial_context_builder.dart';
+export 'assistant_financial_context_records.dart';
 export 'assistant_financial_context_size.dart';
 
 final assistantFinancialContextServiceProvider =
@@ -44,12 +46,12 @@ final class AssistantFinancialContextService {
       final budgetPerformance = model.budgetPerformanceForScope(
         scope,
         periodType: BudgetPeriodType.monthly,
-        periodKey: AssistantFinancialContextBuilder.monthKey(reference),
+        periodKey: monthKey(reference),
       );
       if (budgetPerformance.budgetedCategoryCount == 0) {
         return null;
       }
-      return AssistantFinancialContextBuilder.budgetSummary(budgetPerformance);
+      return budgetSummary(budgetPerformance);
     } on Object {
       return null;
     }

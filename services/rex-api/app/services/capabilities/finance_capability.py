@@ -16,6 +16,11 @@ from app.services.capabilities.finance_capability_mutate import (
     clarity_proposal_for_action,
     finance_mutate_allowed,
 )
+from app.services.capabilities.finance_mutate_outcome import (
+    FINANCE_EDITS_DISABLED,
+    UNRESOLVED_TARGET,
+    FinanceMutateOutcome,
+)
 from app.services.clarity_action_proposal_filter import (
     filter_clarity_action_proposals,
 )
@@ -69,20 +74,37 @@ def collect_finance_proposals(
     settings: AssistantProposalSettings,
     clarity_action_parser,
     financial_context: Optional[dict] = None,
-) -> list[dict]:
-    """Finance proposals allowed by Auto Suggestions and the finance edits gate."""
+) -> FinanceMutateOutcome:
+    """Confirmable finance changes, plus why any requested change fell out."""
     proposals: list[dict] = []
+    reasons: list[str] = []
     for action in actions:
-        proposal = handle_finance_action(
+        if not is_finance_mutate_action(action):
+            continue
+        if not settings.finance_edits_enabled:
+            reasons.append(FINANCE_EDITS_DISABLED)
+            continue
+        if not finance_mutate_allowed(action, settings):
+            # Off mode: Rex's own offer stays unspoken, which is the setting
+            # working, not a change the user asked for going missing.
+            continue
+        raw = clarity_proposal_for_action(
             action,
-            settings=settings,
-            clarity_action_parser=clarity_action_parser,
             financial_context=financial_context,
-            index=len(proposals) + 1,
         )
-        if proposal is not None:
-            proposals.append(proposal)
-    return filter_clarity_action_proposals(
+        if raw is None:
+            reasons.append(UNRESOLVED_TARGET)
+            continue
+        proposals.append(
+            clarity_action_parser.normalize_proposal(raw, index=len(proposals) + 1)
+        )
+    kept = filter_clarity_action_proposals(
         proposals,
         finance_edits_enabled=settings.finance_edits_enabled,
+    )
+    if len(kept) < len(proposals):
+        reasons.append(FINANCE_EDITS_DISABLED)
+    return FinanceMutateOutcome(
+        proposals=kept,
+        blocked_reasons=tuple(reasons),
     )

@@ -1,6 +1,7 @@
 import 'package:clarity/core/models/transaction.dart';
 import 'package:clarity/core/models/account.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
+import 'package:clarity/features/transactions/domain/merchant_normalization.dart';
 import 'package:clarity/features/transactions/domain/spend_categories.dart';
 import 'package:clarity/features/transactions/domain/transaction_resolution.dart';
 import 'package:clarity/rex/data/rex_financial_context_query.dart';
@@ -9,7 +10,9 @@ const int kMaxRexTransactionContextRows = 120;
 const int kMaxRexDrilldownGroups = 18;
 const int kMaxRexDrilldownSampleIds = 8;
 const int kMaxCategorySpendRows = 12;
-const int kMaxMerchantsPerCategorySpend = 3;
+/// Enough merchants for Rex to tell a mixed bucket apart (coffee vs fast food),
+/// while a category row stays small enough to survive payload capping.
+const int kMaxMerchantsPerCategorySpend = 6;
 
 List<TransactionRecord> selectRexTransactionContextRows({
   required List<TransactionRecord> transactions,
@@ -110,6 +113,7 @@ List<TransactionRecord> selectRexMatchedTransactionRows({
 List<Map<String, dynamic>> buildCategorySpendThisMonth({
   required List<ResolvedTransaction> resolvedTransactions,
   required String referenceMonth,
+  Map<String, String> merchantNamesByTransactionId = const {},
   int maxCategories = kMaxCategorySpendRows,
   int maxMerchantsPerCategory = kMaxMerchantsPerCategorySpend,
 }) {
@@ -129,7 +133,10 @@ List<Map<String, dynamic>> buildCategorySpendThisMonth({
       category,
       () => _CategorySpendAccumulator(category: category),
     );
-    accumulator.add(resolved);
+    accumulator.add(
+      resolved,
+      merchantName: merchantNamesByTransactionId[_transactionId(resolved)],
+    );
   }
 
   final sorted = accumulators.values.toList()
@@ -326,19 +333,26 @@ class _CategorySpendAccumulator {
   final String category;
   int transactionCount = 0;
   double spent = 0;
-  final _merchantSpend = <String, double>{};
+  final _merchants = <String, _MerchantSpend>{};
 
-  void add(ResolvedTransaction resolved) {
+  void add(ResolvedTransaction resolved, {String? merchantName}) {
     transactionCount += 1;
     spent += resolved.transaction.amount.abs();
-    final merchant = _merchantLabel(resolved.transaction);
-    _merchantSpend[merchant] =
-        (_merchantSpend[merchant] ?? 0) + resolved.transaction.amount.abs();
+    final named = merchantName?.trim() ?? '';
+    final key = named.isNotEmpty
+        ? named.toLowerCase()
+        : _merchantKey(resolved.transaction);
+    final merchant = _merchants.putIfAbsent(
+      key,
+      () => _MerchantSpend(label: named.isNotEmpty ? named : _merchantLabel(key)),
+    );
+    merchant.spent += resolved.transaction.amount.abs();
+    merchant.transactionCount += 1;
   }
 
   Map<String, dynamic> toContext({required int maxMerchants}) {
-    final merchants = _merchantSpend.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final merchants = _merchants.values.toList()
+      ..sort((a, b) => b.spent.compareTo(a.spent));
     return {
       'category': category,
       'spent': _moneyValue(spent),
@@ -346,18 +360,34 @@ class _CategorySpendAccumulator {
       'top_merchants': [
         for (final merchant in merchants.take(maxMerchants))
           {
-            'merchant': merchant.key,
-            'spent': _moneyValue(merchant.value),
+            'merchant': merchant.label,
+            'spent': _moneyValue(merchant.spent),
+            'transaction_count': merchant.transactionCount,
           },
       ],
     };
   }
 }
 
-String _merchantLabel(Transaction transaction) {
-  final description = transaction.description.trim();
-  if (description.isNotEmpty) {
-    return description;
-  }
-  return 'Unknown merchant';
+class _MerchantSpend {
+  _MerchantSpend({required this.label});
+
+  final String label;
+  double spent = 0;
+  int transactionCount = 0;
+}
+
+/// Group repeat visits together: raw bank descriptions carry card digits and
+/// store codes, so a daily coffee shop would otherwise look like 20 merchants.
+String _merchantKey(Transaction transaction) {
+  final normalized = merchantKeyLowerFromDescription(transaction.description);
+  return normalized.isNotEmpty ? normalized : 'unknown merchant';
+}
+
+String _merchantLabel(String key) {
+  return [
+    for (final word in key.split(' '))
+      if (word.isNotEmpty)
+        '${word[0].toUpperCase()}${word.substring(1)}',
+  ].join(' ');
 }

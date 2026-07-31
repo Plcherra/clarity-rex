@@ -167,7 +167,7 @@ async def test_text_soft_proposes_without_client_cards() -> None:
 
 
 @pytest.mark.asyncio
-async def test_off_soft_desire_without_explicit_does_not_dispatch() -> None:
+async def test_off_soft_desire_rex_offered_itself_does_not_dispatch() -> None:
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
     settings = AssistantProposalSettings(mode="off", threads=True)
@@ -177,7 +177,7 @@ async def test_off_soft_desire_without_explicit_does_not_dispatch() -> None:
             "thread_id": "thread-sleep",
             "title": "Wake at 6am",
         },
-        explicit=False,
+        auto=True,
     )
     gate = apply_auto_suggestions_gate(
         [action],
@@ -341,13 +341,14 @@ async def test_text_yes_applies_pending_without_card() -> None:
 
 @pytest.mark.asyncio
 async def test_finalize_off_soft_stays_chat_only() -> None:
+    """Rex floating its own thread update while chatting stays conversation."""
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
     rex = (
         "Moving from 3am to 6am means an earlier bedtime. "
         "What would you cut the night before?\n\n"
         "```rex_action\n"
-        '{"action":"update_open_thread","payload":{'
+        '{"action":"update_open_thread","auto":true,"payload":{'
         '"thread_id":"thread-sleep",'
         '"title":"Wake at 6am"'
         "}}\n"

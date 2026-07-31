@@ -90,12 +90,18 @@ Unknown action → treat as `unsupported` / `just_chat`. Never invent email send
 
 | Mode | Behavior |
 |------|----------|
-| **Off** | No auto propose/ask; still `just_chat` + fetch answers; **explicit** user commands may still propose/apply with honesty |
+| **Off** | No auto propose/ask; still `just_chat` + fetch answers; work the user asked for still applies with honesty |
 | **Text** | Auto mutate intents → chat ask / say-yes apply; no cards |
 | **Card** | Same intents → `write_proposals` / clarity confirm cards |
 
 Kind toggles (`threads` / `goals` / `memory`) gate auto offers only.  
 **No reply-length mode** — do not reintroduce concise/balanced/detailed.
+
+**Off drops offers, not commands.** The setting is "do not auto suggest", so in
+Off the body drops an action only when Grok marked it `auto:true` (Rex's own
+idea while chatting). Threads, goals, milestones, memory, and finance all follow
+that one rule; kind toggles still decide which capabilities may run, finance
+changes still land as confirm cards, and `finance_edits_enabled` still applies.
 
 ## 5. Fetch pattern (token budget)
 
@@ -209,6 +215,7 @@ Fit: a **milestone** is a step under a **plan/goal** (not an Open Thread). Catal
 - [x] `fetch_spend_insight` / `fetch_account_summary` — passthrough actions → capped fetch pack from the app-provided context → grounded second pass; unreliable context answers with the honest unavailable copy
 - [x] Categorize / categories / budgets per UI truth — Grok names the capability, the body maps it to a `ClarityControlService` action and surfaces a confirm proposal (`finance_edits_enabled` gates all of them)
 - [x] No `create_transaction` if UI cannot — not in the catalog and not dispatchable
+- [x] One confirmed move can create the category it needs and target a merchant, so splitting a mixed bucket beats editing rows by hand (`clarity_category_writes.py`)
 
 **Manual tests** (device smoke — chat and voice, since both share the fetch path):
 

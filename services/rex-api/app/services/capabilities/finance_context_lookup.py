@@ -100,6 +100,44 @@ def transaction_coverage(financial_context: Optional[dict]) -> Optional[str]:
     return "; ".join(parts)
 
 
+def merchant_month_rollups(
+    financial_context: Optional[dict],
+    merchant: Optional[str],
+) -> list[dict]:
+    """Whole-period spend per merchant, from Clarity's own category rollups.
+
+    Transaction rows in the pack are a recent sample, so counting them
+    undercounts a merchant the user visits daily. These rollups cover the full
+    period and stay small enough to always travel with the pack.
+    """
+    wanted = str(merchant or "").strip().lower()
+    if not wanted:
+        return []
+    rollups: list[dict] = []
+    for category in context_list(financial_context, "category_spend_this_month"):
+        entries = category.get("top_merchants")
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            label = str(entry.get("merchant") or entry.get("name") or "").strip()
+            if not label:
+                continue
+            lowered = label.lower()
+            if wanted not in lowered and lowered not in wanted:
+                continue
+            rollups.append(
+                {
+                    "merchant": label,
+                    "category": str(category.get("category") or "").strip(),
+                    "spent": entry.get("spent"),
+                    "transaction_count": entry.get("transaction_count"),
+                }
+            )
+    return rollups
+
+
 def matching_transactions(
     financial_context: Optional[dict],
     *,

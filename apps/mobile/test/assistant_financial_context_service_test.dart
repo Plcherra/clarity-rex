@@ -127,6 +127,68 @@ void main() {
     );
   });
 
+  test('a word from a category label selects that whole category slice', () {
+    final query = extractRexFinancialContextQuery(
+      'How much did I spend on coffee this month?',
+      budgets: const [],
+      categories: [
+        _category(id: 'cat-coffee', name: 'Coffee / Quick Food'),
+        _category(id: 'cat-shopping', name: 'Shopping'),
+      ],
+    );
+
+    expect(query.categoryTerms, contains('Coffee / Quick Food'));
+    expect(query.categoryTerms, isNot(contains('Shopping')));
+  });
+
+  test('category spend groups repeat visits to one merchant', () {
+    final transactions = [
+      for (var day = 1; day <= 4; day += 1)
+        Transaction(
+          date: DateTime(2026, 7, day),
+          description:
+              'CHECKCARD 070$day TST* BOM DOUGH CAMBRIDGE MA XXXXX466$day',
+          amount: -4.14,
+          accountId: 'checking',
+          categoryLabel: 'Coffee / Quick Food',
+          fingerprint: 'bom-$day',
+        ),
+      Transaction(
+        date: DateTime(2026, 7, 5),
+        description: 'WINGSTOP 1234',
+        amount: -23.94,
+        accountId: 'checking',
+        categoryLabel: 'Coffee / Quick Food',
+        fingerprint: 'wingstop',
+      ),
+    ];
+    final resolved = resolveTransactions(
+      transactions,
+      categoryOverrides: const {},
+      categoryDisplayRenamesLower: const {},
+      accountsById: const {},
+      allTransactions: transactions,
+    );
+
+    final spend = buildCategorySpendThisMonth(
+      resolvedTransactions: resolved,
+      referenceMonth: '2026-07',
+      merchantNamesByTransactionId: {
+        for (var day = 1; day <= 4; day += 1) 'bom-$day': 'Bom Dough',
+      },
+    );
+
+    final coffee = spend.singleWhere(
+      (item) => item['category'] == 'Coffee / Quick Food',
+    );
+    final merchants = coffee['top_merchants'] as List;
+    final bomDough = merchants.singleWhere(
+      (item) => (item as Map)['merchant'] == 'Bom Dough',
+    ) as Map;
+    expect(bomDough['transaction_count'], 4);
+    expect(bomDough['spent'], closeTo(16.56, 0.01));
+  });
+
   test('Rex transaction context stays bounded and keeps newest rows', () {
     final records = [
       for (var i = 0; i < 150; i += 1)

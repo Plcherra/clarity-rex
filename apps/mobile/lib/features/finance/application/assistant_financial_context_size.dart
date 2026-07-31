@@ -12,6 +12,9 @@ Map<String, dynamic> capAssistantFinancialContextSize(
     return context;
   }
 
+  // Order matters: period totals (`category_spend_this_month`) and the rows the
+  // question is about (`matched_transactions`) are what Rex answers from, so
+  // background recent rows go first and the aggregates stay to the end.
   var capped = Map<String, dynamic>.from(context);
   capped = _dropKey(capped, 'transaction_slices');
   if (_encodedLength(capped) <= maxChars) {
@@ -19,24 +22,26 @@ Map<String, dynamic> capAssistantFinancialContextSize(
   }
 
   capped = _shrinkList(capped, 'transactions', keep: 40);
-  capped = _shrinkList(capped, 'matched_transactions', keep: 20);
   if (_encodedLength(capped) <= maxChars) {
-    return _markTruncated(capped, reason: 'shrunk_transaction_lists');
-  }
-
-  capped = _dropKey(capped, 'category_spend_this_month');
-  capped = _shrinkList(capped, 'transactions', keep: 20);
-  capped = _shrinkList(capped, 'matched_transactions', keep: 10);
-  if (_encodedLength(capped) <= maxChars) {
-    return _markTruncated(capped, reason: 'dropped_category_spend');
+    return _markTruncated(capped, reason: 'shrunk_recent_transactions');
   }
 
   capped = _dropKey(capped, 'statement_imports');
   capped = _dropKey(capped, 'biggest_month_over_month_increases');
+  capped = _shrinkList(capped, 'transactions', keep: 10);
+  if (_encodedLength(capped) <= maxChars) {
+    return _markTruncated(capped, reason: 'dropped_secondary_sections');
+  }
+
   capped = _shrinkList(capped, 'categories', keep: 30);
   capped = _shrinkList(capped, 'budgets', keep: 20);
-  capped = _shrinkList(capped, 'transactions', keep: 10);
-  capped = _shrinkList(capped, 'matched_transactions', keep: 5);
+  capped = _shrinkList(capped, 'matched_transactions', keep: 40);
+  if (_encodedLength(capped) <= maxChars) {
+    return _markTruncated(capped, reason: 'shrunk_matched_transactions');
+  }
+
+  capped = _shrinkList(capped, 'transactions', keep: 0);
+  capped = _shrinkList(capped, 'matched_transactions', keep: 10);
   if (_encodedLength(capped) <= maxChars) {
     return _markTruncated(capped, reason: 'aggressive_shrink');
   }
@@ -66,7 +71,7 @@ Map<String, dynamic> capAssistantFinancialContextSize(
         'default_transaction_limit': 0,
         'default_selection': 'summary_only_size_capped',
         'drilldown_policy':
-            'Financial context was truncated to fit the API size limit. Use accounts, cash_flow, and budget only; do not invent transaction-level detail.',
+            'Financial context was truncated to fit the API size limit. Use accounts, cash_flow, budget, and the category totals; do not invent transaction-level detail.',
         'supported_drilldown_filters': const <String>[],
       },
       'available_controls': capped['available_controls'],
@@ -75,6 +80,8 @@ Map<String, dynamic> capAssistantFinancialContextSize(
       'financial_data_sources': capped['financial_data_sources'],
       'accounts': capped['accounts'] ?? const <Map<String, dynamic>>[],
       'top_spending_categories': capped['top_spending_categories'],
+      if (capped['category_spend_this_month'] != null)
+        'category_spend_this_month': capped['category_spend_this_month'],
       'budget': capped['budget'],
       'transactions': const <Map<String, dynamic>>[],
     },

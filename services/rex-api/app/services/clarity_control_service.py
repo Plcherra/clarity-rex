@@ -5,7 +5,20 @@ from urllib.parse import quote, urlencode
 import httpx
 
 from app.config import Settings, get_settings
+from app.services.clarity_category_writes import (
+    move_transactions_to_category,
+    renamed_category_fields,
+    resolve_or_create_category,
+)
+from app.services.clarity_control_errors import ClarityControlServiceError
 from app.services.http_client import request_with_retries
+
+__all__ = [
+    "ClarityControlService",
+    "ClarityControlServiceError",
+    "MUTATING_ACTIONS",
+    "PROTECTED_FIELDS",
+]
 
 PROTECTED_FIELDS = {"id", "user_id", "created_at", "updated_at"}
 MUTATING_ACTIONS = {
@@ -24,13 +37,6 @@ MUTATING_ACTIONS = {
     "update_budget",
     "delete_budget",
 }
-
-
-class ClarityControlServiceError(Exception):
-    def __init__(self, detail: str, status_code: int = 400) -> None:
-        super().__init__(detail)
-        self.detail = detail
-        self.status_code = status_code
 
 
 class ClarityControlService:
@@ -116,26 +122,7 @@ class ClarityControlService:
         self,
         payload: dict[str, Any],
     ) -> list[dict[str, Any]]:
-        ids = payload.get("ids")
-        category_id = str(payload.get("category_id") or "").strip()
-        if not isinstance(ids, list) or not ids or not category_id:
-            raise ClarityControlServiceError(
-                "ids and category_id are required for bulk category updates.",
-                400,
-            )
-        cleaned_ids = [str(value).strip() for value in ids if str(value).strip()]
-        if not cleaned_ids:
-            raise ClarityControlServiceError("At least one transaction id is required.")
-        return await self._request(
-            "PATCH",
-            "transactions",
-            body={"category_id": category_id},
-            query={
-                "id": f"in.({','.join(cleaned_ids)})",
-                "select": "*",
-            },
-            prefer="return=representation",
-        )
+        return await move_transactions_to_category(self._request, payload)
 
     async def _execute_delete_import_batch(
         self,
@@ -195,17 +182,7 @@ class ClarityControlService:
         self,
         payload: dict[str, Any],
     ) -> list[dict[str, Any]]:
-        body = self._required_payload(
-            payload,
-            required=("name", "type"),
-            optional=("color", "icon"),
-        )
-        return await self._request(
-            "POST",
-            "categories",
-            body=body,
-            prefer="return=representation",
-        )
+        return await resolve_or_create_category(self._request, payload)
 
     async def _execute_update_category(
         self,
@@ -213,6 +190,8 @@ class ClarityControlService:
     ) -> list[dict[str, Any]]:
         record_id = self._required_id(payload)
         body = self._write_payload(payload, allowed=("name", "type", "color", "icon"))
+        if "name" in body:
+            body.update(renamed_category_fields(body["name"]))
         return await self._patch_by_id("categories", record_id, body)
 
     async def _execute_delete_category(

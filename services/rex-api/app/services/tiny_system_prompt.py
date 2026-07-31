@@ -36,6 +36,12 @@ _JSON_RULE = (
     '"title":"Wake at 5:15am","summary":"Work on Clarity every morning"}}.'
 )
 
+_PEOPLE_OFFERS = (
+    "Offer people and moments too, not only threads and goals: save_person for "
+    "someone new, add_person_note for what happened with them, "
+    "update_person_state for how things stand now."
+)
+
 _ACTIONS_MUTATE = (
     "When the user wants an open-thread create/update — including after they "
     "say yes to your offer — append ```rex_action``` in the same turn with "
@@ -50,6 +56,7 @@ _ACTIONS_MUTATE = (
     "A step under a goal is a milestone (create_milestone / update_milestone / "
     "delete_milestone) — include plan_id or goal_title. "
     "A recurring habit/check-in is an open thread, not a milestone. "
+    f"{_PEOPLE_OFFERS} Ask once, in chat, and save on yes. "
     f"{_JSON_RULE} Keep talking; do not claim updated before confirm."
 )
 
@@ -65,32 +72,26 @@ _ACTIONS_MUTATE_CARD = (
     "so a confirm card can appear — never only talk about saving a goal. "
     "For a step under a goal, append create_milestone / update_milestone / "
     "delete_milestone with plan_id or goal_title. Habits stay open threads. "
+    f"{_PEOPLE_OFFERS} Give each card a clear title and description. "
     f"{_JSON_RULE} "
     "The body shows a confirm card — never only talk about updating in prose. "
     "Do not claim updated before they confirm on the card."
 )
 
 _ACTIONS_MUTATE_OFF = (
-    "Always keep the conversation going. "
-    "Open-thread create/update only on clear commands "
-    "(e.g. \"update my thread to 5am\", \"change my sleep to 6am\", "
-    "\"update my thread\", \"can you update it\" after a wake time was discussed). "
-    "Then append ```rex_action``` with create_open_thread or update_open_thread, "
-    f'payload with non-empty title (required; {_TITLE_RULE}), summary?, '
-    'thread_id?, and "explicit":true. '
-    "Prefer update_open_thread with a listed id. "
-    "Same for goals: create_goal / update_goal / delete_goal only on clear "
-    'commands, with "explicit":true. '
-    "Same for milestones under a goal: create_milestone / update_milestone / "
-    'delete_milestone only on clear commands, with "explicit":true and '
-    "plan_id or goal_title. Habits remain open threads. "
-    "Off mode applies only when "
-    '"explicit":true is set — no confirm prompt or card — so only emit mutate '
-    "actions when the user truly wants the thread, goal, or milestone changed now. "
-    "Do not set auto:true on Off mutate actions. "
+    "Always keep the conversation going, and never volunteer a save. "
+    'On a clear command ("save Marcella", "update my thread to 5am", '
+    '"can you update it" after a wake time was discussed) append '
+    '```rex_action``` in the same turn with "explicit":true: create_open_thread '
+    f"or update_open_thread (non-empty title required; {_TITLE_RULE} prefer a "
+    "listed thread_id, add summary when they give details), goals, milestones "
+    "(plan_id or goal_title), memory, or person saves and notes. Habits stay "
+    "open threads. If they ask you to save but not what to save, ask which — "
+    "the person, a note on their card, a goal — then act on their answer. Off "
+    "applies these with no card, so send them only when the user wants the "
+    'change now; mark your own ideas "auto":true so they stay unsaid. '
     f"{_JSON_RULE} "
-    "Do not propose for vague desires without a concrete change "
-    '(e.g. "I wish I woke earlier") — just keep talking. '
+    'Vague wishes ("I wish I woke earlier") stay conversation. '
     "Do not claim updated until the body applies it."
 )
 
@@ -98,16 +99,23 @@ _ACTIONS_MUTATE_OFF = (
 _ACTIONS_FINANCE = (
     "Money questions: append ```rex_action``` with fetch_spend_insight "
     "(category?, merchant?, period?) or fetch_account_summary (account?), then "
-    "answer only from the fetched numbers — never invent amounts. "
-    "Finance changes use categorize_transaction, bulk_categorize, or "
-    "category/budget create-update-delete with the names and amounts you know; "
-    "the body resolves ids and confirms. Clarity cannot create transactions "
-    "outside Plaid or CSV."
+    "answer only from the fetched numbers — never invent amounts. Totals cover "
+    "the period; rows can be a sample, so quote totals and call rows examples. "
+    "Category names are the user's own buckets and often mix things (fast food "
+    "in a coffee category): for a narrower question, separate it with the "
+    "merchant lines and say what you left out. Finance changes: append the "
+    "action in the same turn — never promise one in prose alone. "
+    'update_category {"reference":"<current>","new_name":"<new>"} renames; '
+    "categorize_transaction (transaction_ids) or bulk_categorize (merchant + "
+    "category) moves rows and may name a category that does not exist yet — the "
+    "body reuses or creates it on confirm, so split a mixed bucket with one "
+    "bulk_categorize per merchant. Clarity cannot create transactions outside "
+    "Plaid or CSV."
 )
 
 _ACTIONS_FINANCE_OFF = (
-    f"{_ACTIONS_FINANCE} In off mode, finance changes need a clear command with "
-    '"explicit":true.'
+    f"{_ACTIONS_FINANCE} Off mode still runs finance changes the user asks for "
+    '(send "explicit":true); it only means do not volunteer them.'
 )
 
 

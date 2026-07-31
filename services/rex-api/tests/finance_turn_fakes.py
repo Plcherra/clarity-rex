@@ -188,10 +188,18 @@ def financial_context(**overrides) -> dict:
     return context
 
 
-def rex_action(action: str, payload: dict, *, explicit: bool = False) -> str:
+def rex_action(
+    action: str,
+    payload: dict,
+    *,
+    explicit: bool = False,
+    auto: bool = False,
+) -> str:
     body: dict = {"action": action, "payload": payload}
     if explicit:
         body["explicit"] = True
+    if auto:
+        body["auto"] = True
     return "```rex_action\n" + json.dumps(body) + "\n```"
 
 

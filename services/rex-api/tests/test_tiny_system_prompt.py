@@ -36,6 +36,21 @@ def test_tiny_system_text_requires_title_on_yes() -> None:
     assert "say yes to your offer" in prompt.lower()
 
 
+def test_text_and_card_offer_people_and_moments_not_only_threads() -> None:
+    """A hard day with someone is a person note, and the offer must reach it."""
+    for mode in ("text", "card"):
+        prompt = build_tiny_system_prompt(AssistantProposalSettings(mode=mode))
+        assert "save_person" in prompt, mode
+        assert "add_person_note" in prompt, mode
+        assert "update_person_state" in prompt, mode
+
+
+def test_off_asks_which_thing_to_save_before_guessing() -> None:
+    prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))
+    assert "ask which" in prompt.lower()
+    assert "a note on their card" in prompt.lower()
+
+
 def test_tiny_system_off_includes_explicit_mutate_only() -> None:
     prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))
     assert "Auto Suggestions: off" in prompt
@@ -46,7 +61,7 @@ def test_tiny_system_off_includes_explicit_mutate_only() -> None:
     assert '"explicit":true' in prompt or '"explicit": true' in prompt
     assert "can you update it" in prompt.lower()
     assert "short habit label" in prompt.lower()
-    assert "do not set auto:true" in prompt.lower()
+    assert "never volunteer a save" in prompt.lower()
     assert "When the user wants an open-thread" not in prompt
     assert "coach" not in prompt.lower()
 

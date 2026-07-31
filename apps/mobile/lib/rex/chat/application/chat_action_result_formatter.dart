@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clarity/rex/memory/data/memory_labels.dart';
@@ -20,7 +19,9 @@ String actionResultMessage(
 ) {
   final label = action.memoryRecordLabel;
   if (result.isEmpty) {
-    return l10n.chatActionDoneSingle(label);
+    // Applied rows come back from every control action, so an empty result
+    // means the filter matched nothing — saying "done" would be a false claim.
+    return l10n.chatActionMatchedNothing(label);
   }
   if (result.length == 1) {
     final merchant = result.single['merchant'];

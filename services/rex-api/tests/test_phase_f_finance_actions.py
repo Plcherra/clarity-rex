@@ -35,12 +35,15 @@ async def test_categorize_transaction_resolves_names_into_a_proposal() -> None:
     proposal = proposals[0]
     assert proposal["action"] == "bulk_update_transaction_category"
     assert proposal["action"] in MUTATING_ACTIONS
+    # Merchant scope, not the sampled ids: the user's older Starbucks rows are
+    # never in the context pack and still need to move.
     assert proposal["payload"] == {
-        "ids": ["tx-1", "tx-2"],
+        "merchant": "Starbucks",
         "category_id": "cat-coffee",
     }
     assert proposal["status"] == "pending"
     assert "Coffee" in proposal["confirmation_text"]
+    assert "every transaction matching Starbucks" in proposal["confirmation_text"]
 
 
 @pytest.mark.asyncio
@@ -76,18 +79,44 @@ async def test_bulk_categorize_keeps_bulk_action_for_one_row() -> None:
 
 
 @pytest.mark.asyncio
-async def test_categorize_without_resolvable_records_makes_no_proposal() -> None:
+async def test_unresolvable_target_is_spoken_instead_of_dropped() -> None:
     finalized = await finalize_finance_turn(
         "I can look at that.\n"
+        + rex_action("categorize_transaction", {"category": "Coffee"}),
+        settings=CARD,
+        context=financial_context(),
+        user_text="Change that charge's category",
+    )
+    assert clarity_proposals(finalized) == []
+    assert "couldn't match that" in finalized["response"]
+    assert "nothing there is prepared" in finalized["response"]
+
+
+@pytest.mark.asyncio
+async def test_moving_rows_into_a_new_category_is_one_confirmable_change() -> None:
+    """Splitting a mixed bucket must not cost the user a second turn."""
+    finalized = await finalize_finance_turn(
+        "Here's the split.\n"
         + rex_action(
-            "categorize_transaction",
-            {"merchant": "Unknown Diner", "category": "Coffee"},
+            "bulk_categorize",
+            {"merchant": "Wingstop", "category": "Fast Food"},
         ),
         settings=CARD,
         context=financial_context(),
-        user_text="Change the diner charge category",
+        user_text="Split coffee and fast food into separate categories",
     )
-    assert clarity_proposals(finalized) == []
+    proposal = clarity_proposals(finalized)[0]
+    assert proposal["action"] == "bulk_update_transaction_category"
+    assert proposal["payload"] == {
+        "merchant": "Wingstop",
+        "new_category": {"name": "Fast Food", "type": "expense"},
+    }
+    assert (
+        proposal["confirmation_text"]
+        == "Create the Fast Food category and move every transaction matching "
+        "Wingstop into it?"
+    )
+    assert "Here's the split." in finalized["response"]
 
 
 @pytest.mark.asyncio
@@ -202,9 +231,10 @@ async def test_delete_budget_resolves_by_name() -> None:
 
 
 @pytest.mark.asyncio
-async def test_finance_edits_disabled_strips_every_finance_proposal() -> None:
+async def test_finance_edits_disabled_says_the_setting_is_off() -> None:
     finalized = await finalize_finance_turn(
-        rex_action(
+        "Moving those now.\n"
+        + rex_action(
             "categorize_transaction",
             {"merchant": "Starbucks", "category": "Coffee"},
         ),
@@ -213,33 +243,48 @@ async def test_finance_edits_disabled_strips_every_finance_proposal() -> None:
         user_text="Recategorize my Starbucks charges as coffee",
     )
     assert clarity_proposals(finalized) == []
+    assert "finance edits are turned off" in finalized["response"]
+    assert "Companion settings" in finalized["response"]
 
 
 @pytest.mark.asyncio
-async def test_off_mode_needs_an_explicit_finance_command() -> None:
-    auto_turn = await finalize_finance_turn(
-        "You could group those.\n"
-        + rex_action(
-            "categorize_transaction",
-            {"merchant": "Starbucks", "category": "Coffee"},
-        ),
-        settings=AssistantProposalSettings(mode="off"),
-        context=financial_context(),
-        user_text="My coffee spending feels messy",
-    )
-    assert clarity_proposals(auto_turn) == []
-
-    explicit_turn = await finalize_finance_turn(
+async def test_off_mode_still_prepares_a_change_the_user_asked_for() -> None:
+    """Off means Rex stops offering, not that it stops doing what it is told."""
+    for action in (
         rex_action(
             "categorize_transaction",
             {"merchant": "Starbucks", "category": "Coffee"},
             explicit=True,
         ),
+        rex_action(
+            "categorize_transaction",
+            {"merchant": "Starbucks", "category": "Coffee"},
+        ),
+    ):
+        finalized = await finalize_finance_turn(
+            action,
+            settings=AssistantProposalSettings(mode="off"),
+            context=financial_context(),
+            user_text="Recategorize my Starbucks charges as coffee",
+        )
+        assert len(clarity_proposals(finalized)) == 1
+
+
+@pytest.mark.asyncio
+async def test_off_mode_keeps_rex_own_finance_offer_to_itself() -> None:
+    finalized = await finalize_finance_turn(
+        "You could group those.\n"
+        + rex_action(
+            "categorize_transaction",
+            {"merchant": "Starbucks", "category": "Coffee"},
+            auto=True,
+        ),
         settings=AssistantProposalSettings(mode="off"),
         context=financial_context(),
-        user_text="Recategorize my Starbucks charges as coffee",
+        user_text="My coffee spending feels messy",
     )
-    assert len(clarity_proposals(explicit_turn)) == 1
+    assert clarity_proposals(finalized) == []
+    assert "You could group those." in finalized["response"]
 
 
 @pytest.mark.asyncio
@@ -266,6 +311,25 @@ async def test_truth_blocks_recategorized_claim_without_a_proposal() -> None:
     lowered = finalized["response"].lower()
     assert "i recategorized" not in lowered
     assert "confirmed change" in lowered or "confirmation" in lowered
+
+
+@pytest.mark.asyncio
+async def test_truth_blocks_a_promised_change_with_no_action_behind_it() -> None:
+    """Grok promising work it never requested left the user waiting forever."""
+    finalized = await finalize_finance_turn(
+        "Sure, I'll create dedicated categories for coffee and fast food, then "
+        "re-categorize the mismatched transactions accordingly.",
+        settings=CARD,
+        context=financial_context(),
+        user_text=(
+            "Can you change this category name from coffee / quick food? Coffee "
+            "transactions stay coffee and the rest become fast food"
+        ),
+    )
+    assert clarity_proposals(finalized) == []
+    lowered = finalized["response"].lower()
+    assert "i'll create" not in lowered
+    assert "re-categorize the mismatched" not in lowered
 
 
 @pytest.mark.asyncio
@@ -308,6 +372,9 @@ def test_tiny_system_prompt_names_finance_fetch_and_change_rules() -> None:
     assert "categorize_transaction" in prompt
     assert "never invent amounts" in prompt.lower()
     assert "cannot create transactions" in prompt.lower()
+    assert "update_category" in prompt
+    assert "never promise one in prose alone" in prompt.lower()
+    assert "user's own buckets" in prompt.lower()
 
     off_prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))
-    assert "finance changes need a clear command" in off_prompt.lower()
+    assert "still runs finance changes the user asks for" in off_prompt.lower()

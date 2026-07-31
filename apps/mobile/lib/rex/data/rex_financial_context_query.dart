@@ -108,21 +108,20 @@ RexFinancialContextQuery extractRexFinancialContextQuery(
     }
   }
 
+  final messageTerms = _significantFinanceTerms(normalized).toSet();
   for (final category in categories) {
     final name = category.name.trim();
     if (name.length < 3) {
       continue;
     }
     final normalizedName = _normalizeFinanceQueryText(name);
-    if (normalized.contains(normalizedName)) {
+    if (normalized.contains(normalizedName) ||
+        _categoryNameSharesTerm(normalizedName, messageTerms)) {
       categoryTerms.add(name);
     }
   }
 
-  final merchantTerms = <String>{};
-  for (final term in _significantFinanceTerms(normalized)) {
-    merchantTerms.add(term);
-  }
+  final merchantTerms = <String>{...messageTerms};
 
   for (final term in categoryTerms) {
     merchantTerms.remove(_normalizeFinanceQueryText(term));
@@ -174,6 +173,23 @@ bool rexTransactionMatchesQuery({
 
 String _normalizeFinanceQueryText(String value) {
   return value.toLowerCase().split(RegExp(r'\s+')).join(' ').trim();
+}
+
+/// True when the question names a word from the category label — "coffee" for
+/// "Coffee / Quick Food" — so the slice ships every row in that category.
+bool _categoryNameSharesTerm(String normalizedName, Set<String> messageTerms) {
+  if (messageTerms.isEmpty) {
+    return false;
+  }
+  for (final token in normalizedName.split(RegExp(r'[^a-z0-9]+'))) {
+    if (token.length < 3 || _financeQueryStopWords.contains(token)) {
+      continue;
+    }
+    if (messageTerms.contains(token)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 List<String> _significantFinanceTerms(String normalizedMessage) {

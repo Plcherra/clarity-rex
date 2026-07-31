@@ -30,7 +30,8 @@ async def test_fetch_spend_insight_answers_from_fetched_numbers() -> None:
     assert len(brain.calls) == 1
     pack = brain.last_fetch_pack
     assert "fetch_spend_insight" in pack
-    assert "Category Coffee: spent=42.5" in pack
+    assert "Category Coffee for the whole period" in pack
+    assert "spent=42.5" in pack
     assert "only source for numbers" in pack
     assert "estimating" in pack
     assert clarity_proposals(finalized) == []
@@ -47,7 +48,7 @@ async def test_fetch_spend_insight_by_merchant_lists_matching_rows() -> None:
         brain=brain,
     )
     pack = brain.last_fetch_pack
-    assert 'Matching transactions for "Starbucks": count=2' in pack
+    assert 'Every row matching "Starbucks" this period: count=2' in pack
     assert "total=11.75" in pack
     assert "Whole Foods" not in pack
 
@@ -129,9 +130,97 @@ async def test_size_capped_pack_still_answers_and_declares_what_is_missing() -> 
     )
     assert finalized["response"] == "Coffee is at $42.50 so far this month."
     pack = brain.last_fetch_pack
-    assert "Category Coffee: spent=42.5" in pack
+    assert "Category Coffee for the whole period" in pack
+    assert "spent=42.5" in pack
     assert "Transaction detail coverage: 40 of 312 transactions this period" in pack
     assert "shrunk_transaction_lists" in pack
+
+
+@pytest.mark.asyncio
+async def test_merchant_answer_uses_the_period_rollup_not_the_sampled_rows() -> None:
+    """A daily coffee habit must not shrink to the rows that fit in the pack."""
+    brain = FakeGrokBrain("Bom Dough is $118.60 across 29 visits this month.")
+    await finalize_finance_turn(
+        rex_action("fetch_spend_insight", {"merchant": "Bom Dough"}),
+        settings=CARD,
+        context=_size_capped_context(
+            category_spend_this_month=[
+                {
+                    "category": "Coffee / Quick Food",
+                    "spent": 214.8,
+                    "transaction_count": 41,
+                    "top_merchants": [
+                        {
+                            "merchant": "Bom Dough",
+                            "spent": 118.6,
+                            "transaction_count": 29,
+                        },
+                        {
+                            "merchant": "Wingstop",
+                            "spent": 23.94,
+                            "transaction_count": 1,
+                        },
+                    ],
+                }
+            ],
+            transactions=[
+                {
+                    "id": "tx-late",
+                    "date": "2026-07-30",
+                    "account_id": "acct-1",
+                    "merchant": "Bom Dough",
+                    "amount": 2.54,
+                    "category_name": "Coffee / Quick Food",
+                }
+            ],
+        ),
+        user_text="How much at Bom Dough this month?",
+        brain=brain,
+    )
+    pack = brain.last_fetch_pack
+    assert "Merchant totals for the whole period" in pack
+    assert "Bom Dough (Coffee / Quick Food): spent=118.6; transactions=29" in pack
+    # The one row that survived trimming must read as an example, not a total.
+    assert "NOT every transaction in the period" in pack
+    assert 'Every row matching "Bom Dough"' not in pack
+
+
+@pytest.mark.asyncio
+async def test_a_mixed_category_arrives_broken_down_by_merchant() -> None:
+    """A category label is the user's bucket, so the answer needs the parts."""
+    brain = FakeGrokBrain("Actual coffee shops are about $124 of that.")
+    await finalize_finance_turn(
+        rex_action("fetch_spend_insight", {"category": "Coffee"}),
+        settings=CARD,
+        context=financial_context(
+            category_spend_this_month=[
+                {
+                    "category": "Coffee / Quick Food",
+                    "spent": 214.8,
+                    "transaction_count": 41,
+                    "top_merchants": [
+                        {
+                            "merchant": "Bom Dough",
+                            "spent": 118.6,
+                            "transaction_count": 29,
+                        },
+                        {"merchant": "Wingstop", "spent": 23.94, "transaction_count": 1},
+                        {
+                            "merchant": "Chick-Fil-A",
+                            "spent": 18.42,
+                            "transaction_count": 2,
+                        },
+                    ],
+                }
+            ]
+        ),
+        user_text="How much did I spend on coffee?",
+        brain=brain,
+    )
+    pack = brain.last_fetch_pack
+    assert "merchants inside it: Bom Dough 118.6 (29 tx)" in pack
+    assert "Wingstop 23.94 (1 tx)" in pack
+    assert "Chick-Fil-A 18.42 (2 tx)" in pack
 
 
 @pytest.mark.asyncio

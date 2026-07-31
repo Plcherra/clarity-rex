@@ -113,8 +113,11 @@ class BrainAction:
     name: str
     payload: dict[str, Any] = field(default_factory=dict)
     capability_hint: str = ""
+    # Grok says the user asked for this now.
     explicit: bool = False
-    auto: bool = True
+    # Grok says this is its own offer. Only set when the brain flags it, so an
+    # unmarked action counts as work the user asked for, not a suggestion.
+    auto: bool = False
 
     @property
     def kind(self) -> Optional[str]:
@@ -192,16 +195,10 @@ def _normalize_action(item: dict[str, Any]) -> Optional[BrainAction]:
             capability_hint=hint,
         )
     # explicit:true always wins — Grok often emits both auto and explicit.
-    marked_explicit = item.get("explicit") is True or payload.get("explicit") is True
-    if marked_explicit:
-        explicit = True
-        auto = False
-    elif "auto" in item:
-        auto = bool(item.get("auto"))
-        explicit = not auto
-    else:
-        explicit = False
-        auto = True
+    explicit = item.get("explicit") is True or payload.get("explicit") is True
+    auto = not explicit and (
+        item.get("auto") is True or payload.get("auto") is True
+    )
     return BrainAction(
         name=name,
         payload=payload,

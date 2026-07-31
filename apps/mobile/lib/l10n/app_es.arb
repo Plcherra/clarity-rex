@@ -604,6 +604,14 @@
       }
     }
   },
+  "chatActionMatchedNothing": "No coincidió nada, así que el cambio {action} no modificó ningún registro.",
+  "@chatActionMatchedNothing": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
   "chatActionDoneSingle": "Hecho. Apliqué el cambio {action}.",
   "@chatActionDoneSingle": {
     "placeholders": {
@@ -1263,7 +1271,7 @@
   "assistantAutoProposalsModeOff": "Desactivado",
   "assistantAutoProposalsModeText": "Solo texto",
   "assistantAutoProposalsModeCard": "Tarjeta de confirmación",
-  "assistantAutoProposalsModeOffHint": "Solo chat. Rex no propone guardados.",
+  "assistantAutoProposalsModeOffHint": "Rex nunca propone guardados por su cuenta. Igual hace lo que le pidas.",
   "assistantAutoProposalsModeTextHint": "Rex pregunta en el chat (di sí para guardar). Sin tarjeta de confirmación.",
   "assistantAutoProposalsModeCardHint": "Rex muestra una tarjeta editable antes de guardar.",
   "assistantAutoProposalsTypeThreads": "Hilos abiertos (hábitos y seguimiento)",

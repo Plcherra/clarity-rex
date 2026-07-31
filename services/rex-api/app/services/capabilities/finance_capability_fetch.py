@@ -15,6 +15,7 @@ from app.services.capabilities.finance_context_lookup import (
     context_list,
     find_account,
     matching_transactions,
+    merchant_month_rollups,
     spend_total,
     transaction_coverage,
     transaction_line,
@@ -24,6 +25,7 @@ FETCH_PACK_CHAR_BUDGET = 2200
 _MAX_TRANSACTION_ROWS = 8
 _MAX_ACCOUNTS = 8
 _MAX_CATEGORIES = 6
+_MAX_CATEGORY_MERCHANTS = 6
 
 
 def build_finance_fetch_pack(
@@ -49,6 +51,7 @@ def _spend_insight_lines(
     lines.extend(_period_lines(financial_context))
     lines.extend(_cash_flow_lines(financial_context))
     lines.extend(_category_lines(request, financial_context))
+    lines.extend(_merchant_rollup_lines(request, financial_context))
     lines.extend(_transaction_lines(request, financial_context))
     lines.extend(_budget_lines(financial_context))
     lines.extend(_coverage_lines(financial_context))
@@ -156,6 +159,26 @@ def _category_lines(
     return [f"- {_category_spend_line(item)}" for item in spend[:_MAX_CATEGORIES]]
 
 
+def _merchant_rollup_lines(
+    request: FinanceFetchRequest,
+    financial_context: dict,
+) -> list[str]:
+    rollups = merchant_month_rollups(financial_context, request.merchant)
+    if not rollups:
+        return []
+    parts = []
+    for rollup in rollups:
+        part = f"{rollup['merchant']} ({rollup['category']}): spent={rollup['spent']}"
+        count = rollup.get("transaction_count")
+        if count is not None:
+            part = f"{part}; transactions={count}"
+        parts.append(part)
+    return [
+        "- Merchant totals for the whole period (Clarity's own rollup): "
+        + "; ".join(parts)
+    ]
+
+
 def _transaction_lines(
     request: FinanceFetchRequest,
     financial_context: dict,
@@ -168,12 +191,12 @@ def _transaction_lines(
         merchant=request.merchant,
         category=request.category if not request.merchant else None,
     )
+    coverage = transaction_coverage(financial_context)
     if not rows:
         # Category totals already answer category questions; only a merchant ask
         # needs the explicit "nothing matched" line.
         if not request.merchant:
             return []
-        coverage = transaction_coverage(financial_context)
         if coverage:
             return [
                 f"- No rows match \"{needle}\" in the transaction detail Clarity "
@@ -182,9 +205,22 @@ def _transaction_lines(
             ]
         return [f"- No transactions in this context match \"{needle}\"."]
     total = spend_total(rows)
-    header = f"- Matching transactions for \"{needle}\": count={len(rows)}"
-    if total is not None:
-        header = f"{header}; total={total:.2f}"
+    if coverage:
+        # Counting sampled rows undercounts the period; the totals above do not.
+        header = (
+            f"- Example rows matching \"{needle}\" — {len(rows)} row(s) out of "
+            "the partial detail Clarity sent, NOT every transaction in the "
+            "period. Quote the totals above for amounts and present these as "
+            "examples"
+        )
+        if total is not None:
+            header = f"{header} (these rows alone add to {total:.2f})"
+    else:
+        header = (
+            f"- Every row matching \"{needle}\" this period: count={len(rows)}"
+        )
+        if total is not None:
+            header = f"{header}; total={total:.2f}"
     lines = [header]
     lines.extend(
         f"  - {transaction_line(row)}" for row in rows[:_MAX_TRANSACTION_ROWS]
@@ -222,21 +258,39 @@ def _budget_lines(financial_context: dict) -> list[str]:
 
 def _category_spend_line(item: dict) -> str:
     line = (
-        f"Category {item.get('category')}: spent={item.get('spent')}; "
+        f"Category {item.get('category')} for the whole period (Clarity's own "
+        f"total): spent={item.get('spent')}; "
         f"transactions={item.get('transaction_count')}"
     )
-    merchants = item.get("top_merchants")
-    if isinstance(merchants, list) and merchants:
-        labels = [
-            str(entry.get("merchant") or entry.get("name") or "").strip()
-            if isinstance(entry, dict)
-            else str(entry).strip()
-            for entry in merchants[:3]
-        ]
-        joined = ", ".join(label for label in labels if label)
-        if joined:
-            line = f"{line}; top merchants={joined}"
+    breakdown = _merchant_breakdown(item.get("top_merchants"))
+    if breakdown:
+        # A category label is the user's bucket, not a definition — the split by
+        # merchant is what lets the answer separate coffee from fast food.
+        line = f"{line}; merchants inside it: {breakdown}"
     return line
+
+
+def _merchant_breakdown(merchants: object) -> str:
+    if not isinstance(merchants, list):
+        return ""
+    parts: list[str] = []
+    for entry in merchants[:_MAX_CATEGORY_MERCHANTS]:
+        if not isinstance(entry, dict):
+            label = str(entry).strip()
+            if label:
+                parts.append(label)
+            continue
+        label = str(entry.get("merchant") or entry.get("name") or "").strip()
+        if not label:
+            continue
+        spent = entry.get("spent")
+        count = entry.get("transaction_count")
+        if spent is not None:
+            label = f"{label} {spent}"
+        if count is not None:
+            label = f"{label} ({count} tx)"
+        parts.append(label)
+    return "; ".join(parts)
 
 
 def _account_summary(account: dict) -> str:

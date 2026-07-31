@@ -30,7 +30,7 @@ def apply_auto_suggestions_gate(
     *,
     user_message: str = "",
 ) -> AutoSuggestionsGateResult:
-    _ = user_message  # API compat; Off uses action.explicit only (no phrase heuristics)
+    _ = user_message  # API compat; the gate reads Grok's flags, never phrases
     allowed: list[BrainAction] = []
     dropped: list[BrainAction] = []
     unsupported: list[str] = []
@@ -49,12 +49,14 @@ def apply_auto_suggestions_gate(
             continue
 
         kind = action.kind
-        # Off: no auto offers. Only Grok-marked explicit commands may run.
+        # Off silences Rex's own offers, not the work the user asked for: only
+        # actions the brain flagged as its own idea are dropped. Kind toggles
+        # still decide which capabilities may run at all.
         if settings.mode == AUTO_PROPOSALS_OFF:
             if (
                 kind is not None
                 and settings.allows_explicit_command(kind)
-                and action.explicit
+                and not action.auto
             ):
                 allowed.append(action)
             else:

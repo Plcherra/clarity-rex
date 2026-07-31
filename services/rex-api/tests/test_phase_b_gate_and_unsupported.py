@@ -104,6 +104,24 @@ def test_gate_off_allows_explicit_command() -> None:
     assert not gated.dropped_soft_actions
 
 
+def test_gate_off_runs_a_change_grok_did_not_flag_as_its_own_idea() -> None:
+    """Off means "stop offering", so an unflagged save still runs for memory."""
+    actions = [
+        BrainAction(
+            name="save_memory",
+            payload={"content": "I am allergic to penicillin"},
+        )
+    ]
+    off = AssistantProposalSettings(mode="off", memory=True)
+    gated = apply_auto_suggestions_gate(
+        actions,
+        off,
+        user_message="remember that I'm allergic to penicillin",
+    )
+    assert gated.allowed_soft_actions
+    assert not gated.dropped_soft_actions
+
+
 def test_gate_off_explicit_respects_kind_toggle() -> None:
     actions = [
         BrainAction(
@@ -187,11 +205,13 @@ async def test_email_unsupported_truth_never_claims_sent() -> None:
 
 @pytest.mark.asyncio
 async def test_off_soft_habit_pipeline_emits_no_proposals() -> None:
+    """A wish Rex turned into an offer of its own stays unsaved in Off."""
     store = _NoPendingStore()
     rex = (
         "Wake at 6am sounds good — I can help you stick with it.\n\n"
         "```rex_action\n"
-        '{"action":"create_open_thread","payload":{"title":"Wake at 6am"}}\n'
+        '{"action":"create_open_thread","auto":true,'
+        '"payload":{"title":"Wake at 6am"}}\n'
         "```"
     )
     finalized = await finalize_grok_turn(

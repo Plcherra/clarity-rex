@@ -168,6 +168,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String chatActionMatchedNothing(String action) {
+    return 'No coincidió nada, así que el cambio $action no modificó ningún registro.';
+  }
+
+  @override
   String get commonCancel => 'Cancelar';
 
   @override
@@ -1028,7 +1033,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get assistantAutoProposalsModeOffHint =>
-      'Solo chat. Rex no propone guardados.';
+      'Rex nunca propone guardados por su cuenta. Igual hace lo que le pidas.';
 
   @override
   String get assistantAutoProposalsModeTextHint =>
