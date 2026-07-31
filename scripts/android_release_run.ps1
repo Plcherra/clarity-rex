@@ -146,7 +146,8 @@ $defineArgs = @(
   "--dart-define=SUPABASE_ANON_KEY=$SupabaseAnonKey",
   "--dart-define=REX_BACKEND_URL=$RexBackendUrl",
   "--dart-define=REX_CLOUD_VOICE_ENABLED=$CloudVoice",
-  "--dart-define=REX_STREAMING_VOICE_ENABLED=$StreamingVoice"
+  "--dart-define=REX_STREAMING_VOICE_ENABLED=$StreamingVoice",
+  "--dart-define=SUPABASE_AUTH_REDIRECT_URL=https://goclarity.app/auth/confirmed/"
 )
 
 if ($BuildOnly) {

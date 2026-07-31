@@ -287,7 +287,7 @@ abstract class AppLocalizations {
   /// No description provided for @authConfirmEmailStillPending.
   ///
   /// In en, this message translates to:
-  /// **'Email is not confirmed yet. Open the link from your inbox, then try again.'**
+  /// **'Email is not confirmed yet. Open the link from your inbox, then return here.'**
   String get authConfirmEmailStillPending;
 
   /// No description provided for @authConfirmEmailResent.

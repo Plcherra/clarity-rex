@@ -20,10 +20,13 @@ The confirm-signup template is bilingual (English / Spanish). Sign-up passes
 Logo URL used in emails: `https://goclarity.app/clarity-mark-96.png`
 
 Deploy the web app first so the logo and auth pages are live.
-Confirmation emails should redirect to `io.goclarity.clarity://login-callback`
-on native (opens Clarity) and `https://goclarity.app/app/` on web. Also allow
-`https://goclarity.app/auth/confirmed/` as a legacy handoff that opens the app.
-Add those URLs under Supabase Auth → Redirect URLs.
+Confirmation emails should redirect to `https://goclarity.app/auth/confirmed/`
+on native (Universal / App Links open Clarity) and `https://goclarity.app/app/`
+on web. Also allow `io.goclarity.clarity://login-callback` for browser→app
+handoff. Add those under Supabase Auth → Redirect URLs.
+
+Serve `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json`
+on goclarity.app (deployed with the landing site).
 
 ## Variables
 

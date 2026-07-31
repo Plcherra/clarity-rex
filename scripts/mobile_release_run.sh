@@ -110,6 +110,7 @@ command=(
   "--dart-define=REX_BACKEND_URL=${REX_BACKEND_URL}"
   "--dart-define=REX_CLOUD_VOICE_ENABLED=${REX_CLOUD_VOICE_ENABLED}"
   "--dart-define=REX_STREAMING_VOICE_ENABLED=${REX_STREAMING_VOICE_ENABLED}"
+  "--dart-define=SUPABASE_AUTH_REDIRECT_URL=https://goclarity.app/auth/confirmed/"
 )
 
 if [ -n "${SENTRY_DSN:-}" ]; then

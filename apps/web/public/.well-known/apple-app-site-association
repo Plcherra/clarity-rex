@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "7N42NS8B9B.app.goclarity.clarity",
+        "paths": [
+          "/auth/confirmed",
+          "/auth/confirmed/",
+          "/auth/confirmed/*"
+        ]
+      }
+    ]
+  }
+}

@@ -148,7 +148,7 @@ void main() {
     expect(controller.needsEmailConfirmation, isTrue);
     expect(
       controller.infoMessage,
-      'Email is not confirmed yet. Open the link from your inbox, then try again.',
+      'Email is not confirmed yet. Open the link from your inbox, then return here.',
     );
   });
 

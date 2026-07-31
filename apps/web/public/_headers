@@ -1,3 +1,12 @@
+# Universal Links / App Links discovery (must be application/json, no redirect).
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+  Cache-Control: public, max-age=300
+
+/.well-known/assetlinks.json
+  Content-Type: application/json
+  Cache-Control: public, max-age=300
+
 # Force correct MIME for Flutter boot scripts (never cache SPA HTML fallbacks).
 # Use no-store so custom-domain CDN edges cannot keep stale main.dart.js for hours.
 /app/passkeys_bundle.js

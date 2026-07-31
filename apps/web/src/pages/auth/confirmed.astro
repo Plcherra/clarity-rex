@@ -2,14 +2,14 @@
 import AuthLayout from '@layouts/AuthLayout.astro';
 import { product } from '@content/site';
 
-/** Flutter web PWA — fallback when the native app is not installed. */
+/** Flutter web PWA — desktop / no-app fallback. */
 const webAppUrl = 'https://goclarity.app/app/';
-/** Custom scheme registered in iOS/Android for Supabase auth callbacks. */
+/** Custom scheme — used when this page loads in a browser instead of via App Link. */
 const nativeAppUrl = 'io.goclarity.clarity://login-callback';
 const steps = [
   {
     title: 'Continue in Clarity',
-    body: 'You should be redirected into the app automatically. If not, use the button below.',
+    body: 'If Clarity did not open automatically, use Open Clarity below.',
   },
   {
     title: 'Log in if needed',
@@ -33,7 +33,7 @@ const steps = [
     <p class="eyebrow">Account verified</p>
     <h1 id="auth-confirmed-title">You are all set.</h1>
     <p class="auth-card__lede" id="auth-confirmed-lede">
-      Your email is confirmed. Opening Clarity so you can continue…
+      Your email is confirmed. Opening Clarity…
     </p>
 
     <div id="auth-confirmed-error" class="auth-alert auth-alert--error" hidden>
@@ -55,8 +55,11 @@ const steps = [
     </ol>
 
     <div class="auth-card__actions" id="auth-confirmed-actions" hidden>
-      <a class="button button--large" id="auth-confirmed-open-app" href={webAppUrl}>
-        Continue to Clarity
+      <a class="button button--large" id="auth-confirmed-open-app" href={nativeAppUrl}>
+        Open Clarity
+      </a>
+      <a class="button button--secondary button--large" href={webAppUrl}>
+        Continue on web
       </a>
       <a class="button button--secondary button--large" href={`mailto:${product.supportEmail}`}>
         Contact support
@@ -82,19 +85,21 @@ const steps = [
       var lede = document.getElementById('auth-confirmed-lede');
       var openApp = document.getElementById('auth-confirmed-open-app');
       var suffix = window.location.search + window.location.hash;
-      var nativeTarget = String(nativeAppUrl || 'io.goclarity.clarity://login-callback') + suffix;
+      var nativeTarget =
+        String(nativeAppUrl || 'io.goclarity.clarity://login-callback') + suffix;
       var webTarget =
-        String(webAppUrl || 'https://goclarity.app/app/').replace(/\/?$/, '/') + suffix;
+        String(webAppUrl || 'https://goclarity.app/app/').replace(/\/?$/, '/') +
+        suffix;
 
       function showManualContinue(message) {
         if (lede) {
           lede.textContent =
             message ||
-            'Your email is confirmed for Clarity. Continue in the app to sign in.';
+            'Your email is confirmed. Tap Open Clarity to continue in the app.';
         }
         if (steps) steps.hidden = false;
         if (actions) actions.hidden = false;
-        if (openApp) openApp.setAttribute('href', webTarget);
+        if (openApp) openApp.setAttribute('href', nativeTarget);
       }
 
       if (error) {
@@ -110,19 +115,11 @@ const steps = [
         return;
       }
 
-      if (openApp) openApp.setAttribute('href', webTarget);
+      if (openApp) openApp.setAttribute('href', nativeTarget);
 
-      // Prefer the installed native app; fall back to the web PWA.
-      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
+      // Always try the native scheme first so Chrome/Safari hand off into Clarity.
       try {
-        if (isMobile) {
-          window.location.replace(nativeTarget);
-          window.setTimeout(function () {
-            window.location.replace(webTarget);
-          }, 900);
-        } else {
-          window.location.replace(webTarget);
-        }
+        window.location.replace(nativeTarget);
       } catch (_) {
         showManualContinue();
         return;
@@ -130,7 +127,7 @@ const steps = [
 
       window.setTimeout(function () {
         showManualContinue();
-      }, 1600);
+      }, 1200);
     })();
   </script>
 </AuthLayout>

@@ -128,17 +128,6 @@ final class _EmailConfirmationScreenState extends State<EmailConfirmationScreen>
                           ],
                           const SizedBox(height: 22),
                           ClarityButton.filled(
-                            label: l10n.authConfirmEmailContinueButton,
-                            onPressed: widget.controller.isLoading
-                                ? null
-                                : () => unawaited(
-                                    widget.controller
-                                        .continueAfterEmailConfirmation(),
-                                  ),
-                            expanded: true,
-                          ),
-                          const SizedBox(height: 12),
-                          ClarityButton.text(
                             label: l10n.authConfirmEmailResendButton,
                             onPressed: widget.controller.isLoading
                                 ? null

@@ -93,7 +93,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String authConfirmEmailSubtitle(String email) {
-    return 'We sent a confirmation link to $email. Open it — Clarity should reopen and continue. Or tap below after you confirm.';
+    return 'We sent a confirmation link to $email. Open it on this phone — Clarity should reopen and continue automatically.';
   }
 
   @override
@@ -108,7 +108,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authConfirmEmailStillPending =>
-      'Email is not confirmed yet. Open the link from your inbox, then try again.';
+      'Email is not confirmed yet. Open the link from your inbox, then return here.';
 
   @override
   String authConfirmEmailResent(String email) {

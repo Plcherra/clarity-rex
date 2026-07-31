@@ -28,7 +28,7 @@
   "authEnterEmailForReset": "Enter your email to reset your password.",
   "authLanguageLabel": "Language",
   "authConfirmEmailTitle": "Confirm your email",
-  "authConfirmEmailSubtitle": "We sent a confirmation link to {email}. Open it — Clarity should reopen and continue. Or tap below after you confirm.",
+  "authConfirmEmailSubtitle": "We sent a confirmation link to {email}. Open it on this phone — Clarity should reopen and continue automatically.",
   "@authConfirmEmailSubtitle": {
     "placeholders": {
       "email": {
@@ -39,7 +39,7 @@
   "authConfirmEmailHint": "Check spam or promotions if you do not see it within a few minutes.",
   "authConfirmEmailResendButton": "Resend confirmation email",
   "authConfirmEmailContinueButton": "I've confirmed — continue",
-  "authConfirmEmailStillPending": "Email is not confirmed yet. Open the link from your inbox, then try again.",
+  "authConfirmEmailStillPending": "Email is not confirmed yet. Open the link from your inbox, then return here.",
   "authConfirmEmailResent": "Confirmation email sent again to {email}.",
   "@authConfirmEmailResent": {
     "placeholders": {
