@@ -24,14 +24,13 @@ class _GoalsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final pressure = buildGoalMoneyPressure(plans);
+    final moneyNeeds = buildGoalMoneyNeeds(plans);
     return _Section(
       title: l10n.accountabilitySectionsActiveGoals,
       emptyText: l10n.accountabilitySectionsNoActiveGoals,
       emptyActionLabel: l10n.accountabilitySharedAddFirstGoal,
       onEmptyAction: onAddGoal,
       children: [
-        if (pressure.isNotEmpty) _MoneyPressureCard(points: pressure),
         ...plans.map(
           (plan) => _GoalTile(
             plan: plan,
@@ -43,6 +42,7 @@ class _GoalsSection extends StatelessWidget {
             onSetDueDate: () => onSetDueDate(plan),
           ),
         ),
+        if (moneyNeeds.isNotEmpty) _MoneyNeedsSummary(summary: moneyNeeds),
       ],
     );
   }

@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 PlanRecord _goal({
   required String id,
   required String title,
-  required DateTime due,
   required double amount,
   String status = 'active',
 }) {
@@ -19,7 +18,7 @@ PlanRecord _goal({
     status: status,
     active: true,
     startDate: null,
-    targetDate: due,
+    targetDate: null,
     targetAmount: amount,
     completedAt: null,
     lastReviewedAt: null,
@@ -28,65 +27,23 @@ PlanRecord _goal({
 }
 
 void main() {
-  test('stacks money goals by due date into cumulative pressure', () {
-    final points = buildGoalMoneyPressure(
-      [
-        _goal(
-          id: 'bike',
-          title: 'motorcycle',
-          due: DateTime(2026, 10, 1),
-          amount: 3000,
-        ),
-        _goal(
-          id: 'ram',
-          title: 'RAM',
-          due: DateTime(2026, 12, 1),
-          amount: 500,
-        ),
-        _goal(
-          id: 'storage',
-          title: 'storage',
-          due: DateTime(2026, 12, 1),
-          amount: 500,
-        ),
-        _goal(
-          id: 'license',
-          title: 'get license',
-          due: DateTime(2026, 9, 1),
-          amount: 0,
-        ),
-      ],
-      now: DateTime(2026, 8, 1),
-    );
+  test('totals active money goals only', () {
+    final summary = buildGoalMoneyNeeds([
+      _goal(id: 'bike', title: 'motorcycle', amount: 3000),
+      _goal(id: 'ram', title: '16GB RAM', amount: 200),
+      _goal(id: 'license', title: 'get license', amount: 0),
+      _goal(id: 'old', title: 'old gear', amount: 500, status: 'completed'),
+    ]);
 
-    expect(points, hasLength(2));
-    expect(points[0].cumulativeAmount, 3000);
-    expect(points[0].titles, ['motorcycle']);
-    expect(points[1].cumulativeAmount, 4000);
-    expect(points[1].titles, ['motorcycle', 'RAM', 'storage']);
+    expect(summary.totalAmount, 3200);
+    expect(summary.isEmpty, isFalse);
   });
 
-  test('skips checkpoints that are already past', () {
-    final points = buildGoalMoneyPressure(
-      [
-        _goal(
-          id: 'old',
-          title: 'old gear',
-          due: DateTime(2026, 6, 1),
-          amount: 200,
-        ),
-        _goal(
-          id: 'bike',
-          title: 'motorcycle',
-          due: DateTime(2026, 10, 1),
-          amount: 3000,
-        ),
-      ],
-      now: DateTime(2026, 8, 1),
-    );
+  test('empty when nothing needs money', () {
+    final summary = buildGoalMoneyNeeds([
+      _goal(id: 'bike', title: 'motorcycle', amount: 0),
+    ]);
 
-    expect(points, hasLength(1));
-    expect(points.single.cumulativeAmount, 3000);
-    expect(points.single.titles, ['motorcycle']);
+    expect(summary.isEmpty, isTrue);
   });
 }

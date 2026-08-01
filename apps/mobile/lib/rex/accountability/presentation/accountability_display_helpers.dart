@@ -83,8 +83,11 @@ String? goalStepsProgressLabel(
   return l10n.accountabilityStepsDone(done, milestones.length);
 }
 
-/// Always shown: money goals as dollars, everything else as $0.
-String goalAmountLabel(PlanRecord plan) => formatMoney(plan.targetAmount);
+/// Dollars only when the goal needs money. $0 is not a price — hide it.
+String? goalAmountLabel(PlanRecord plan) {
+  if (plan.targetAmount <= 0) return null;
+  return formatMoney(plan.targetAmount);
+}
 
 String? openThreadSubtitle(AppLocalizations l10n, OpenThread thread) {
   final summary = thread.summary?.trim();

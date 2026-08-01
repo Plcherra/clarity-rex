@@ -46,6 +46,42 @@ void main() {
         'Upgrade the dev machine before July.',
       );
     });
+
+    test('hides a zero dollar amount on non-money goals', () {
+      const free = PlanRecord(
+        id: 'plan-3',
+        planType: 'personal',
+        title: 'Get a CBR600RR',
+        description: null,
+        desiredOutcome: null,
+        priority: 5,
+        status: 'active',
+        active: true,
+        startDate: null,
+        targetDate: null,
+        targetAmount: 0,
+        completedAt: null,
+        lastReviewedAt: null,
+      );
+      const money = PlanRecord(
+        id: 'plan-4',
+        planType: 'personal',
+        title: 'Buy more 16GB RAM',
+        description: null,
+        desiredOutcome: null,
+        priority: 4,
+        status: 'active',
+        active: true,
+        startDate: null,
+        targetDate: null,
+        targetAmount: 200,
+        completedAt: null,
+        lastReviewedAt: null,
+      );
+
+      expect(goalAmountLabel(free), isNull);
+      expect(goalAmountLabel(money), isNotNull);
+    });
   });
 
   group('goal steps', () {

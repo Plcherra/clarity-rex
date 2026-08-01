@@ -6169,18 +6169,8 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilityMoneyPressureTitle.
   ///
   /// In en, this message translates to:
-  /// **'Money needed'**
+  /// **'Total amount needed:'**
   String get accountabilityMoneyPressureTitle;
-
-  /// No description provided for @accountabilityMoneyPressureLine.
-  ///
-  /// In en, this message translates to:
-  /// **'{amount} by {date} ({titles})'**
-  String accountabilityMoneyPressureLine(
-    String amount,
-    String date,
-    String titles,
-  );
 
   /// No description provided for @accountabilityAddOpenThreadPrimaryHint.
   ///

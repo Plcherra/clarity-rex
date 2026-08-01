@@ -282,6 +282,9 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
   void _selectIndex(int index) {
     _idx = index;
     _lastSelectedIndex = index;
+    // IndexedStack keeps every shell tab alive; without this, a focused
+    // composer or search field keeps the keyboard up on the next destination.
+    FocusManager.instance.primaryFocus?.unfocus();
     if (index != assistantShellTabIndex) {
       ref.read(assistantChatVisibleProvider.notifier).setVisible(false);
       return;

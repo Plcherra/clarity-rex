@@ -3585,16 +3585,7 @@ class AppLocalizationsEs extends AppLocalizations {
       '0 si este objetivo no necesita dinero';
 
   @override
-  String get accountabilityMoneyPressureTitle => 'Dinero necesario';
-
-  @override
-  String accountabilityMoneyPressureLine(
-    String amount,
-    String date,
-    String titles,
-  ) {
-    return '$amount para el $date ($titles)';
-  }
+  String get accountabilityMoneyPressureTitle => 'Cantidad total necesaria:';
 
   @override
   String get accountabilityAddOpenThreadPrimaryHint => 'Despierta a las 5 a.m.';

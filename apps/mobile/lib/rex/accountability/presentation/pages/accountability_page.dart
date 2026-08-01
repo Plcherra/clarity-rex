@@ -237,6 +237,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
         child: Scrollbar(
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(

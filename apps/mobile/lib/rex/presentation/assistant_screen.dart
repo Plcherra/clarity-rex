@@ -78,6 +78,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       return;
     }
     _selectedTabId = _tabs[controller.index].id;
+    // TabBarView keeps every assistant tab mounted. Without this, the chat
+    // composer (or Chats search) stays focused and the keyboard rides along.
+    FocusManager.instance.primaryFocus?.unfocus();
     _updateAssistantChatVisibility();
   }
 

@@ -31,7 +31,7 @@ class _GoalTile extends StatelessWidget {
       priority: plan.priority,
       status: plan.status,
       metaSuffix: [
-        goalAmountLabel(plan),
+        ?goalAmountLabel(plan),
         ?goalStepsProgressLabel(context.l10n, steps),
       ].join(' · '),
       trailing: _GoalActions(
