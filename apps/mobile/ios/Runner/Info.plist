@@ -44,9 +44,9 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Clarity uses the microphone so you can talk to your assistant by voice.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Clarity uses the camera so you can attach photos to Rex chats.</string>
+	<string>Clarity uses the camera so you can take a profile photo or attach photos to Rex chats.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Clarity uses your photo library so you can attach images to Rex chats.</string>
+	<string>Clarity uses your photo library so you can choose a profile photo or attach images to Rex chats.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Clarity uses speech recognition to turn your voice into assistant messages.</string>
 	<key>UIApplicationSceneManifest</key>
