@@ -258,7 +258,7 @@ class ChatMessageBubble extends StatelessWidget {
           maxHeight: 280,
         ),
         child: ChatAttachmentImage(
-          previewBytes: hasBytes ? Uint8List.fromList(bytes!) : null,
+          previewBytes: hasBytes ? Uint8List.fromList(bytes) : null,
           localPath: hasPath ? path : null,
           fit: BoxFit.cover,
           maxHeight: 280,

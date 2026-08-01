@@ -35,8 +35,8 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
   final _monthlyCashFlowKey = GlobalKey();
   final _spendingPressureKey = GlobalKey();
   final _budgetPerformanceKey = GlobalKey();
-  final _coreChartsController = ExpansionTileController();
-  final _spendingAnalysisController = ExpansionTileController();
+  final _coreChartsController = ExpansibleController();
+  final _spendingAnalysisController = ExpansibleController();
 
   @override
   void initState() {

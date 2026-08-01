@@ -105,7 +105,7 @@ class InsightItem {
     'title': title,
     'body': body,
     'period_key': periodKey,
-    if (insightAnchorApiKey(anchor) case final anchorKey?) 'anchor_key': anchorKey,
+    'anchor_key': ?insightAnchorApiKey(anchor),
   };
 }
 

@@ -1,17 +1,16 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 bool isVoiceMicrophoneContextSecure() {
-  return html.window.isSecureContext ?? false;
+  return web.window.isSecureContext;
 }
 
 Future<bool> isWebMicrophonePermissionPermanentlyDenied() async {
   try {
-    final permissions = html.window.navigator.permissions;
-    if (permissions == null) {
-      return false;
-    }
-
-    final status = await permissions.query({'name': 'microphone'});
+    final status = await web.window.navigator.permissions
+        .query({'name': 'microphone'}.jsify() as JSObject)
+        .toDart;
     return status.state == 'denied';
   } on Object {
     return false;
@@ -25,15 +24,11 @@ Future<bool> isWebMicrophonePermissionPermanentlyDenied() async {
 /// first — as the record package does — drops activation and suppresses the
 /// prompt).
 Future<bool> requestWebMicrophoneAccess() {
-  final mediaDevices = html.window.navigator.mediaDevices;
-  if (mediaDevices == null) {
-    return Future.value(false);
-  }
-
-  return mediaDevices
-      .getUserMedia({'audio': true})
+  return web.window.navigator.mediaDevices
+      .getUserMedia(web.MediaStreamConstraints(audio: true.toJS))
+      .toDart
       .then((stream) {
-        for (final track in stream.getAudioTracks()) {
+        for (final track in stream.getAudioTracks().toDart) {
           track.stop();
         }
         return true;

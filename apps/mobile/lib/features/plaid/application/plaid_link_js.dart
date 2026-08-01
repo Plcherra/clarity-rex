@@ -44,12 +44,18 @@ external void historyReplaceState(
 
 bool isPlaidLinkScriptLoaded() => _plaidGlobal != null;
 
-Map<dynamic, dynamic> jsObjectToMap(Object? jsObject) {
-  if (jsObject is Map) return jsObject;
-  if (jsObject is! JSAny) return {};
-  final dartified = jsObject.dartify();
-  if (dartified is Map) return dartified;
-  return {};
+/// Converts a payload handed to us by Plaid's JS callbacks.
+///
+/// Typed as [JSAny] rather than testing at runtime: `is JSAny` is not
+/// consistent between dart2js and wasm.
+Map<dynamic, dynamic> jsAnyToMap(JSAny? jsObject) {
+  final dartified = jsObject?.dartify();
+  return dartified is Map ? dartified : {};
+}
+
+/// Reads a nested value that [jsAnyToMap] already converted to Dart.
+Map<dynamic, dynamic> jsObjectToMap(Object? value) {
+  return value is Map ? value : {};
 }
 
 String jsString(Object? value) {

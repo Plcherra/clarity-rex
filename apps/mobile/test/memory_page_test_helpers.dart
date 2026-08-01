@@ -100,7 +100,7 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
       importance: importance,
       active: true,
       metadata: {
-        if (memoryCategory != null) 'memory_category': memoryCategory,
+        'memory_category': ?memoryCategory,
       },
       createdAt: DateTime.utc(2026, 6, 1),
       updatedAt: DateTime.utc(2026, 6, 1),
@@ -545,7 +545,7 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
     milestoneCreates.add({
       'planId': planId,
       'title': title,
-      if (description != null) 'description': description,
+      'description': ?description,
     });
     return PlanMilestoneMemoryItem(
       id: 'milestone-new',

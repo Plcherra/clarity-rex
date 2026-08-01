@@ -1,4 +1,5 @@
 @TestOn('browser')
+library;
 
 import 'package:clarity/core/layout/clarity_breakpoints.dart';
 import 'package:clarity/core/layout/clarity_native_layout.dart';

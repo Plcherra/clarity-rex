@@ -254,18 +254,4 @@ class TransactionWorkflowService {
     }
     return null;
   }
-
-  Future<List<Transaction>> _fetchTransactions({String? accountId}) async {
-    final records = await transactionService.fetchTransactions(
-      accountId: accountId,
-    );
-    return records
-        .map(
-          (record) => transactionFromRecord(
-            record,
-            categoryNameForId: categoryNameForId,
-          ),
-        )
-        .toList();
-  }
 }

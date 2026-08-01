@@ -1,6 +1,5 @@
 import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
 import 'package:clarity/core/layout/clarity_breakpoints.dart';
-import 'package:clarity/core/layout/finance_content_constraints.dart';
 import 'package:clarity/features/shell/presentation/home_shell_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

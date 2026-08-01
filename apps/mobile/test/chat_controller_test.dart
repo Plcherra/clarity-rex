@@ -973,14 +973,12 @@ class _FakeChatApi extends ChatApi {
     this.streamEvents = const <ChatStreamEvent>[],
     this.delayBeforeYielding,
     this.sendErrors = const <Object?>[],
-    this.responses = const <ChatApiResponse>[],
   });
 
   final ChatApiResponse response;
   final List<ChatStreamEvent> streamEvents;
   final Duration? delayBeforeYielding;
   final List<Object?> sendErrors;
-  final List<ChatApiResponse> responses;
   final financialContexts = <Map<String, dynamic>?>[];
   final writeConfirmations = <Map<String, dynamic>?>[];
   var _sendCount = 0;
@@ -1001,9 +999,6 @@ class _FakeChatApi extends ChatApi {
       if (error != null) {
         throw error;
       }
-    }
-    if (index < responses.length) {
-      return responses[index];
     }
     return response;
   }

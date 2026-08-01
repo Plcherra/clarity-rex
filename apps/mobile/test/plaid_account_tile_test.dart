@@ -2,7 +2,6 @@ import 'package:clarity/app/ui_dependencies.dart';
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/features/accounts/data/plaid_account_service.dart';
 import 'package:clarity/features/accounts/presentation/widgets/plaid_account_tile.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/l10n_test_wrapper.dart';

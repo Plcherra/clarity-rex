@@ -1,8 +1,6 @@
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/memory/data/memory_api.dart';
-import 'package:clarity/rex/memory/data/memory_constants.dart';
 import 'package:clarity/rex/memory/application/memory_controller.dart';
-import 'package:clarity/rex/memory/data/entity_memory_model.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/data/memory_paged_result.dart';
 import 'package:clarity/rex/memory/presentation/memory_l10n.dart';

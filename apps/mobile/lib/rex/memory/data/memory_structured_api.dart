@@ -22,9 +22,9 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
   }) async {
     final data = await _getPagedMap('/entities', {
       'limit': limit.toString(),
-      if (entityType != null) 'entity_type': entityType,
+      'entity_type': ?entityType,
       if (active != null) 'active': active.toString(),
-      if (cursor != null) 'cursor': cursor,
+      'cursor': ?cursor,
     });
     return MemoryPagedResult.fromJson(data, EntityMemoryItem.fromJson);
   }
@@ -154,7 +154,7 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
     final data = await _getPagedMap('/rules', {
       'limit': limit.toString(),
       if (active != null) 'active': active.toString(),
-      if (cursor != null) 'cursor': cursor,
+      'cursor': ?cursor,
     });
     return MemoryPagedResult.fromJson(data, RuleMemoryItem.fromJson);
   }
@@ -221,7 +221,7 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
     final data = await _getPagedMap('/plans', {
       'limit': limit.toString(),
       if (active != null) 'active': active.toString(),
-      if (cursor != null) 'cursor': cursor,
+      'cursor': ?cursor,
     });
     return MemoryPagedResult.fromJson(data, PlanMemoryItem.fromJson);
   }

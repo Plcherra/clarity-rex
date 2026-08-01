@@ -42,7 +42,7 @@ final class WebPlaidLinkLauncher implements PlaidLinkLauncher {
           onSuccess: ((JSAny publicToken, JSAny metadata) {
             final result = launchResultFromWebSuccess(
               jsString(publicToken.dartify()),
-              jsObjectToMap(metadata),
+              jsAnyToMap(metadata),
             );
             if (result == null) {
               if (!completer.isCompleted) {
@@ -62,8 +62,8 @@ final class WebPlaidLinkLauncher implements PlaidLinkLauncher {
             if (!completer.isCompleted) {
               completer.complete(
                 launchResultFromWebExit(
-                  error == null ? null : jsObjectToMap(error),
-                  jsObjectToMap(metadata),
+                  error == null ? null : jsAnyToMap(error),
+                  jsAnyToMap(metadata),
                 ),
               );
             }

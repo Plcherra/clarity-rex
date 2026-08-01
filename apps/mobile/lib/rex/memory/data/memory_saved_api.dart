@@ -22,7 +22,7 @@ mixin _SavedMemoryApi on _MemoryApiTransport {
   }) async {
     final query = <String, String>{
       'limit': limit.toString(),
-      if (cursor != null) 'cursor': cursor,
+      'cursor': ?cursor,
     };
     if (memoryType != null) {
       query['memory_type'] = memoryType.apiValue;

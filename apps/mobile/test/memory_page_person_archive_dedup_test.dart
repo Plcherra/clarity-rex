@@ -1,6 +1,5 @@
 import 'package:clarity/rex/memory/application/memory_controller.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
-import 'package:clarity/rex/memory/data/person_memory_model.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_filters.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_quick_filter.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -2,7 +2,6 @@ import 'package:clarity/core/models/models.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
 import 'package:clarity/rex/data/rex_financial_context_query.dart';
-import 'package:clarity/rex/data/rex_financial_transaction_policy.dart';
 import 'package:clarity/features/categories/domain/category_normalization.dart';
 import 'package:clarity/features/finance/application/financial_read_model_service.dart';
 import 'package:clarity/features/transactions/domain/transaction_resolution.dart';

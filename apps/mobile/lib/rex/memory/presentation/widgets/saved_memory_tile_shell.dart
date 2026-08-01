@@ -110,7 +110,7 @@ class SavedMemoryTileShell extends StatelessWidget {
     final updatedLabel = memoryUpdatedLabel(l10n, updatedAt, createdAt);
     final semanticsParts = <String>[
       title,
-      if (detailLine != null) detailLine,
+      ?detailLine,
       ...metaParts,
       memoryImportanceShortLabel(l10n, importance),
       if (updatedLabel.isNotEmpty) updatedLabel,

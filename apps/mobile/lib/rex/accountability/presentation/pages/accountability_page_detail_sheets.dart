@@ -283,7 +283,7 @@ class _PriorityPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return DropdownButtonFormField<int>(
-      value: value.clamp(1, 5),
+      initialValue: value.clamp(1, 5),
       decoration: InputDecoration(labelText: l10n.commonPriority),
       items: [
         DropdownMenuItem(value: 2, child: Text(l10n.commonLow)),
@@ -317,7 +317,7 @@ class _StatusPicker extends StatelessWidget {
     final normalized = value.trim().toLowerCase();
     final selected = options.contains(normalized) ? normalized : options.first;
     return DropdownButtonFormField<String>(
-      value: selected,
+      initialValue: selected,
       decoration: InputDecoration(labelText: l10n.commonStatus),
       items: [
         for (final option in options)

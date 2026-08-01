@@ -9,7 +9,6 @@ import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/rex/voice/presentation/voice_elapsed_format.dart';
 import 'package:clarity/theme/clarity_colors.dart';
-import 'package:clarity/widgets/clarity_diamond_loader.dart';
 
 /// Inline live transcript shown at the bottom of the chat scroll area.
 class VoiceLiveTranscript extends StatelessWidget {
@@ -299,7 +298,6 @@ class _VoiceWaveIndicator extends StatefulWidget {
     this.isMuted = false,
     this.isFailed = false,
     this.compact = false,
-    this.thinkingLabel,
   });
 
   final VoiceCallPhase phase;
@@ -307,7 +305,6 @@ class _VoiceWaveIndicator extends StatefulWidget {
   final bool isMuted;
   final bool isFailed;
   final bool compact;
-  final String? thinkingLabel;
 
   @override
   State<_VoiceWaveIndicator> createState() => _VoiceWaveIndicatorState();
@@ -339,18 +336,6 @@ class _VoiceWaveIndicatorState extends State<_VoiceWaveIndicator>
     }
     if (widget.isMuted && widget.phase == VoiceCallPhase.listening) {
       return Icon(Icons.mic_off_outlined, color: widget.color, size: 18);
-    }
-    if (widget.phase == VoiceCallPhase.thinking) {
-      final label = widget.thinkingLabel;
-      if (label != null && label.isNotEmpty) {
-        return Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: widget.color,
-            fontWeight: FontWeight.w600,
-          ),
-        );
-      }
     }
     if (widget.phase == VoiceCallPhase.speaking) {
       return Icon(Icons.volume_up_outlined, color: widget.color, size: 18);

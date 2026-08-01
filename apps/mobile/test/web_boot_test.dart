@@ -1,11 +1,11 @@
 @TestOn('browser')
+library;
 
 import 'package:clarity/app/app.dart';
 import 'package:clarity/app/app_composition.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/shell/presentation/home_shell.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';

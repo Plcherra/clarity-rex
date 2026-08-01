@@ -1,5 +1,3 @@
-// ignore_for_file: invalid_use_of_protected_member
-
 part of 'auth_controller.dart';
 
 extension AuthControllerEmailConfirmation on AuthController {
@@ -8,7 +6,7 @@ extension AuthControllerEmailConfirmation on AuthController {
     _pendingConfirmationPassword = null;
     errorMessage = null;
     infoMessage = null;
-    notifyListeners();
+    publishAuthState();
   }
 
   /// Leaves the confirm-email screen and returns to sign-in with email ready.
@@ -22,7 +20,7 @@ extension AuthControllerEmailConfirmation on AuthController {
     }
     errorMessage = null;
     infoMessage = l10n.authInfoEmailConfirmedSignIn;
-    notifyListeners();
+    publishAuthState();
   }
 
   /// Refresh session after email link / resume; enter app or fall back to sign-in.

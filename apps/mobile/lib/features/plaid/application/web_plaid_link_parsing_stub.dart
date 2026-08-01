@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'plaid_connection_models.dart';
 
 /// Parses Plaid Link web callback payloads into Clarity launch models.
-@visibleForTesting
 PlaidLinkLaunchResult? launchResultFromWebSuccess(
   String publicToken,
   Map<dynamic, dynamic> metadata,
@@ -25,7 +24,6 @@ PlaidLinkLaunchResult? launchResultFromWebSuccess(
   );
 }
 
-@visibleForTesting
 PlaidLinkLaunchResult launchResultFromWebExit(
   Map<dynamic, dynamic>? error,
   Map<dynamic, dynamic> metadata,

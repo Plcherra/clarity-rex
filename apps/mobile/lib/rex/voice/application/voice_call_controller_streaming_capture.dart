@@ -265,7 +265,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       if (_isCurrentCall(generation)) {
         failL10n((l10n) => l10n.voiceErrorStreamVoiceAudioFailed);
       }
-      if (session != null && !identical(_activeStreamingSession, session)) {
+      if (!identical(_activeStreamingSession, session)) {
         unawaited(session.endSession());
       }
       return;
@@ -274,7 +274,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     if (!_isCurrentCall(generation) ||
         listenEpoch != _streamingListenEpoch ||
         !state.isCallActive) {
-      if (session != null && !identical(_activeStreamingSession, session)) {
+      if (!identical(_activeStreamingSession, session)) {
         unawaited(session.endSession());
       }
       return;

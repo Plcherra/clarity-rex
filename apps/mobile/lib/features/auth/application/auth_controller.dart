@@ -78,6 +78,12 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Republishes state for the extensions in this library's part files.
+  ///
+  /// `notifyListeners` is protected on [ChangeNotifier], and an extension is
+  /// not a subclass, so it cannot reach it directly.
+  void publishAuthState() => notifyListeners();
+
   String? takePrefillEmail() {
     final email = prefillEmail?.trim();
     prefillEmail = null;

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:clarity/l10n/app_localizations.dart';
-import 'package:clarity/rex/memory/data/memory_constants.dart';
-import 'package:clarity/rex/memory/data/memory_paged_result.dart';
 
 import 'memory_page_test_helpers.dart';
 

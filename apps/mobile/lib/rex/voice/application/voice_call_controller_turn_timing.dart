@@ -81,7 +81,7 @@ extension VoiceCallControllerTurnTiming on VoiceCallController {
     timing.logged = true;
     final origin = timing.turnStartedAt;
     int? ms(DateTime? at) =>
-        at == null ? null : at.difference(origin).inMilliseconds;
+        at?.difference(origin).inMilliseconds;
     debugPrint(
       'rex_voice_turn_timing turn=$turnSequence '
       'capture_end=${ms(timing.captureEndAt)} '

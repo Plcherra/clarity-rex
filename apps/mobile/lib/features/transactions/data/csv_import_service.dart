@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -47,7 +47,7 @@ typedef _CategorizeTransactions =
     Future<Map<String, dynamic>> Function(Map<String, dynamic> body);
 typedef _UpsertStatementImport =
     Future<void> Function(AccountStatementImportInput input);
-typedef _UpsertMerchantCategoryRule =
+typedef UpsertMerchantCategoryRule =
     Future<void> Function({
       required String merchantKey,
       String? merchantDisplay,
@@ -118,7 +118,7 @@ class CsvImportService {
     required bool Function() isAiConfigured,
     required Future<Map<String, dynamic>> Function(Map<String, dynamic> body)
     categorizeTransactions,
-    _UpsertMerchantCategoryRule? upsertMerchantCategoryRule,
+    UpsertMerchantCategoryRule? upsertMerchantCategoryRule,
   }) : this._(
          fetchAccounts: fetchAccounts,
          fetchTransactions: fetchTransactions,
@@ -150,7 +150,7 @@ class CsvImportService {
     required _UpdateTransactionsCategory updateTransactionsCategory,
     required bool Function() isAiConfigured,
     required _CategorizeTransactions categorizeTransactions,
-    required _UpsertMerchantCategoryRule upsertMerchantCategoryRule,
+    required UpsertMerchantCategoryRule upsertMerchantCategoryRule,
   }) : _fetchAccounts = fetchAccounts,
        _fetchTransactions = fetchTransactions,
        _createTransactions = createTransactions,

@@ -23,7 +23,7 @@ extension WebPcmMicrophoneEngineResume on WebPcmMicrophoneEngine {
 }
 
 final class WebPcmCaptureSession {
-  WebPcmCaptureSession({required Stream<Uint8List> stream}) : stream = stream;
+  WebPcmCaptureSession({required this.stream});
 
   final Stream<Uint8List> stream;
 }

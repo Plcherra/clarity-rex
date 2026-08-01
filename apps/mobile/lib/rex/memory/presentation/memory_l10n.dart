@@ -1,5 +1,4 @@
 import 'package:clarity/l10n/app_localizations.dart';
-import 'package:clarity/rex/memory/data/memory_labels.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 
 /// Canonical backend category keys for flat memory create flows.

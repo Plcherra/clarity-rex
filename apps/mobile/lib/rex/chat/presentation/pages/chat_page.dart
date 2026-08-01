@@ -325,6 +325,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
     } on Object {
       fileSize = bytes?.length ?? 0;
     }
+    if (!mounted) return;
 
     final l10n = context.l10n;
     final validationError = bytes == null

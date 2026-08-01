@@ -36,7 +36,7 @@ extension VoiceCallControllerChatSync on VoiceCallController {
 
   void _finalizeVoiceTranscriptInChat({String? finalTranscript}) {
     final text = VoiceTranscriptBuffer.preferFullest([
-      if (finalTranscript != null) finalTranscript,
+      ?finalTranscript,
       _transcriptBuffer.visible,
     ]).trim();
     if (text.isEmpty) {
@@ -85,7 +85,7 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     }
 
     final transcript = VoiceTranscriptBuffer.preferFullest([
-      if (preferredTranscript != null) preferredTranscript,
+      ?preferredTranscript,
       _transcriptBuffer.visible,
     ]).trim();
     if (transcript.isEmpty) {

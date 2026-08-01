@@ -37,7 +37,7 @@ class _DashboardCollapsibleChartGroup extends StatelessWidget {
   final String title;
   final String? subtitle;
   final bool initiallyExpanded;
-  final ExpansionTileController? controller;
+  final ExpansibleController? controller;
   final List<Widget> children;
   final bool alwaysExpanded;
 
