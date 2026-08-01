@@ -1250,17 +1250,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardTransactionsNoImportedHistory => 'No imported history';
 
   @override
-  String get dashboardTransactionsModeMonths => 'Months';
+  String get dashboardTransactionsModeMonths => 'By month';
 
   @override
-  String get dashboardTransactionsModeCategories => 'Categories';
+  String get dashboardTransactionsModeCategories => 'By category';
 
   @override
   String get dashboardTransactionsSearchHint =>
       'Search merchant, category, month, or amount';
 
   @override
-  String get dashboardTransactionsFilterCategory => 'Category';
+  String get dashboardTransactionsFilterCategory => 'All categories';
 
   @override
   String get dashboardTransactionsFilterAllCategories => 'All categories';

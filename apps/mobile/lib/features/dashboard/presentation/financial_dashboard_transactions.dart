@@ -47,9 +47,9 @@ class _DashboardTransactionsSectionState
 
   bool get _isAccountScope => widget.scope is AccountDashboardScope;
 
-  bool get _showsDashboardMonthMiniAnalytics =>
-      _timeFilter == _TransactionsTimeFilter.dashboardMonth ||
-      _timeFilter == _TransactionsTimeFilter.all;
+  /// Glance totals are for the open dashboard month. Hide them while search
+  /// or filters are on so matching month cards sit right under the controls.
+  bool get _showsDashboardMonthMiniAnalytics => _activeFilterCount == 0;
 
   @override
   void initState() {
@@ -343,7 +343,14 @@ class _DashboardTransactionsSectionState
         const SizedBox(height: 14),
         _TransactionsModePicker(
           selected: _mode,
-          onSelected: (mode) => setState(() => _mode = mode),
+          onSelected: (mode) => setState(() {
+            _mode = mode;
+            // By category already groups by bucket; a leftover category chip
+            // would silently shrink the list with no control on screen.
+            if (mode == _TransactionsViewMode.categories) {
+              _categoryFilter = null;
+            }
+          }),
         ),
         const SizedBox(height: 12),
         _TransactionSearchField(controller: _searchController),
@@ -352,6 +359,7 @@ class _DashboardTransactionsSectionState
           categories: _categoryOptions(l10n),
           accounts: _accounts,
           isAccountScope: _isAccountScope,
+          showCategoryFilter: _mode == _TransactionsViewMode.months,
           category: _categoryFilter,
           accountId: _accountFilter,
           timeFilter: _timeFilter,
@@ -364,10 +372,6 @@ class _DashboardTransactionsSectionState
           onRoleChanged: (value) => setState(() => _roleFilter = value),
         ),
         const SizedBox(height: 16),
-        if (_showsDashboardMonthMiniAnalytics) ...[
-          TransactionsMonthMiniAnalytics(snapshot: widget.snapshot),
-          const SizedBox(height: 16),
-        ],
         if (_loading)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 28),
@@ -395,6 +399,10 @@ class _DashboardTransactionsSectionState
               groups: _categoryGroups(l10n),
             ),
           },
+        if (_showsDashboardMonthMiniAnalytics) ...[
+          const SizedBox(height: 16),
+          TransactionsMonthMiniAnalytics(snapshot: widget.snapshot),
+        ],
       ],
     );
   }

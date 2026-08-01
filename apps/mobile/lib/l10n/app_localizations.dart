@@ -2280,13 +2280,13 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardTransactionsModeMonths.
   ///
   /// In en, this message translates to:
-  /// **'Months'**
+  /// **'By month'**
   String get dashboardTransactionsModeMonths;
 
   /// No description provided for @dashboardTransactionsModeCategories.
   ///
   /// In en, this message translates to:
-  /// **'Categories'**
+  /// **'By category'**
   String get dashboardTransactionsModeCategories;
 
   /// No description provided for @dashboardTransactionsSearchHint.
@@ -2298,7 +2298,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardTransactionsFilterCategory.
   ///
   /// In en, this message translates to:
-  /// **'Category'**
+  /// **'All categories'**
   String get dashboardTransactionsFilterCategory;
 
   /// No description provided for @dashboardTransactionsFilterAllCategories.

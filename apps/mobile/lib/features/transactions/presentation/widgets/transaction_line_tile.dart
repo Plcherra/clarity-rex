@@ -61,6 +61,8 @@ class TransactionLineTile extends StatelessWidget {
               children: [
                 Text(
                   tx.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w500,
                     height: 1.3,

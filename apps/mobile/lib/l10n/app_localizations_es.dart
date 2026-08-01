@@ -1262,17 +1262,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardTransactionsNoImportedHistory => 'Sin historia importada';
 
   @override
-  String get dashboardTransactionsModeMonths => 'Meses';
+  String get dashboardTransactionsModeMonths => 'Por mes';
 
   @override
-  String get dashboardTransactionsModeCategories => 'Categorías';
+  String get dashboardTransactionsModeCategories => 'Por categoría';
 
   @override
   String get dashboardTransactionsSearchHint =>
       'Buscar comerciante, categoría, mes o monto';
 
   @override
-  String get dashboardTransactionsFilterCategory => 'Categoría';
+  String get dashboardTransactionsFilterCategory => 'Todas las categorias';
 
   @override
   String get dashboardTransactionsFilterAllCategories => 'Todas las categorias';

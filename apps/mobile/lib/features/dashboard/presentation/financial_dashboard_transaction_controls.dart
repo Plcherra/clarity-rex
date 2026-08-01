@@ -109,6 +109,7 @@ class _InlineFilterBar extends StatelessWidget {
     required this.categories,
     required this.accounts,
     required this.isAccountScope,
+    required this.showCategoryFilter,
     required this.category,
     required this.accountId,
     required this.timeFilter,
@@ -124,6 +125,9 @@ class _InlineFilterBar extends StatelessWidget {
   final List<String> categories;
   final List<Account> accounts;
   final bool isAccountScope;
+
+  /// Hidden in By category mode — grouping already is by category.
+  final bool showCategoryFilter;
   final String? category;
   final String? accountId;
   final _TransactionsTimeFilter timeFilter;
@@ -138,12 +142,10 @@ class _InlineFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
+    final chips = <Widget>[
+      if (showCategoryFilter)
         _PopupFilterChip<String?>(
-          label: category ?? l10n.dashboardTransactionsFilterCategory,
+          label: category ?? l10n.dashboardTransactionsFilterAllCategories,
           active: category != null,
           icon: Icons.category_outlined,
           values: [null, ...categories],
@@ -151,45 +153,60 @@ class _InlineFilterBar extends StatelessWidget {
               value ?? l10n.dashboardTransactionsFilterAllCategories,
           onSelected: onCategoryChanged,
         ),
-        if (!isAccountScope)
-          _PopupFilterChip<String?>(
-            label: _accountLabel(accountId) ?? l10n.dashboardTransactionsFilterAccount,
-            active: accountId != null,
-            icon: Icons.account_balance_outlined,
-            values: [null, ...accounts.map((a) => a.id)],
-            labelFor: (value) =>
-                _accountLabel(value) ?? l10n.dashboardTransactionsFilterAllAccounts,
-            onSelected: onAccountChanged,
-          ),
-        _PopupFilterChip<_TransactionsTimeFilter>(
-          label: _timeLabel(l10n, timeFilter),
-          active: timeFilter != _TransactionsTimeFilter.all,
-          icon: Icons.date_range_outlined,
-          values: _TransactionsTimeFilter.values,
-          labelFor: (value) => _timeLabel(l10n, value),
-          onSelected: onTimeChanged,
+      if (!isAccountScope)
+        _PopupFilterChip<String?>(
+          label:
+              _accountLabel(accountId) ??
+              l10n.dashboardTransactionsFilterAllAccounts,
+          active: accountId != null,
+          icon: Icons.account_balance_outlined,
+          values: [null, ...accounts.map((a) => a.id)],
+          labelFor: (value) =>
+              _accountLabel(value) ??
+              l10n.dashboardTransactionsFilterAllAccounts,
+          onSelected: onAccountChanged,
         ),
-        _PopupFilterChip<_TransactionsSortMode>(
-          label: _sortLabel(l10n, sortMode),
-          active: sortMode != _TransactionsSortMode.newest,
-          icon: Icons.sort_rounded,
-          values: _TransactionsSortMode.values,
-          labelFor: (value) => _sortLabel(l10n, value),
-          onSelected: onSortChanged,
-        ),
-        _PopupFilterChip<FinancialRole?>(
-          label: roleFilter == null
-              ? l10n.dashboardTransactionsFilterRole
-              : _financialRoleLabel(l10n, roleFilter!),
-          active: roleFilter != null,
-          icon: Icons.account_tree_outlined,
-          values: <FinancialRole?>[null, ...FinancialRole.values],
-          labelFor: (value) => value == null
-              ? l10n.dashboardTransactionsFilterAllRoles
-              : _financialRoleLabel(l10n, value),
-          onSelected: onRoleChanged,
-        ),
-      ],
+      _PopupFilterChip<_TransactionsTimeFilter>(
+        label: _timeLabel(l10n, timeFilter),
+        active: timeFilter != _TransactionsTimeFilter.all,
+        icon: Icons.date_range_outlined,
+        values: _TransactionsTimeFilter.values,
+        labelFor: (value) => _timeLabel(l10n, value),
+        onSelected: onTimeChanged,
+      ),
+      _PopupFilterChip<_TransactionsSortMode>(
+        label: _sortLabel(l10n, sortMode),
+        active: sortMode != _TransactionsSortMode.newest,
+        icon: Icons.sort_rounded,
+        values: _TransactionsSortMode.values,
+        labelFor: (value) => _sortLabel(l10n, value),
+        onSelected: onSortChanged,
+      ),
+      _PopupFilterChip<FinancialRole?>(
+        label: roleFilter == null
+            ? l10n.dashboardTransactionsFilterRole
+            : _financialRoleLabel(l10n, roleFilter!),
+        active: roleFilter != null,
+        icon: Icons.account_tree_outlined,
+        values: <FinancialRole?>[null, ...FinancialRole.values],
+        labelFor: (value) => value == null
+            ? l10n.dashboardTransactionsFilterAllRoles
+            : _financialRoleLabel(l10n, value),
+        onSelected: onRoleChanged,
+      ),
+    ];
+
+    // One horizontal row on phone — a Wrap stacks into a tall "drawer".
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var i = 0; i < chips.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            chips[i],
+          ],
+        ],
+      ),
     );
   }
 
