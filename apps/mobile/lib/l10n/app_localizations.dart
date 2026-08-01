@@ -1520,8 +1520,32 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardOverviewSixMonthTrend.
   ///
   /// In en, this message translates to:
-  /// **'Six-month spend trend'**
+  /// **'Spend trend'**
   String get dashboardOverviewSixMonthTrend;
+
+  /// No description provided for @financeChartRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart range'**
+  String get financeChartRangeLabel;
+
+  /// No description provided for @financeChartRange3Months.
+  ///
+  /// In en, this message translates to:
+  /// **'3M'**
+  String get financeChartRange3Months;
+
+  /// No description provided for @financeChartRange6Months.
+  ///
+  /// In en, this message translates to:
+  /// **'6M'**
+  String get financeChartRange6Months;
+
+  /// No description provided for @financeChartRange12Months.
+  ///
+  /// In en, this message translates to:
+  /// **'1Y'**
+  String get financeChartRange12Months;
 
   /// No description provided for @dashboardOverviewSpendingPressure.
   ///
@@ -1974,7 +1998,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardSectionTrendChartsHint.
   ///
   /// In en, this message translates to:
-  /// **'Income mix and six-month history'**
+  /// **'Income mix and spending history'**
   String get dashboardSectionTrendChartsHint;
 
   /// No description provided for @dashboardSectionSpendingAnalysis.

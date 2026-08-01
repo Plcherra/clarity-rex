@@ -803,7 +803,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardOverviewIncomeVsSpending => 'Income vs spending';
 
   @override
-  String get dashboardOverviewSixMonthTrend => 'Six-month spend trend';
+  String get dashboardOverviewSixMonthTrend => 'Spend trend';
+
+  @override
+  String get financeChartRangeLabel => 'Chart range';
+
+  @override
+  String get financeChartRange3Months => '3M';
+
+  @override
+  String get financeChartRange6Months => '6M';
+
+  @override
+  String get financeChartRange12Months => '1Y';
 
   @override
   String get dashboardOverviewSpendingPressure => 'Spending pressure';
@@ -1071,7 +1083,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardSectionTrendChartsHint =>
-      'Income mix and six-month history';
+      'Income mix and spending history';
 
   @override
   String get dashboardSectionSpendingAnalysis => 'Spending analysis';

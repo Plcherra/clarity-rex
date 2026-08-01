@@ -1,11 +1,5 @@
 part of 'financial_dashboard_view.dart';
 
-List<MonthlyBankGroup> _chronologicalMonthlyGroups(
-  List<MonthlyBankGroup> groups,
-) {
-  return groups.reversed.toList(growable: false);
-}
-
 class _DashboardChartPanel extends StatelessWidget {
   const _DashboardChartPanel({required this.child});
 

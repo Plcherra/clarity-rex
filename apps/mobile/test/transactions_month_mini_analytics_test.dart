@@ -1,6 +1,6 @@
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_snapshot.dart';
-import 'package:clarity/features/transactions/domain/bank_statement_monthly.dart';
+import 'package:clarity/features/dashboard/domain/monthly_cash_flow_series.dart';
 import 'package:clarity/features/transactions/presentation/widgets/transactions_month_mini_analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -59,37 +59,23 @@ void main() {
     expect(find.text('This month at a glance'), findsNothing);
   });
 
-  testWidgets('mini analytics sparkline uses monthly groups from snapshot', (
+  testWidgets('mini analytics sparkline uses the cash flow series', (
     tester,
   ) async {
-    final groups = [
-      for (var i = 1; i <= 3; i++)
-        MonthlyBankGroup(
-          yearMonth: '2026-0$i',
-          totalAmount: -100 * i.toDouble(),
-          transactions: [
-            BankStatementLine(
-              transaction: Transaction(
-                accountId: 'acct-1',
-                date: DateTime(2026, i, 5),
-                amount: -100 * i.toDouble(),
-                description: 'Spend $i',
-              ),
-              suggestedCategory: 'Shopping',
-            ),
-          ],
-        ),
-    ];
-
-    final snapshot = DashboardSnapshot(
+    const snapshot = DashboardSnapshot(
       totalBalance: 500,
       spentThisMonth: 300,
       incomeThisMonth: 1000,
       availableThisMonth: 700,
-      topCategories: const [CategorySpend(name: 'Shopping', amount: 300)],
-      biggestLeaksThisMonth: const [],
+      topCategories: [CategorySpend(name: 'Shopping', amount: 300)],
+      biggestLeaksThisMonth: [],
       burnRunwayDays: 5,
-      monthlyGroups: groups.reversed.toList(growable: false),
+      monthlyGroups: [],
+      monthlyCashFlow: [
+        MonthlyCashFlowPoint(yearMonth: '2026-01', income: 900, spend: 100),
+        MonthlyCashFlowPoint(yearMonth: '2026-02', income: 900, spend: 200),
+        MonthlyCashFlowPoint(yearMonth: '2026-03', income: 1000, spend: 300),
+      ],
     );
 
     await tester.pumpWidget(

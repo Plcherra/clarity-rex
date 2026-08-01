@@ -5,8 +5,8 @@ import '../../../../core/formatting/formatting.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
 import '../../../dashboard/domain/dashboard_snapshot.dart';
+import '../../../dashboard/domain/monthly_cash_flow_series.dart';
 import '../../../dashboard/presentation/charts/finance_charts.dart';
-import '../../domain/bank_statement_monthly.dart';
 import '../../../../theme/clarity_colors.dart';
 import '../../../../theme/clarity_radius.dart';
 import '../../../../widgets/clarity_card.dart';
@@ -38,7 +38,7 @@ class TransactionsMonthMiniAnalytics extends StatelessWidget {
     }
 
     final topCategories = snapshot.topCategories.take(3).toList(growable: false);
-    final sparklineValues = _sparklineSpendValues(snapshot.monthlyGroups);
+    final sparklineValues = _sparklineSpendValues(snapshot.monthlyCashFlow);
 
     return ClarityCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -127,13 +127,12 @@ class TransactionsMonthMiniAnalytics extends StatelessWidget {
   }
 }
 
-List<double> _sparklineSpendValues(List<MonthlyBankGroup> monthlyGroups) {
-  if (monthlyGroups.isEmpty) {
+List<double> _sparklineSpendValues(List<MonthlyCashFlowPoint> months) {
+  if (months.isEmpty) {
     return const [];
   }
-  final chronological = monthlyGroups.reversed.toList(growable: false);
-  final recent = trimFinanceChartMonths(chronological);
-  return recent.map(spendForMonthlyBankGroup).toList(growable: false);
+  final recent = trimFinanceChartMonths(months);
+  return [for (final month in recent) month.spend];
 }
 
 class _MiniMetricTile extends StatelessWidget {

@@ -46,7 +46,8 @@ bool isBankStatementDataRow(Transaction t) {
   return true;
 }
 
-String _yearMonthKey(DateTime d) =>
+/// `YYYY-MM` for [d] in local time — the key every monthly rollup groups on.
+String yearMonthKey(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}';
 
 /// Groups [transactions] by calendar month using the same rules as the bank
@@ -73,7 +74,7 @@ List<MonthlyBankGroup> monthlyGroupsFromTransactions(
   final byMonth = <String, List<BankStatementLine>>{};
   for (final r in resolved) {
     final t = r.transaction;
-    final key = _yearMonthKey(t.date);
+    final key = yearMonthKey(t.date);
     byMonth
         .putIfAbsent(key, () => [])
         .add(
@@ -104,7 +105,7 @@ List<MonthlyBankGroup> monthlyGroupsFromResolvedTransactions(
   for (final resolved in transactions) {
     final transaction = resolved.transaction;
     if (!isBankStatementDataRow(transaction)) continue;
-    final key = _yearMonthKey(transaction.date);
+    final key = yearMonthKey(transaction.date);
     byMonth
         .putIfAbsent(key, () => [])
         .add(

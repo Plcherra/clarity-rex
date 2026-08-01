@@ -1,6 +1,7 @@
 import 'balance_resolve.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import 'dashboard_metrics.dart';
+import 'monthly_cash_flow_series.dart';
 import '../../../core/models/models.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
@@ -55,6 +56,7 @@ class DashboardSnapshot {
     required this.biggestLeaksThisMonth,
     required this.burnRunwayDays,
     required this.monthlyGroups,
+    this.monthlyCashFlow = const [],
   });
 
   final double totalBalance;
@@ -64,7 +66,13 @@ class DashboardSnapshot {
   final List<CategorySpend> topCategories;
   final List<CategoryLeakStat> biggestLeaksThisMonth;
   final int? burnRunwayDays;
+
+  /// Statement months, newest first. Every row of the month, for month detail.
   final List<MonthlyBankGroup> monthlyGroups;
+
+  /// Chart series, oldest month first. Counted like [spentThisMonth] and
+  /// [incomeThisMonth] so a chart can never disagree with the overview card.
+  final List<MonthlyCashFlowPoint> monthlyCashFlow;
 }
 
 DashboardSnapshot buildDashboardSnapshot({
@@ -165,5 +173,6 @@ DashboardSnapshot buildDashboardSnapshot({
     biggestLeaksThisMonth: leaks,
     burnRunwayDays: runway,
     monthlyGroups: monthsNewestFirst,
+    monthlyCashFlow: buildMonthlyCashFlowSeries(resolved),
   );
 }

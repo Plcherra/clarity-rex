@@ -1,83 +1,16 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
 
 import 'package:clarity/core/formatting/formatting.dart';
-import 'package:clarity/core/layout/clarity_breakpoints.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/features/budgets/domain/budget_models.dart';
-import 'package:clarity/features/transactions/domain/bank_statement_monthly.dart';
-import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
-class MonthlyCashFlowChart extends StatelessWidget {
-  const MonthlyCashFlowChart({required this.monthlyGroups, super.key});
+import 'finance_chart_primitives.dart';
 
-  final List<MonthlyBankGroup> monthlyGroups;
-
-  @override
-  Widget build(BuildContext context) {
-    if (monthlyGroups.isEmpty) {
-      return _FinanceChartEmpty(
-        message: context.l10n.dashboardChartConnectAccountsCashFlow,
-      );
-    }
-
-    final recent = trimFinanceChartMonths(monthlyGroups);
-    final colors = context.clarityColors;
-    final l10n = context.l10n;
-    final labels = recent.map((group) => _monthLabel(l10n, group)).toList();
-    final incomeValues = recent.map(_incomeForGroup).toList();
-    final spendValues = recent.map(_spendForGroup).toList();
-
-    return SizedBox(
-      height: financeChartHeight(context),
-      child: BarChart(
-        BarChartData(
-          maxY: financeChartMaxY([...incomeValues, ...spendValues]),
-          gridData: FlGridData(
-            drawVerticalLine: false,
-            getDrawingHorizontalLine: (_) => FlLine(
-              color: colors.divider.withValues(alpha: 0.35),
-            ),
-          ),
-          titlesData: FlTitlesData(
-            topTitles: const AxisTitles(),
-            rightTitles: const AxisTitles(),
-            leftTitles: const AxisTitles(),
-            bottomTitles: _financeChartBottomTitles(
-              labels: labels,
-              textColor: colors.textMuted,
-            ),
-          ),
-          borderData: FlBorderData(show: false),
-          barGroups: [
-            for (var i = 0; i < recent.length; i++)
-              BarChartGroupData(
-                x: i,
-                barsSpace: 4,
-                barRods: [
-                  BarChartRodData(
-                    toY: incomeValues[i],
-                    color: ClarityColors.financePositive,
-                    width: 8,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  BarChartRodData(
-                    toY: spendValues[i],
-                    color: ClarityColors.financeSpending,
-                    width: 8,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+export 'finance_cash_flow_charts.dart';
+export 'finance_chart_primitives.dart';
+export 'finance_chart_range_switch.dart';
 
 class CategorySpendChart extends StatelessWidget {
   const CategorySpendChart({required this.categories, super.key});
@@ -87,7 +20,7 @@ class CategorySpendChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (categories.isEmpty) {
-      return _FinanceChartEmpty(
+      return FinanceChartEmpty(
         message: context.l10n.dashboardChartNoCategorySpending,
       );
     }
@@ -119,7 +52,7 @@ class BiggestLeaksChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (leaks.isEmpty) {
-      return _FinanceChartEmpty(
+      return FinanceChartEmpty(
         message: context.l10n.dashboardChartNoSpendingPressure,
       );
     }
@@ -154,7 +87,7 @@ class BudgetVsSpentChart extends StatelessWidget {
         ? performance.categories.take(6).toList(growable: false)
         : performance.topOverspendingCategories;
     if (categories.isEmpty) {
-      return _FinanceChartEmpty(
+      return FinanceChartEmpty(
         message: context.l10n.dashboardChartNoBudgetCategories,
       );
     }
@@ -206,68 +139,6 @@ class BudgetVsSpentChart extends StatelessWidget {
   }
 }
 
-class SixMonthSpendTrendChart extends StatelessWidget {
-  const SixMonthSpendTrendChart({required this.monthlyGroups, super.key});
-
-  final List<MonthlyBankGroup> monthlyGroups;
-
-  @override
-  Widget build(BuildContext context) {
-    if (monthlyGroups.isEmpty) {
-      return _FinanceChartEmpty(
-        message: context.l10n.dashboardChartNoSpendingHistory,
-      );
-    }
-
-    final recent = trimFinanceChartMonths(monthlyGroups);
-    final spendValues = recent.map(_spendForGroup).toList();
-    final l10n = context.l10n;
-    final labels = recent.map((group) => _monthLabel(l10n, group)).toList();
-    final colors = context.clarityColors;
-    final spots = [
-      for (var i = 0; i < spendValues.length; i++)
-        FlSpot(i.toDouble(), spendValues[i]),
-    ];
-
-    return SizedBox(
-      height: financeChartHeight(context, compact: 180),
-      child: LineChart(
-        LineChartData(
-          minX: 0,
-          maxX: spots.isEmpty ? 0 : spots.length - 1,
-          minY: 0,
-          maxY: financeChartMaxY(spendValues),
-          gridData: FlGridData(
-            drawVerticalLine: false,
-            getDrawingHorizontalLine: (_) => FlLine(
-              color: colors.divider.withValues(alpha: 0.35),
-            ),
-          ),
-          titlesData: FlTitlesData(
-            topTitles: const AxisTitles(),
-            rightTitles: const AxisTitles(),
-            leftTitles: const AxisTitles(),
-            bottomTitles: _financeChartBottomTitles(
-              labels: labels,
-              textColor: colors.textMuted,
-            ),
-          ),
-          borderData: FlBorderData(show: false),
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              color: ClarityColors.financeSpending,
-              barWidth: 3,
-              dotData: const FlDotData(show: true),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class IncomeSpendRatioChart extends StatelessWidget {
   const IncomeSpendRatioChart({
     required this.income,
@@ -281,7 +152,7 @@ class IncomeSpendRatioChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (income <= 0 && spent <= 0) {
-      return _FinanceChartEmpty(
+      return FinanceChartEmpty(
         message: context.l10n.dashboardChartNoIncomeOrSpending,
       );
     }
@@ -324,28 +195,6 @@ class IncomeSpendRatioChart extends StatelessWidget {
           style: theme.textTheme.bodySmall?.copyWith(color: colors.textMuted),
         ),
       ],
-    );
-  }
-}
-
-class _FinanceChartEmpty extends StatelessWidget {
-  const _FinanceChartEmpty({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 100,
-      child: Center(
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: context.clarityColors.textMuted,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -406,100 +255,4 @@ class _HorizontalAmountBar extends StatelessWidget {
       ),
     );
   }
-}
-
-String _monthLabel(AppLocalizations l10n, MonthlyBankGroup group) {
-  final parts = group.yearMonth.split('-');
-  if (parts.length != 2) {
-    return group.yearMonth;
-  }
-  final month = int.tryParse(parts[1]) ?? 0;
-  if (month < 1 || month > 12) {
-    return group.yearMonth;
-  }
-  return switch (month) {
-    1 => l10n.commonMonthShortJan,
-    2 => l10n.commonMonthShortFeb,
-    3 => l10n.commonMonthShortMar,
-    4 => l10n.commonMonthShortApr,
-    5 => l10n.commonMonthShortMay,
-    6 => l10n.commonMonthShortJun,
-    7 => l10n.commonMonthShortJul,
-    8 => l10n.commonMonthShortAug,
-    9 => l10n.commonMonthShortSep,
-    10 => l10n.commonMonthShortOct,
-    11 => l10n.commonMonthShortNov,
-    12 => l10n.commonMonthShortDec,
-    _ => l10n.commonMonthShortOld,
-  };
-}
-
-AxisTitles _financeChartBottomTitles({
-  required List<String> labels,
-  required Color textColor,
-}) {
-  return AxisTitles(
-    sideTitles: SideTitles(
-      showTitles: true,
-      interval: 1,
-      reservedSize: 22,
-      getTitlesWidget: (value, _) {
-        final index = value.round();
-        if ((value - index).abs() > 0.001) {
-          return const SizedBox.shrink();
-        }
-        if (index < 0 || index >= labels.length) {
-          return const SizedBox.shrink();
-        }
-        return Text(
-          labels[index],
-          style: TextStyle(color: textColor, fontSize: 10),
-        );
-      },
-    ),
-  );
-}
-
-double _incomeForGroup(MonthlyBankGroup group) {
-  var total = 0.0;
-  for (final line in group.transactions) {
-    if (line.transaction.amount > 0) {
-      total += line.transaction.amount;
-    }
-  }
-  return total;
-}
-
-double _spendForGroup(MonthlyBankGroup group) => spendForMonthlyBankGroup(group);
-
-@visibleForTesting
-double spendForMonthlyBankGroup(MonthlyBankGroup group) {
-  var total = 0.0;
-  for (final line in group.transactions) {
-    if (line.transaction.amount < 0) {
-      total += -line.transaction.amount;
-    }
-  }
-  return total;
-}
-
-@visibleForTesting
-List<T> trimFinanceChartMonths<T>(List<T> items) {
-  if (items.length <= 6) {
-    return items;
-  }
-  return items.sublist(items.length - 6);
-}
-
-@visibleForTesting
-double financeChartMaxY(Iterable<double> values) {
-  final maxY = values.fold<double>(
-    0,
-    (max, value) => value > max ? value : max,
-  );
-  return maxY <= 0 ? 1 : maxY * 1.15;
-}
-
-double financeChartHeight(BuildContext context, {double compact = 200}) {
-  return isClarityDesktopLayout(context) ? 300 : compact;
 }

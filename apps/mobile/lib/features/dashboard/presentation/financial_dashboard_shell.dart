@@ -115,10 +115,6 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
     final l10n = context.l10n;
     final snapshot = widget.snapshot;
     final budgetPerformance = widget.budgetPerformance;
-    final chronologicalGroups = _chronologicalMonthlyGroups(
-      snapshot.monthlyGroups,
-    );
-
     final wide = isClarityWideLayout(context);
     final desktop = isClarityDesktopLayout(context);
     final native = ClarityNativeLayout.active(context);
@@ -138,7 +134,7 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
     final cashFlowChart = _DashboardChartSection(
       sectionKey: _monthlyCashFlowKey,
       title: l10n.dashboardOverviewMonthlyCashFlow,
-      child: MonthlyCashFlowChart(monthlyGroups: chronologicalGroups),
+      child: MonthlyCashFlowChart(months: snapshot.monthlyCashFlow),
     );
     final categoryChart = _DashboardChartSection(
       title: l10n.dashboardOverviewSpendingByCategory,
@@ -147,7 +143,7 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
     );
     final trendChart = _DashboardChartSection(
       title: l10n.dashboardOverviewSixMonthTrend,
-      child: SixMonthSpendTrendChart(monthlyGroups: chronologicalGroups),
+      child: SpendTrendChart(months: snapshot.monthlyCashFlow),
     );
     final pressureChart = _DashboardChartSection(
       sectionKey: _spendingPressureKey,
