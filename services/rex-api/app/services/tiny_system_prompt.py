@@ -1,4 +1,11 @@
-"""Tiny system prompt: Truth + Auto Suggestions + capability names. No persona."""
+"""Tiny system prompt: Truth + Auto Suggestions + judgment. No persona.
+
+Most of this used to be format instructions — the canonical JSON shape, that a
+fence must be valid, that it belongs in the same turn as the reply. The
+rex_action tool schema enforces all of that now, and its enum already lists
+every capability, so the prompt only has to carry what a schema cannot: which
+kind of thing a request is, and when the gate lets Rex act.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +15,6 @@ from app.services.assistant_proposal_settings import (
     AUTO_PROPOSALS_TEXT,
     AssistantProposalSettings,
 )
-from app.services.capability_catalog import capability_names_prompt
 from app.services.clarity_knowledge_labels import CLARITY_KNOWLEDGE_LANGUAGE_PROMPT
 
 _TRUTH_RULE = (
@@ -18,104 +24,76 @@ _TRUTH_RULE = (
 )
 
 _ACTIONS_BASE = (
-    "You are the conversational brain every turn — always reply naturally.\n"
-    "Unsupported (email/SMS): honest cannot-send; may offer a draft; append:\n"
-    "```rex_action\n"
-    '{"action":"unsupported","capability_hint":"send_email"}\n'
-    "```"
+    "You are the conversational brain every turn — always reply naturally. "
+    "Everything Clarity can do is in the rex_action tool; call it to make "
+    "something happen, because describing it does nothing. For email, SMS, or "
+    "anything outside Clarity: say plainly you cannot, offer a draft if it "
+    "helps, and call unsupported."
 )
 
 _TITLE_RULE = (
-    'Title must be a short habit label (e.g. "Wake at 5am"), never the user\'s '
-    "full sentence or a paste of their message."
-)
-
-_JSON_RULE = (
-    "Use only valid JSON inside ```rex_action```. Canonical shape: "
-    '{"action":"update_open_thread","payload":{"thread_id":"<listed-id>",'
-    '"title":"Wake at 5:15am","summary":"Work on Clarity every morning"}}.'
+    'Titles are short labels ("Wake at 5am"), never the user\'s whole sentence.'
 )
 
 _PEOPLE_OFFERS = (
-    "Offer people and moments too, not only threads and goals: save_person for "
-    "someone new, add_person_note for what happened with them, "
-    "update_person_state for how things stand now."
+    "People count too: save_person for someone new, add_person_note for what "
+    "happened with them, update_person_state for how things stand now."
+)
+
+_KIND_RULE = (
+    "A recurring habit or check-in is an open thread; something with an end is "
+    "a goal; a step under a goal is a milestone (send plan_id or goal_title)."
 )
 
 _ACTIONS_MUTATE = (
-    "When the user wants an open-thread create/update — including after they "
-    "say yes to your offer — append ```rex_action``` in the same turn with "
-    "create_open_thread or update_open_thread. "
-    f"Payload MUST include a non-empty title. {_TITLE_RULE} "
-    "Prefer update_open_thread with a listed thread_id when changing an "
-    "existing thread. Include summary when the user gives reminder details, "
-    "the reason it matters, or a renamed purpose. "
-    "For achievement goals (not habits), use create_goal / update_goal / "
-    "delete_goal with a short title (and description when known). "
-    "Prefer plan_id or existing_title/reference when updating or deleting. "
-    "A step under a goal is a milestone (create_milestone / update_milestone / "
-    "delete_milestone) — include plan_id or goal_title. "
-    "A recurring habit/check-in is an open thread, not a milestone. "
-    f"{_PEOPLE_OFFERS} Ask once, in chat, and save on yes. "
-    f"{_JSON_RULE} Keep talking; do not claim updated before confirm."
+    "When the user wants a thread created or changed — including after they "
+    "say yes to your offer — call create_open_thread or update_open_thread, "
+    f"preferring a listed thread_id. {_TITLE_RULE} Add a summary when they "
+    f"give details or the reason it matters. {_KIND_RULE} {_PEOPLE_OFFERS} "
+    "Ask once, save on yes, and keep talking."
 )
 
 _ACTIONS_MUTATE_CARD = (
-    "When the user asks to create/update an open thread or change wake/sleep/"
-    "habit time — and open threads are listed — you MUST append ```rex_action``` "
-    "in the same turn with update_open_thread (preferred, with listed thread_id) "
-    "or create_open_thread. "
-    f"Payload MUST include a non-empty title. {_TITLE_RULE} "
-    "Pre-fill both title and summary when known so the confirm card can edit "
-    "both fields. "
-    "For achievement goals, append create_goal / update_goal / delete_goal "
-    "so a confirm card can appear — never only talk about saving a goal. "
-    "For a step under a goal, append create_milestone / update_milestone / "
-    "delete_milestone with plan_id or goal_title. Habits stay open threads. "
-    f"{_PEOPLE_OFFERS} Give each card a clear title and description. "
-    f"{_JSON_RULE} "
-    "The body shows a confirm card — never only talk about updating in prose. "
-    "Do not claim updated before they confirm on the card."
+    "When the user asks to create or change a thread, goal, milestone, person, "
+    "or a wake/sleep/habit time, call the matching action so a confirm card "
+    "appears — never only talk about saving it. Prefer update_open_thread with "
+    f"a listed thread_id. {_TITLE_RULE} Fill in the summary or description too "
+    f"so the card is worth editing. {_KIND_RULE} {_PEOPLE_OFFERS} Do not say "
+    "it is saved before they confirm on the card."
 )
 
 _ACTIONS_MUTATE_OFF = (
-    "Always keep the conversation going, and never volunteer a save. "
-    'On a clear command ("save Marcella", "update my thread to 5am", '
-    '"can you update it" after a wake time was discussed) append '
-    '```rex_action``` in the same turn with "explicit":true: create_open_thread '
-    f"or update_open_thread (non-empty title required; {_TITLE_RULE} prefer a "
-    "listed thread_id, add summary when they give details), goals, milestones "
-    "(plan_id or goal_title), memory, or person saves and notes. Habits stay "
-    "open threads. If they ask you to save but not what to save, ask which — "
-    "the person, a note on their card, a goal — then act on their answer. Off "
-    "applies these with no card, so send them only when the user wants the "
-    'change now; mark your own ideas "auto":true so they stay unsaid. '
-    f"{_JSON_RULE} "
-    'Vague wishes ("I wish I woke earlier") stay conversation. '
-    "Do not claim updated until the body applies it."
+    "Keep the conversation going and never volunteer a save. On a clear "
+    'command ("save Marcella", "update my thread to 5am", "can you update it" '
+    "after a wake time was discussed) call the matching action with explicit "
+    f"true. {_TITLE_RULE} {_KIND_RULE} If they ask you to save but not what to "
+    "save, ask which — the person, a note on their card, a goal — then act on "
+    "their answer. Off applies with no card, so act only when they want the "
+    "change now, and mark your own ideas auto true so they stay unsaid. Vague "
+    'wishes ("I wish I woke earlier") stay conversation.'
 )
 
+_ACTIONS_FETCH = (
+    "You cannot see money, past chats, or saved items until you ask: "
+    "fetch_spend_insight, fetch_account_summary, search_chats, "
+    "list_knows_summary. Read first, then answer only from what comes back. A "
+    "read that finds nothing is an answer — say so instead of recalling."
+)
 
 _ACTIONS_FINANCE = (
-    "Money questions: append ```rex_action``` with fetch_spend_insight "
-    "(category?, merchant?, period?) or fetch_account_summary (account?), then "
-    "answer only from the fetched numbers — never invent amounts. Totals cover "
-    "the period; rows can be a sample, so quote totals and call rows examples. "
-    "Category names are the user's own buckets and often mix things (fast food "
-    "in a coffee category): for a narrower question, separate it with the "
-    "merchant lines and say what you left out. Finance changes: append the "
-    "action in the same turn — never promise one in prose alone. "
-    'update_category {"reference":"<current>","new_name":"<new>"} renames; '
-    "categorize_transaction (transaction_ids) or bulk_categorize (merchant + "
-    "category) moves rows and may name a category that does not exist yet — the "
-    "body reuses or creates it on confirm, so split a mixed bucket with one "
-    "bulk_categorize per merchant. Clarity cannot create transactions outside "
-    "Plaid or CSV."
+    "Totals cover the period; rows can be a sample, so quote totals and call "
+    "rows examples. Category names are the user's own buckets and often mix "
+    "things (fast food in a coffee category): for a narrower question, "
+    "separate it with the merchant lines and say what you left out. "
+    "update_category renames; categorize_transaction or bulk_categorize moves "
+    "rows and may name a category that does not exist yet — the body reuses or "
+    "creates it on confirm, so split a mixed bucket with one bulk_categorize "
+    "per merchant. Clarity cannot create transactions outside Plaid or CSV."
 )
 
 _ACTIONS_FINANCE_OFF = (
     f"{_ACTIONS_FINANCE} Off mode still runs finance changes the user asks for "
-    '(send "explicit":true); it only means do not volunteer them.'
+    "(send explicit true); it only means do not volunteer them."
 )
 
 
@@ -135,10 +113,13 @@ def _mode_guidance(mode: str) -> str:
 
 def _actions_block(mode: str) -> str:
     if mode == AUTO_PROPOSALS_OFF:
-        return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE_OFF}\n{_ACTIONS_FINANCE_OFF}"
-    if mode == AUTO_PROPOSALS_CARD:
-        return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE_CARD}\n{_ACTIONS_FINANCE}"
-    return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE}\n{_ACTIONS_FINANCE}"
+        mutate, finance = _ACTIONS_MUTATE_OFF, _ACTIONS_FINANCE_OFF
+    elif mode == AUTO_PROPOSALS_CARD:
+        mutate, finance = _ACTIONS_MUTATE_CARD, _ACTIONS_FINANCE
+    else:
+        mutate, finance = _ACTIONS_MUTATE, _ACTIONS_FINANCE
+    # Reads are the same in every mode: the gate is about saving, not looking.
+    return f"{_ACTIONS_BASE}\n{mutate}\n{_ACTIONS_FETCH}\n{finance}"
 
 
 def build_tiny_system_prompt(
@@ -157,7 +138,6 @@ def build_tiny_system_prompt(
     sections = [
         _TRUTH_RULE,
         gate,
-        capability_names_prompt(),
         _actions_block(mode),
         CLARITY_KNOWLEDGE_LANGUAGE_PROMPT,
     ]

@@ -14,6 +14,7 @@ from app.services.clarity_action_parser import ClarityActionParser
 from app.services.durable_write_service import DurableWriteService
 from app.services.prompt_open_threads_context import format_open_threads_context
 from app.services.tiny_system_prompt import build_tiny_system_prompt
+from tests.brain_surface import capability_surface
 
 
 _SLEEP_THREAD_ROW = {
@@ -674,10 +675,10 @@ def test_open_threads_context_includes_ids() -> None:
 
 
 def test_tiny_system_phase_c_mentions_open_thread_dispatch() -> None:
-    prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="card"))
-    assert "create_open_thread" in prompt
-    assert "update_open_thread" in prompt
-    assert "delete_open_thread" not in prompt
+    surface = capability_surface(build_tiny_system_prompt(AssistantProposalSettings(mode="card")))
+    assert "create_open_thread" in surface
+    assert "update_open_thread" in surface
+    assert "delete_open_thread" not in surface
 
 
 @pytest.mark.asyncio

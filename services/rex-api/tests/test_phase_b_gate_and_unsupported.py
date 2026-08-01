@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-from app.services.action_fence_stream import ActionFenceStreamFilter
 from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.auto_suggestions_gate import apply_auto_suggestions_gate
 from app.services.brain_action_schema import BrainAction, parse_brain_actions
@@ -13,6 +12,7 @@ from app.services.chat_turn_finalize import finalize_grok_turn
 from app.services.clarity_action_parser import ClarityActionParser
 from app.services.durable_write_service import DurableWriteService
 from app.services.tiny_system_prompt import build_tiny_system_prompt
+from tests.brain_surface import capability_surface
 
 
 class _NoPendingStore:
@@ -236,29 +236,26 @@ async def test_off_soft_habit_pipeline_emits_no_proposals() -> None:
 
 def test_tiny_system_has_unsupported_no_response_style() -> None:
     prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))
+    surface = capability_surface(prompt)
     assert "unsupported" in prompt.lower()
     assert "rex_action" in prompt
-    assert "send_email" in prompt
-    assert "update_open_thread" in prompt
+    assert "email" in prompt.lower()
+    assert "update_open_thread" in surface
     assert "response style" not in prompt.lower()
     assert "concise" not in prompt.lower()
     assert "balanced" not in prompt.lower()
     assert "detailed" not in prompt.lower()
 
 
-def test_action_fence_stream_hides_rex_action() -> None:
-    stream_filter = ActionFenceStreamFilter()
-    visible: list[str] = []
-    for token in [
-        "Draft here. ```rex",
-        "_action\n",
-        '{"action":"unsupported","capability_hint":"send_email"}',
-        "\n``` Thanks.",
-    ]:
-        visible.extend(stream_filter.feed(token))
-    visible.extend(stream_filter.finish())
-    text = "".join(visible)
-    assert "Draft here." in text
-    assert "Thanks." in text
-    assert "rex_action" not in text
-    assert "send_email" not in text
+def test_a_fence_a_model_still_writes_never_reaches_the_reply() -> None:
+    """Fences are the fallback path; their text must not be spoken aloud."""
+    parsed = parse_brain_actions(
+        "Draft here. ```rex_action\n"
+        '{"action":"unsupported","capability_hint":"send_email"}\n'
+        "``` Thanks."
+    )
+    assert "Draft here." in parsed.reply_text
+    assert "Thanks." in parsed.reply_text
+    assert "rex_action" not in parsed.reply_text
+    assert "send_email" not in parsed.reply_text
+    assert [action.name for action in parsed.actions] == ["unsupported"]

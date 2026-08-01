@@ -32,7 +32,7 @@ async def test_fetch_spend_insight_answers_from_fetched_numbers() -> None:
     assert "fetch_spend_insight" in pack
     assert "Category Coffee for the whole period" in pack
     assert "spent=42.5" in pack
-    assert "only source for numbers" in pack
+    assert "only source for this answer" in pack
     assert "estimating" in pack
     assert clarity_proposals(finalized) == []
 

@@ -103,7 +103,7 @@ def _proposal_shape(turn: dict) -> dict:
 async def test_voice_refuses_finance_answer_without_financial_context():
     async with async_voice_client() as client:
         ai_service = FakeAIService(
-            stream_tokens=[
+            reply_chunks=[
                 "You spent $42. ",
                 "```rex_action\n",
                 '{"action":"fetch_spend_insight","payload":{"category":"Groceries"}}\n',
@@ -121,8 +121,8 @@ async def test_voice_refuses_finance_answer_without_financial_context():
 
         assert done["response_text"] == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
         # No grounded second pass without reliable Clarity finance data.
-        assert ai_service.generate_calls == 0
-        assert ai_service.stream_calls == 1
+        assert ai_service.fetch_calls == 0
+        assert ai_service.decide_calls == 1
         assert " ".join(tts.calls) == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
         assert "without guessing" in done["response_text"]
         assert "$42" not in done["response_text"]
@@ -205,7 +205,7 @@ async def test_voice_updates_keep_one_saved_fact_instead_of_duplicates():
         assert tickets["memory_changes"]["updated"] == 1
         assert canceled["memory_changes"]["updated"] == 1
         # Three brain turns; the three confirmations never re-ask the brain.
-        assert ai_service.stream_calls == 3
+        assert ai_service.decide_calls == 3
         assert len(memory_service.long_term_memory) == 1
         assert memory_service.long_term_memory[0]["content"] == (
             "User canceled the plan to watch Masters of the Universe tonight "
@@ -233,7 +233,7 @@ async def test_voice_updates_keep_one_saved_fact_instead_of_duplicates():
 @pytest.mark.asyncio
 async def test_voice_speaks_the_brain_reply_for_questions(question, answer):
     async with async_voice_client() as client:
-        ai_service = ScriptedAIService(stream_tokens=[answer])
+        ai_service = ScriptedAIService(reply_chunks=[answer])
         memory_service = FakeMemoryService()
         chat = _chat_service(ai_service, memory_service)
 
@@ -241,6 +241,6 @@ async def test_voice_speaks_the_brain_reply_for_questions(question, answer):
 
         assert done["response_text"] == answer
         assert " ".join(part.strip() for part in tts.calls) == answer
-        assert ai_service.stream_calls == 1
+        assert ai_service.decide_calls == 1
         assert done["memory_changes"] is None
         assert memory_service.long_term_memory == []

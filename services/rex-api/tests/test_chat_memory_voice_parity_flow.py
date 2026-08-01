@@ -98,8 +98,9 @@ async def test_voice_update_rewrites_the_existing_memory_after_confirm():
     confirmed = await confirm_durable_write(turns.chat, _proposal_result(events))
 
     assert confirmed["memory_changes"]["updated"] == 1
-    assert turns.brain.generate_calls == 0
-    assert turns.brain.stream_calls == 1
+    # One brain turn for the ask; the confirm is body-only.
+    assert turns.brain.decide_calls == 1
+    assert turns.brain.fetch_calls == 0
     person = assert_person_card_covers(
         turns.store,
         relationship="self",

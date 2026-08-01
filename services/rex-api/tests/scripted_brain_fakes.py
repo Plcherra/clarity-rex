@@ -58,40 +58,41 @@ class ScriptedAIService:
         script: Optional[dict[str, str]] = None,
         *,
         default: str = "Rex response",
-        stream_tokens: Optional[Sequence[str]] = None,
+        reply_chunks: Optional[Sequence[str]] = None,
         usage: Optional[GrokUsage] = None,
     ) -> None:
         self.script = dict(script or {})
         self.default = default
-        self.stream_tokens = list(stream_tokens) if stream_tokens else None
+        self.reply_chunks = list(reply_chunks) if reply_chunks else None
         self.usage = usage or GrokUsage(prompt_tokens=100, completion_tokens=40)
         self.messages: list = []
         self.kwargs: dict = {}
         self.prompts: list[str] = []
         self.user_messages: list[str] = []
         self.generate_calls = 0
-        self.stream_calls = 0
+        # Turns where Grok could act carry the capability tool; the grounded
+        # second pass does not. Counting them apart keeps "the brain ran once"
+        # separate from "we paid for a fetch pass".
+        self.decide_calls = 0
+        self.fetch_calls = 0
 
     def reply_for(self, messages: Sequence[dict]) -> str:
         user_text = latest_user_text(messages).casefold()
         for phrase, reply in self.script.items():
             if phrase.casefold() in user_text:
                 return reply
+        if self.reply_chunks:
+            return "".join(self.reply_chunks)
         return self.default
 
     async def generate_response(self, messages, **kwargs):
         self.generate_calls += 1
+        if kwargs.get("tools"):
+            self.decide_calls += 1
+        else:
+            self.fetch_calls += 1
         self._record(messages, kwargs)
         return GrokChatResult(text=self.reply_for(messages), usage=self.usage)
-
-    async def stream_response(self, messages, **kwargs):
-        self.stream_calls += 1
-        self._record(messages, kwargs)
-        usage_holder = kwargs.get("usage_holder")
-        if usage_holder is not None:
-            usage_holder.usage = self.usage
-        for token in self.stream_tokens or _stream_chunks(self.reply_for(messages)):
-            yield token
 
     def _record(self, messages, kwargs: dict) -> None:
         self.messages = messages
@@ -150,10 +151,3 @@ def message_text(content: Any) -> str:
         ]
         return " ".join(part for part in parts if part)
     return str(content or "")
-
-
-def _stream_chunks(reply: str, size: int = 24) -> list[str]:
-    """Chunk a scripted reply so streaming tests see more than one token."""
-    if not reply:
-        return [""]
-    return [reply[index : index + size] for index in range(0, len(reply), size)]

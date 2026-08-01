@@ -10,6 +10,7 @@ from app.services.brain_action_schema import BrainAction, parse_brain_actions
 from app.services.capability_dispatcher import dispatch_allowed_actions
 from app.services.durable_write_service import DurableWriteService
 from app.services.tiny_system_prompt import build_tiny_system_prompt
+from tests.brain_surface import capability_surface
 from chat_service_fakes import FakeMemoryService
 
 
@@ -548,7 +549,8 @@ def test_parse_create_milestone_action_aliases() -> None:
 
 def test_tiny_system_phase_e2_mentions_milestone_dispatch() -> None:
     prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="card", goals=True))
-    assert "create_milestone" in prompt
-    assert "update_milestone" in prompt
-    assert "delete_milestone" in prompt
+    surface = capability_surface(prompt)
+    assert "create_milestone" in surface
+    assert "update_milestone" in surface
+    assert "delete_milestone" in surface
     assert "open thread" in prompt.lower() or "habit" in prompt.lower()

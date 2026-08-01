@@ -1,11 +1,10 @@
 import json
-from collections.abc import AsyncIterator
 from typing import Optional
 
 import httpx
 
 from app.config import Settings, get_settings
-from app.services.grok_usage import GrokChatResult, GrokUsage, GrokUsageHolder
+from app.services.grok_usage import GrokChatResult, GrokUsage
 from app.services.http_client import request_with_retries
 
 
@@ -28,6 +27,7 @@ class AIService:
         model_override: Optional[str] = None,
         max_tokens: Optional[int] = None,
         max_prompt_characters: Optional[int] = None,
+        tools: Optional[list[dict]] = None,
     ) -> GrokChatResult:
         prompt_messages = self._validated_prompt_messages(
             messages,
@@ -40,6 +40,7 @@ class AIService:
             stream=False,
             model_override=model_override,
             max_tokens=max_tokens,
+            tools=tools,
         )
 
         try:
@@ -56,9 +57,12 @@ class AIService:
             response.raise_for_status()
 
             data = json.loads(response.text)
+            text, tool_calls, finish_reason = self._parse_grok_choice(data)
             return GrokChatResult(
-                text=self._parse_grok_response(data),
+                text=text,
                 usage=GrokUsage.from_api_payload(data),
+                tool_calls=tool_calls,
+                finish_reason=finish_reason,
             )
         except httpx.HTTPStatusError as error:
             raise self._http_status_error(error.response) from error
@@ -67,59 +71,6 @@ class AIService:
         except json.JSONDecodeError as error:
             raise AIServiceError(
                 "Grok API returned an unreadable response.",
-                status_code=500,
-            ) from error
-
-    async def stream_response(
-        self,
-        messages: list[dict],
-        max_tokens: Optional[int] = None,
-        model_override: Optional[str] = None,
-        max_prompt_characters: Optional[int] = None,
-        usage_holder: GrokUsageHolder | None = None,
-    ) -> AsyncIterator[str]:
-        prompt_messages = self._validated_prompt_messages(
-            messages,
-            model_override=model_override,
-            max_prompt_characters=max_prompt_characters,
-        )
-        payload = self._payload(
-            messages=prompt_messages,
-            stream=True,
-            model_override=model_override,
-            max_tokens=max_tokens,
-        )
-
-        try:
-            from app.services.http_client import get_http_client
-
-            client = get_http_client()
-            async with client.stream(
-                "POST",
-                self.settings.grok_chat_url,
-                headers={
-                    "Authorization": f"Bearer {self.settings.grok_api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-                timeout=self.settings.grok_timeout_seconds,
-            ) as response:
-                response.raise_for_status()
-                captured_usage: GrokUsage | None = None
-                async for token, chunk_usage in self._parse_grok_stream(response):
-                    if chunk_usage is not None:
-                        captured_usage = chunk_usage
-                    if token:
-                        yield token
-                if usage_holder is not None:
-                    usage_holder.usage = captured_usage
-        except httpx.HTTPStatusError as error:
-            raise self._http_status_error(error.response) from error
-        except (httpx.RequestError, TimeoutError) as error:
-            raise AIServiceError("Cannot reach Grok API right now.") from error
-        except json.JSONDecodeError as error:
-            raise AIServiceError(
-                "Grok API returned an unreadable streaming response.",
                 status_code=500,
             ) from error
 
@@ -151,6 +102,7 @@ class AIService:
         stream: bool,
         model_override: Optional[str] = None,
         max_tokens: Optional[int] = None,
+        tools: Optional[list[dict]] = None,
     ) -> dict:
         payload = {
             "model": self._model_for_request(model_override),
@@ -161,6 +113,9 @@ class AIService:
             payload["stream_options"] = {"include_usage": True}
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
+        if tools:
+            payload["tools"] = tools
+            payload["tool_choice"] = "auto"
         return payload
 
     def _model_for_request(self, model_override: Optional[str] = None) -> Optional[str]:
@@ -210,39 +165,25 @@ class AIService:
             return len(str(part.get("text", "")))
         return len(str(part))
 
-    def _parse_grok_response(self, data: dict) -> str:
+    def _parse_grok_choice(self, data: dict) -> tuple[str, tuple[dict, ...], str | None]:
+        """Reply text, tool calls, and why the model stopped."""
         choices = data.get("choices", [])
         if not choices:
             raise AIServiceError("Grok API returned no response.", status_code=502)
 
-        message = choices[0].get("message", {})
+        choice = choices[0]
+        message = choice.get("message", {})
         content = message.get("content", "")
-        return str(content).strip()
-
-    async def _parse_grok_stream(
-        self,
-        response: httpx.Response,
-    ) -> AsyncIterator[tuple[str, GrokUsage | None]]:
-        async for line in response.aiter_lines():
-            line = line.strip()
-            if not line or line.startswith(":"):
-                continue
-            if line.startswith("data:"):
-                line = line[5:].strip()
-            if line == "[DONE]":
-                break
-
-            data = json.loads(line)
-            usage = GrokUsage.from_api_payload(data)
-            token = ""
-            choices = data.get("choices", [])
-            if choices:
-                delta = choices[0].get("delta", {})
-                content = delta.get("content")
-                if content:
-                    token = str(content)
-            if token or usage is not None:
-                yield token, usage
+        raw_calls = message.get("tool_calls")
+        tool_calls: tuple[dict, ...] = ()
+        if isinstance(raw_calls, list):
+            tool_calls = tuple(call for call in raw_calls if isinstance(call, dict))
+        finish_reason = choice.get("finish_reason")
+        return (
+            str(content or "").strip(),
+            tool_calls,
+            str(finish_reason) if finish_reason else None,
+        )
 
     def _http_status_error(self, response: httpx.Response) -> AIServiceError:
         detail = self._grok_error_detail(response)

@@ -165,13 +165,42 @@ flowchart TD
 
 | Piece | Guide |
 | --- | --- |
-| Capability **names** only | Short identifiers — not manuals |
+| Capability **names** only | The `action` enum on the `rex_action` tool — not manuals |
 | Truth + Off/Text/Card + kind flags | Small fixed rules |
+| Judgment rules (thread vs goal vs milestone, gate, finance nuance) | Prose the schema cannot carry |
 | Recent chat + open thread **titles** (≤5) | Thin state |
-| **Base total** | Aim **&lt; ~1k** input tokens |
+| **Base total** | Aim **&lt; ~1k** input tokens, **tool schema included** |
 | Fetch / tool packs | Extra only when the situation needs them |
 
 Do **not** always-on dump full Knows or full finance into every base turn.
+Do **not** restate capability names or JSON shape in the prompt — the tool
+schema is billed as input too, so duplicating it is paid-for repetition.
+
+### Actions are tool calls
+
+Grok returns actions through the `rex_action` function call, not a trailing
+```` ```rex_action ```` fence. A fence sat after the prose, so a reply that hit
+`max_tokens` lost the action while keeping the promise — "adding this goal"
+with no goal — and invalid JSON was dropped just as silently. A tool call is a
+separate field on the response: it cannot be truncated off the end and cannot
+be malformed.
+
+| Role | File |
+| --- | --- |
+| Tool schema (one function, enum of names) | `capability_tools.py` |
+| Names | `capability_catalog.py` |
+| Tool calls → typed actions | `actions_from_tool_calls` in `brain_action_schema.py` |
+| Fence fallback (still stripped from replies) | `parse_brain_actions` |
+| Truncation signal | `GrokChatResult.was_cut_off` (`finish_reason == "length"`) |
+
+Fence parsing stays as a fallback because models still reach for one, and fence
+text must never reach the user. `finish_reason` is read every turn: a cut-off
+reply says so rather than shipping a stub as if it were an answer.
+
+There is no Grok token stream. The "streaming" chat path buffered every token
+and emitted one burst at the end, so it was a stream in name only; it now makes
+one buffered call, which is also the only way the tool-call field arrives whole.
+Deepgram STT streaming and TTS playback are unaffected.
 
 ### Brain vs body
 
@@ -181,11 +210,11 @@ Do **not** always-on dump full Knows or full finance into every base turn.
 | Durable writes | `durable_write_*.py` (incl. milestone kinds) |
 | Open thread **storage** | `open_thread_service.py`, repository, `/open-threads` |
 | Finance body | `ClarityControlService`, `/clarity/actions`, action parser as executor |
-| Proposal settings | Off/Text/Card + kinds + finance edits (not reply length) |
+| Proposal settings | Off/Text/Card + kinds (not finance edits, not reply length) |
 | Truth | `chat_response_truth.py`, `action_truth_policy.py` |
 | Recall engine | `chat_recall_service.py`, search ranking/repo |
 | Prompt assembly | `prompt_service.py` (rewired for names + thin state + fetch packs) |
-| Grok I/O | AI generate/stream |
+| Grok I/O | `ai_service.generate_response` + `rex_action` tool calls |
 
 | Forbidden as understanding (kill list — `plans/02`) | Examples |
 | --- | --- |
@@ -207,7 +236,7 @@ Do **not** always-on dump full Knows or full finance into every base turn.
 | Knows | `apps/mobile/lib/rex/memory/application/memory_controller.dart` |
 | HTTP client | `apps/mobile/lib/core/rex/rex_api_client.dart` |
 | Confirm cards | `apps/mobile/lib/rex/chat/presentation/widgets/clarity_action_cards_strip.dart` (voice uses same `write_proposals`) |
-| Companion settings | Auto Suggestions Off/Text/Card + kinds + finance edits — **no** reply-length control |
+| Companion settings | Auto Suggestions Off/Text/Card + kinds, and voice usage. Reached **only** from the assistant gear — Profile is account-only. **No** reply-length control, **no** finance-edits switch, **no** proactive-insights switch |
 
 ## 7. Memory and Recall Wiring
 
@@ -290,12 +319,14 @@ Canonical tables/services (land with social-intelligence phases; keep modules un
 
 | Role | File |
 | --- | --- |
+| Recall capability (`search_chats`, `list_knows_summary`) | `capabilities/recall_capability.py`, `capabilities/recall_action_payload.py` |
+| Grounded second pass (shared with finance) | `chat_turn_fetch.py`, `chat_turn_fetch_wiring.py` |
 | Chat search fetch (body) | `chat_recall_service.py` |
 | Chat search ranking | `chat_search_ranking.py` |
 | User-scoped storage | `conversation_repository.py` |
 | Social neighborhood | `social_neighborhood_service.py` |
 
-Target trigger: Grok requests `search_chats` (or equivalent) — not a competing heuristic recall brain. Prompt modules label old chat hits as `Chat history, not saved memory`. Social neighborhood is labeled as saved knowledge (Connections / Shared history), never as chat history. `action_truth_policy.py` handles degraded, filtered, partial, and empty recall fallbacks — and must not treat unconfirmed or Knows-invisible social facts as remembered.
+Trigger: Grok emits `search_chats` or `list_knows_summary` — not a competing heuristic recall brain, and not an always-on load. Both reads are non-mutating, so Auto Suggestions does not gate them: the setting is about saving, not looking. Prompt modules label old chat hits as `Chat history, not saved memory`. Social neighborhood is labeled as saved knowledge (Connections / Shared history), never as chat history. `action_truth_policy.py` handles degraded, filtered, partial, and empty recall fallbacks — and must not treat unconfirmed or Knows-invisible social facts as remembered.
 
 ### Knows manual create
 

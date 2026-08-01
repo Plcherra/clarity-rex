@@ -54,15 +54,20 @@ class GrokUsage:
         )
 
 
-@dataclass
-class GrokUsageHolder:
-    usage: GrokUsage | None = None
-
-
 @dataclass(frozen=True)
 class GrokChatResult:
     text: str
     usage: GrokUsage | None = None
+    # Raw tool calls as the API returned them; parsed into actions downstream.
+    tool_calls: tuple[dict, ...] = ()
+    # "length" means the model was cut off mid-reply. Without it a truncated
+    # turn is indistinguishable from a finished one, and a lost action reads
+    # to the user as Rex saying it would do something and then not doing it.
+    finish_reason: str | None = None
+
+    @property
+    def was_cut_off(self) -> bool:
+        return self.finish_reason == "length"
 
 
 def _non_negative_int(value: Any) -> int | None:

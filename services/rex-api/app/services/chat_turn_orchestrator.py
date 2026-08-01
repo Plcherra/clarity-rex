@@ -19,8 +19,9 @@ from app.services.chat_turn_orchestrator_support import (
     finish_short_circuit,
     load_pending_action,
 )
+from app.services.chat_recall_service import ChatRecallService
+from app.services.chat_turn_fetch_wiring import build_turn_fetch_runner
 from app.services.chat_turn_finalize import finalize_grok_turn
-from app.services.chat_turn_finance_fetch import build_finance_fetch_runner
 from app.services.chat_turn_stream_finalize import (
     collect_buffered_grok_reply,
     iter_finalized_stream_events,
@@ -32,6 +33,9 @@ from app.services.grok_prompt_logging import log_grok_prompt_messages
 from app.services.grok_turn_brain import GrokTurnBrain
 from app.services.open_thread_context_loader import load_open_threads_context
 from app.services.rex_channel import RexBrainChannel
+from app.services.saved_knowledge_overview_service import (
+    SavedKnowledgeOverviewService,
+)
 from app.services.transcript_normalizer import (
     DEFAULT_TRANSCRIPT_NORMALIZER,
     TranscriptNormalizer,
@@ -56,6 +60,10 @@ class ChatTurnOrchestrator:
         grok_turn_brain: Optional[GrokTurnBrain] = None,
         transcript_normalizer: Optional[TranscriptNormalizer] = None,
         turn_observer: Optional[ChatTurnObserver] = None,
+        chat_recall_service: Optional[ChatRecallService] = None,
+        saved_knowledge_overview_service: Optional[
+            SavedKnowledgeOverviewService
+        ] = None,
     ) -> None:
         self.ai_service = ai_service
         self.memory_service = memory_service
@@ -70,6 +78,13 @@ class ChatTurnOrchestrator:
             transcript_normalizer or DEFAULT_TRANSCRIPT_NORMALIZER
         )
         self.turn_observer = turn_observer or ChatTurnObserver()
+        self.chat_recall_service = chat_recall_service or ChatRecallService(
+            memory_service,
+        )
+        self.saved_knowledge_overview_service = (
+            saved_knowledge_overview_service
+            or SavedKnowledgeOverviewService(memory_service)
+        )
 
     async def send_message(
         self,
@@ -83,13 +98,8 @@ class ChatTurnOrchestrator:
         user_requested_deep_thinking: bool = False,
         locale: Optional[str] = None,
         write_confirmation: Optional[dict] = None,
-        user_enabled_proactive_insights: bool = False,
     ) -> dict:
-        _ = (
-            response_instructions,
-            user_requested_deep_thinking,
-            user_enabled_proactive_insights,
-        )
+        _ = (response_instructions, user_requested_deep_thinking)
         stored_message, brain_message = brain_messages(
             self.transcript_normalizer,
             message,
@@ -149,7 +159,7 @@ class ChatTurnOrchestrator:
         )
         llm_started_at = time.perf_counter()
         try:
-            grok_result = await self.grok_turn_brain.generate(
+            grok_result = await self.grok_turn_brain.decide(
                 ai_messages,
                 max_tokens=resolved_max,
             )
@@ -181,11 +191,15 @@ class ChatTurnOrchestrator:
             turn_trace=turn_trace,
             ai_messages=ai_messages,
             financial_context=financial_context,
-            finance_fetch_runner=self._finance_fetch_runner(
+            fetch_runner=self._fetch_runner(
                 financial_context,
                 channel=channel,
                 max_tokens=resolved_max,
+                conversation_id=conversation_id,
+                user_message=brain_message,
             ),
+            tool_calls=getattr(grok_result, "tool_calls", ()),
+            was_cut_off=bool(getattr(grok_result, "was_cut_off", False)),
         )
         if finalized.get("proposed_turn") is not None:
             proposed = finalized["proposed_turn"]
@@ -236,13 +250,8 @@ class ChatTurnOrchestrator:
         include_turn_trace: bool = False,
         locale: Optional[str] = None,
         write_confirmation: Optional[dict] = None,
-        user_enabled_proactive_insights: bool = False,
     ) -> AsyncIterator[dict]:
-        _ = (
-            response_instructions,
-            user_requested_deep_thinking,
-            user_enabled_proactive_insights,
-        )
+        _ = (response_instructions, user_requested_deep_thinking)
         stored_message, brain_message = brain_messages(
             self.transcript_normalizer,
             message,
@@ -319,7 +328,7 @@ class ChatTurnOrchestrator:
             conversation_id=conversation_id,
         )
         # Buffer until finalize so Truth/body cannot flash a second reply.
-        rex_response = await collect_buffered_grok_reply(
+        grok_result = await collect_buffered_grok_reply(
             self.grok_turn_brain,
             ai_messages=ai_messages,
             max_tokens=resolved_max,
@@ -327,7 +336,7 @@ class ChatTurnOrchestrator:
             channel=channel,
         )
         async for event in iter_finalized_stream_events(
-            rex_response,
+            getattr(grok_result, "text", "") or "",
             clarity_action_parser=self.clarity_action_parser,
             truth_service=self.truth_service,
             durable_write_service=self.durable_write_service,
@@ -344,28 +353,39 @@ class ChatTurnOrchestrator:
             turn_started_at=turn_started_at,
             recent_public_messages=self._recent_public_messages,
             financial_context=financial_context,
-            finance_fetch_runner=self._finance_fetch_runner(
+            fetch_runner=self._fetch_runner(
                 financial_context,
                 channel=channel,
                 max_tokens=resolved_max,
+                conversation_id=conversation_id,
+                user_message=brain_message,
             ),
+            tool_calls=getattr(grok_result, "tool_calls", ()),
+            was_cut_off=bool(getattr(grok_result, "was_cut_off", False)),
         ):
             yield event
 
-    def _finance_fetch_runner(
+    def _fetch_runner(
         self,
         financial_context: Optional[dict],
         *,
         channel: RexBrainChannel,
         max_tokens: int,
+        conversation_id: str,
+        user_message: str,
     ):
-        return build_finance_fetch_runner(
+        """Every read the brain can ask for, answered in one grounded pass."""
+        return build_turn_fetch_runner(
             grok_turn_brain=self.grok_turn_brain,
             financial_guard=self.financial_guard,
             financial_context=financial_context,
+            recall_service=self.chat_recall_service,
+            overview_service=self.saved_knowledge_overview_service,
             usage_recorder=self.usage_recorder,
             channel=channel,
             max_tokens=max_tokens,
+            conversation_id=conversation_id,
+            user_message=user_message,
         )
 
     async def _open_thread_titles_block(self) -> Optional[str]:

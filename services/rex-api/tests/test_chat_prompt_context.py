@@ -81,12 +81,10 @@ async def test_base_turn_carries_truth_gate_and_capability_names():
     system_content = ai_service.prompts[-1]
     assert "Truth Rule:" in system_content
     assert "Auto Suggestions:" in system_content
-    assert "Capability names (body executes after Auto Suggestions gate):" in (
-        system_content
-    )
-    assert "save_memory" in system_content
-    assert "search_chats" in system_content
-    assert "just_chat" in system_content
+    # The names ride on the tool the turn was sent with, not in the prose.
+    tools = ai_service.kwargs["tools"]
+    names = tools[0]["function"]["parameters"]["properties"]["action"]["enum"]
+    assert {"save_memory", "search_chats", "just_chat"} <= set(names)
     assert "create_transaction" not in system_content
 
 

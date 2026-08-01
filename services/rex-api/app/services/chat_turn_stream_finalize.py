@@ -5,10 +5,8 @@ from __future__ import annotations
 import time
 from typing import Any, AsyncIterator
 
-from app.services.action_fence_stream import ActionFenceStreamFilter
 from app.services.chat_turn_finalize import finalize_grok_turn
 from app.services.chat_turn_orchestrator_support import finish_short_circuit
-from app.services.grok_usage import GrokUsageHolder
 
 
 async def collect_buffered_grok_reply(
@@ -18,20 +16,17 @@ async def collect_buffered_grok_reply(
     max_tokens: int,
     usage_recorder,
     channel,
-) -> str:
-    """Drain Grok stream without yielding tokens; strip action fences."""
-    response_parts: list[str] = []
-    stream_filter = ActionFenceStreamFilter()
+):
+    """One buffered Grok turn, capability calls included.
+
+    This drained a token stream and threw every token away, emitting the whole
+    reply in one burst at the end — a stream in name only. Asking for the reply
+    outright costs the user nothing and is the only way the tool-call field
+    arrives whole, rather than as deltas to be stitched back together.
+    """
     llm_started_at = time.perf_counter()
-    usage_holder = GrokUsageHolder()
     try:
-        async for token in grok_turn_brain.stream(
-            ai_messages,
-            max_tokens=max_tokens,
-            usage_holder=usage_holder,
-        ):
-            response_parts.append(token)
-            stream_filter.feed(token)
+        result = await grok_turn_brain.decide(ai_messages, max_tokens=max_tokens)
     except Exception as error:
         await usage_recorder.record_llm_usage(
             channel=channel,
@@ -39,17 +34,15 @@ async def collect_buffered_grok_reply(
             latency_ms=usage_recorder.elapsed_ms(llm_started_at),
             status="failure",
             error_class=error.__class__.__name__,
-            usage=usage_holder.usage,
         )
         raise
     await usage_recorder.record_llm_usage(
         channel=channel,
         ai_kwargs={"max_tokens": max_tokens},
         latency_ms=usage_recorder.elapsed_ms(llm_started_at),
-        usage=usage_holder.usage,
+        usage=getattr(result, "usage", None),
     )
-    stream_filter.finish()
-    return "".join(response_parts).strip()
+    return result
 
 
 async def iter_finalized_stream_events(
@@ -71,7 +64,9 @@ async def iter_finalized_stream_events(
     turn_started_at: float,
     recent_public_messages,
     financial_context: dict | None = None,
-    finance_fetch_runner=None,
+    fetch_runner=None,
+    tool_calls=None,
+    was_cut_off: bool = False,
 ) -> AsyncIterator[dict[str, Any]]:
     """Finalize then emit a single token burst + done (stable reply)."""
     finalized = await finalize_grok_turn(
@@ -87,7 +82,9 @@ async def iter_finalized_stream_events(
         turn_trace=turn_trace,
         ai_messages=ai_messages,
         financial_context=financial_context,
-        finance_fetch_runner=finance_fetch_runner,
+        fetch_runner=fetch_runner,
+        tool_calls=tool_calls,
+        was_cut_off=was_cut_off,
     )
     if finalized.get("proposed_turn") is not None:
         proposed = finalized["proposed_turn"]

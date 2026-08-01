@@ -1,15 +1,13 @@
 from app.services.assistant_proposal_settings import AssistantProposalSettings
-from app.services.capability_catalog import CAPABILITY_NAMES, capability_names_prompt
+from app.services.capability_catalog import CAPABILITY_NAMES
 from app.services.grok_turn_brain import GrokTurnBrain
 from app.services.tiny_system_prompt import build_tiny_system_prompt
+from tests.brain_surface import capability_surface, tool_schema_json
 
 
 def test_capability_catalog_includes_just_chat() -> None:
     assert "just_chat" in CAPABILITY_NAMES
     assert "create_transaction" not in CAPABILITY_NAMES
-    text = capability_names_prompt()
-    assert "just_chat" in text
-    assert "email" in text.lower()
 
 
 def test_tiny_system_has_truth_and_gate_no_reply_length() -> None:
@@ -17,22 +15,29 @@ def test_tiny_system_has_truth_and_gate_no_reply_length() -> None:
     prompt = build_tiny_system_prompt(settings)
     assert "Truth Rule" in prompt
     assert "Auto Suggestions: card" in prompt
-    assert "just_chat" in prompt
-    assert "unsupported" in prompt
     assert "rex_action" in prompt
-    assert "create_open_thread" in prompt
-    assert "MUST append" in prompt
+    assert "unsupported" in prompt
     assert "confirm card" in prompt.lower()
     assert "concise" not in prompt.lower()
     assert "response style" not in prompt.lower()
     assert "persona" not in prompt.lower()
 
 
-def test_tiny_system_text_requires_title_on_yes() -> None:
+def test_the_prompt_no_longer_repeats_what_the_tool_schema_already_says() -> None:
+    """Names live in the enum; spelling them out again is paid-for duplication."""
+    prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="card"))
+    assert "just_chat" not in prompt
+    assert "Canonical shape" not in prompt
+    assert "valid JSON" not in prompt
+    assert "just_chat" in capability_surface(prompt)
+    assert "create_open_thread" in capability_surface(prompt)
+
+
+def test_tiny_system_text_names_the_title_rule_on_yes() -> None:
     prompt = build_tiny_system_prompt(
         AssistantProposalSettings(mode="text", threads=True)
     )
-    assert "non-empty title" in prompt
+    assert "short labels" in prompt
     assert "say yes to your offer" in prompt.lower()
 
 
@@ -55,14 +60,11 @@ def test_tiny_system_off_includes_explicit_mutate_only() -> None:
     prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))
     assert "Auto Suggestions: off" in prompt
     assert "keep chatting always" in prompt.lower()
-    assert "explicit" in prompt.lower()
-    assert "create_open_thread" in prompt
-    assert "update_open_thread" in prompt
-    assert '"explicit":true' in prompt or '"explicit": true' in prompt
+    assert "explicit true" in prompt.lower()
     assert "can you update it" in prompt.lower()
-    assert "short habit label" in prompt.lower()
+    assert "short labels" in prompt.lower()
     assert "never volunteer a save" in prompt.lower()
-    assert "When the user wants an open-thread" not in prompt
+    assert "When the user wants a thread created" not in prompt
     assert "coach" not in prompt.lower()
 
 
@@ -79,5 +81,6 @@ def test_grok_turn_brain_builds_thin_messages() -> None:
     assert "Wake up early" in messages[0]["content"]
     assert messages[-1] == {"role": "user", "content": "hey"}
     # Rough base size under ~1k tokens (~4 chars/token) for empty-ish thread.
+    # The tool schema is billed as input too, so it counts against the budget.
     base_chars = sum(len(item["content"]) for item in messages)
-    assert base_chars < 4000
+    assert base_chars + len(tool_schema_json()) < 4400

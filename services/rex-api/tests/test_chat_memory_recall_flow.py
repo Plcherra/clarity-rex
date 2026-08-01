@@ -88,8 +88,8 @@ async def test_base_recall_turn_stays_thin_and_does_not_dump_knows():
     # No always-on Knows dump: the saved detail is not free in the base turn.
     assert "June 18" not in system_prompt
     # It is reachable instead through named fetch capabilities.
-    assert "fetch_person_context" in system_prompt
     assert "search_chats" in system_prompt
+    assert "list_knows_summary" in system_prompt
 
 
 @pytest.mark.asyncio
@@ -118,18 +118,17 @@ async def test_read_only_fetch_action_writes_nothing():
         {
             "tell me about my mom": reply_with_action(
                 "Let me pull up what you've saved about her.",
-                "fetch_person_context",
-                {"display_name": "Mom"},
+                "list_knows_summary",
+                {},
             )
         }
     )
 
     result = await turns.chat.send_message("Tell me about my mom")
 
-    assert result["response"] == "Let me pull up what you've saved about her."
-    assert result["memory_changes"] is None
     assert turns.store.long_term_memory == []
     assert turns.store.entities == []
+    assert not (result["memory_changes"] or {}).get("write_proposals")
 
 
 @pytest.mark.asyncio

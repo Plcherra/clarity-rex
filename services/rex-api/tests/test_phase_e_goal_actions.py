@@ -10,6 +10,7 @@ from app.services.brain_action_schema import BrainAction, parse_brain_actions
 from app.services.capability_dispatcher import dispatch_allowed_actions
 from app.services.durable_write_service import DurableWriteService
 from app.services.tiny_system_prompt import build_tiny_system_prompt
+from tests.brain_surface import capability_surface
 from chat_service_fakes import FakeMemoryService
 
 
@@ -369,6 +370,7 @@ def test_parse_create_goal_action_aliases() -> None:
 
 def test_tiny_system_phase_e_mentions_goal_dispatch() -> None:
     prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="card", goals=True))
-    assert "create_goal" in prompt
-    assert "update_goal" in prompt
-    assert "delete_goal" in prompt
+    surface = capability_surface(prompt)
+    assert "create_goal" in surface
+    assert "update_goal" in surface
+    assert "delete_goal" in surface

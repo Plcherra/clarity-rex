@@ -1,8 +1,15 @@
 # 05 — Simple brain implementation
 
-**Status:** Phase F complete (2026-07-31) on `plan/04-aggressive-deletion`. Phases A–F done (manual device tests still pending).  
+**Status:** Phases A–G implementation complete (2026-08-01) on `plan/04-aggressive-deletion`. H and I remain. **Every manual device test below is still unchecked.**  
 **Depends on:** [`04_aggressive_deletion.md`](04_aggressive_deletion.md) (complete)  
 **Vision reference:** [`01_vision_gap_and_token_budget.md`](01_vision_gap_and_token_budget.md)
+
+**Work landed outside these phases.** Using the app produced its own queue —
+goal achievement and steps, deadline pressure, category drill-down, income and
+transfer classification, savings on the dashboard, merchant matching, the
+Companion screen. It is real and shipped, and it is not tracked here. The
+phases below describe the brain cutover only; do not read them as the whole
+state of the app.
 
 ## 1. Goal
 
@@ -70,6 +77,19 @@ Keep files under size limits (PROJECT_STRUCTURE).
 Do **not** recreate `rex_intent_router` or open-thread eligibility.
 
 ## 3. Structured actions (minimum)
+
+**Shipped as tool calls.** Grok returns actions through a single `rex_action`
+function whose `action` enum is the capability catalog — not a trailing
+```` ```rex_action ```` fence. The fence sat after the prose, so a reply that
+hit `max_tokens` kept the promise and lost the action ("adding this goal" with
+no goal), and invalid JSON was dropped just as quietly. One function rather
+than 28 keeps the schema near the size of the name list it replaced.
+
+The prompt lost the format rules the schema now enforces — canonical shape,
+valid JSON, same-turn — dropping it from ~3,700 to ~2,500 characters. Counting
+the tool schema as input, base turns land near the ~1k ceiling rather than
+under it: the win is reliability, not tokens. Fence parsing stays as a
+fallback so fence text never reaches the user. See `capability_tools.py`.
 
 Grok returns JSON (or tool calls) such as:
 
@@ -227,13 +247,20 @@ Fit: a **milestone** is a step under a **plan/goal** (not an Open Thread). Catal
 
 ### Phase G — Recall / inventory fetch
 
-- [ ] `search_chats` / `list_knows_summary` as actions
-- [ ] Truth on empty/degraded recall
+- [x] `search_chats` / `list_knows_summary` as actions — `recall_capability.py` reads `ChatRecallService` and `SavedKnowledgeOverviewService` only when the brain names them
+- [x] Truth on empty/degraded recall — the fetch reports its own status into `memory_status`, so a search that failed cannot become a confident "nothing there"
+- [x] Finance and recall share one grounded pass (`chat_turn_fetch.py`), so a turn that wants both still costs one extra call
+- [x] Catalog carries no name the body cannot run — `save_connection`, `save_shared_history`, and `fetch_person_context` are out until Phase H, and a test holds the line
+
+**Note on Truth:** reading Knows out loud is not a write claim. The saved-memory
+guard stands down when the turn actually read Knows, or "you have Marcella
+saved" gets replaced by a fallback about an unconfirmed save.
 
 **Manual tests:**
 
 - [ ] “Do you remember what I said about X?” → search then grounded reply or honest miss
 - [ ] Inventory question → summary without dumping entire Knows every turn
+- [ ] Same two questions in voice — one shared fetch path, so a chat-only pass proves nothing
 
 ### Phase H — Person-card net (Connections → Shared history → groups)
 
@@ -258,7 +285,7 @@ Order (Truth Rule):
 - [ ] `.github/workflows/ci.yml` green (rex-api pytest + mobile tests + docs canon)
 - [ ] Deploy API to `/opt/clarity/current` + `scripts/vps_restart_rex_api.sh` (or equivalent)
 - [ ] Confirm prod Auto Suggestions still from **profile** (env override empty)
-- [ ] Spot-check **base** turn prompt size still near &lt;~1k (no always-on FC)
+- [ ] Base turn prompt size — currently ~3.9k characters (~975 tokens), sitting **at** the ceiling rather than under it. The next capability name needs something else removed first.
 - [ ] Device smoke matrix: Off / Text / Card × threads / memory / finance fetch / unsupported / milestone
 - [ ] Reply length control absent from Profile; answers feel natural
 

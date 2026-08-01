@@ -9,6 +9,7 @@ a save the user can see in Goals is what makes the claim true.
 from __future__ import annotations
 
 from app.services.action_truth_policy import (
+    memory_status_has_saved_knowledge,
     safe_chat_search_capability_response,
     safe_degraded_memory_search_response,
     safe_empty_recall_search_response,
@@ -171,13 +172,17 @@ class ChatResponseTruthService:
                 updated,
                 turn_trace,
             )
-        updated = safe_unexecuted_saved_memory_claim_response(response)
-        response = _apply_truth_guard(
-            "unexecuted_saved_memory_claim",
-            response,
-            updated,
-            turn_trace,
-        )
+        # Reading Knows out loud is not a write claim. "You have Marcella saved"
+        # is exactly what the user asked for, and the guard cannot hear the
+        # difference — so it stands down when the turn actually read Knows.
+        if not memory_status_has_saved_knowledge(memory_status):
+            updated = safe_unexecuted_saved_memory_claim_response(response)
+            response = _apply_truth_guard(
+                "unexecuted_saved_memory_claim",
+                response,
+                updated,
+                turn_trace,
+            )
         updated = safe_unexecuted_finance_response(
             response,
             user_message=user_message,

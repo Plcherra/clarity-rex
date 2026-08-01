@@ -8,13 +8,15 @@ from app.services.grok_usage import GrokUsage
 
 def test_ai_service_parse_grok_response_text():
     service = AIService(Settings(grok_api_key="test-key", grok_model="grok-test"))
-    text = service._parse_grok_response(
+    text, tool_calls, finish_reason = service._parse_grok_choice(
         {
             "choices": [{"message": {"content": " Hello Rex "}}],
             "usage": {"prompt_tokens": 10, "completion_tokens": 5},
         }
     )
     assert text == "Hello Rex"
+    assert tool_calls == ()
+    assert finish_reason is None
 
 
 def test_grok_usage_from_non_stream_response_shape():

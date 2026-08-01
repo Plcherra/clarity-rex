@@ -12,6 +12,7 @@ from app.services.assistant_proposal_settings import (
     PROPOSAL_KIND_MEMORY,
     PROPOSAL_KIND_THREADS,
 )
+from app.services.capability_tools import TOOL_NAME
 
 REX_ACTION_BLOCK_PATTERN = re.compile(
     r"```rex_action\s*(.*?)```",
@@ -142,8 +143,47 @@ def proposal_kind_for_action(action_name: str) -> Optional[str]:
     return _SOFT_ACTION_KINDS.get(str(action_name or "").strip())
 
 
+def actions_from_tool_calls(tool_calls) -> list[BrainAction]:
+    """Typed actions from the API's own tool-call field.
+
+    Preferred over fences: the call arrives as structured data, so it cannot be
+    cut off by a token cap or arrive as unparseable JSON.
+    """
+    actions: list[BrainAction] = []
+    for call in tool_calls or []:
+        item = _tool_call_item(call)
+        if item is None:
+            continue
+        action = _normalize_action(item)
+        if action is not None:
+            actions.append(action)
+    return actions
+
+
+def _tool_call_item(call) -> Optional[dict[str, Any]]:
+    """Unwrap one tool call into the same dict shape a fence would carry."""
+    if not isinstance(call, dict):
+        return None
+    function = call.get("function")
+    if not isinstance(function, dict):
+        return None
+    if str(function.get("name") or "").strip() != TOOL_NAME:
+        return None
+    arguments = function.get("arguments")
+    if isinstance(arguments, str):
+        try:
+            arguments = json.loads(arguments or "{}")
+        except json.JSONDecodeError:
+            return None
+    return arguments if isinstance(arguments, dict) else None
+
+
 def parse_brain_actions(response: str) -> ParsedBrainTurn:
-    """Strip ```rex_action``` fences and return typed actions + visible reply."""
+    """Strip ```rex_action``` fences and return typed actions + visible reply.
+
+    Fences are the fallback now that tool calls carry actions; models still
+    reach for them, and a fence left in the visible reply reads as a glitch.
+    """
     actions: list[BrainAction] = []
 
     def replace_block(match: re.Match[str]) -> str:

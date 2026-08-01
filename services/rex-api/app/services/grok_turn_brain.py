@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Optional
+from typing import Any, Optional
 
 from app.services.assistant_proposal_settings import AssistantProposalSettings
+from app.services.capability_tools import capability_tools
 from app.services.file_service import AttachmentContext
 from app.services.locale_utils import locale_response_rule
 from app.services.prompt_constants import TIME_CONTEXT_PREFIX
@@ -56,6 +57,7 @@ class GrokTurnBrain:
         *,
         max_tokens: Optional[int] = None,
     ) -> Any:
+        """Plain reply, no capabilities — used for the grounded fetch pass."""
         if max_tokens is None:
             return await self.ai_service.generate_response(messages)
         return await self.ai_service.generate_response(
@@ -63,19 +65,17 @@ class GrokTurnBrain:
             max_tokens=max_tokens,
         )
 
-    def stream(
+    async def decide(
         self,
         messages: list[dict[str, str]],
         *,
         max_tokens: Optional[int] = None,
-        usage_holder=None,
-    ) -> AsyncIterator[str]:
-        stream_kwargs: dict[str, Any] = {}
+    ) -> Any:
+        """The turn where Grok may act: reply plus any capability calls."""
+        kwargs: dict[str, Any] = {"tools": capability_tools()}
         if max_tokens is not None:
-            stream_kwargs["max_tokens"] = max_tokens
-        if usage_holder is not None:
-            stream_kwargs["usage_holder"] = usage_holder
-        return self.ai_service.stream_response(messages, **stream_kwargs)
+            kwargs["max_tokens"] = max_tokens
+        return await self.ai_service.generate_response(messages, **kwargs)
 
 
 def time_context_line(time_context: Optional[dict]) -> Optional[str]:

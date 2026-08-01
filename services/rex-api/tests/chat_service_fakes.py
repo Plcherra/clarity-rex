@@ -5,38 +5,31 @@ from app.services.memory_correction_service import CorrectionIntentType
 
 
 class FakeAIService:
-    def __init__(self, response="Rex response", stream_tokens=None, usage=None):
+    def __init__(self, response="Rex response", reply_chunks=None, usage=None):
         self.messages = []
         self.response = response
-        self.stream_tokens = stream_tokens or ["Rex ", "stream"]
+        self.reply_chunks = reply_chunks
         self.usage = usage or GrokUsage(prompt_tokens=100, completion_tokens=40)
         self.generate_calls = 0
-        self.stream_calls = 0
+        # Tool-bearing turns are the ones where Grok could act.
+        self.decide_calls = 0
+        self.fetch_calls = 0
 
     async def generate_response(self, messages, **kwargs):
         self.generate_calls += 1
+        if kwargs.get("tools"):
+            self.decide_calls += 1
+        else:
+            self.fetch_calls += 1
         self.messages = messages
         self.kwargs = kwargs
-        return GrokChatResult(text=self.response, usage=self.usage)
-
-    async def stream_response(self, messages, **kwargs):
-        self.stream_calls += 1
-        self.messages = messages
-        self.kwargs = kwargs
-        usage_holder = kwargs.get("usage_holder")
-        if usage_holder is not None:
-            usage_holder.usage = self.usage
-        for token in self.stream_tokens:
-            yield token
+        text = "".join(self.reply_chunks) if self.reply_chunks else self.response
+        return GrokChatResult(text=text, usage=self.usage)
 
 
 class FailingAIService:
     async def generate_response(self, messages, **kwargs):
         raise RuntimeError("AI failed")
-
-    async def stream_response(self, messages, **kwargs):
-        raise RuntimeError("AI failed")
-        yield
 
 
 class FakeMemoryService:

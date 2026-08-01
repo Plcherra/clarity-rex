@@ -1,4 +1,4 @@
-"""Frozen capability names for the tiny system prompt (plan 05)."""
+"""Frozen capability names — the enum on the rex_action tool (plan 05)."""
 
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ CAPABILITY_NAMES: tuple[str, ...] = (
     "save_person",
     "update_person_state",
     "add_person_note",
-    "save_connection",
-    "save_shared_history",
-    "fetch_person_context",
+    # save_connection / save_shared_history / fetch_person_context: Phase H.
+    # A name here is a promise the body keeps, so they stay out until the
+    # Knows UI can show what they would write.
     "search_chats",
     "list_knows_summary",
     "create_goal",
@@ -37,13 +37,3 @@ CAPABILITY_NAMES: tuple[str, ...] = (
     "update_budget",
     "delete_budget",
 )
-
-
-def capability_names_prompt() -> str:
-    lines = ", ".join(CAPABILITY_NAMES)
-    return (
-        "Capability names (body executes after Auto Suggestions gate):\n"
-        f"{lines}\n"
-        "Unsupported examples: send_email, send_sms, external_world_actions.\n"
-        "Never claim email, SMS, or other external-world actions were done."
-    )

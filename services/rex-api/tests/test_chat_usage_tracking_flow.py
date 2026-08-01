@@ -83,7 +83,7 @@ async def test_confirming_a_memory_save_adds_no_second_llm_usage_event():
 @pytest.mark.asyncio
 async def test_stream_message_records_one_llm_usage_event_for_normal_voice_turn():
     usage = FakeUsageTrackingService()
-    ai = FakeAIService(stream_tokens=["Voice ", "response."])
+    ai = FakeAIService(reply_chunks=["Voice ", "response."])
     chat = _chat_service(ai_service=ai, usage_service=usage)
 
     events = [

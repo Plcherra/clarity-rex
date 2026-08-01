@@ -123,8 +123,8 @@ async def test_voice_save_action_confirms_before_writing_to_knows(caplog):
         ]
         assert "Knows" in saved["response_text"]
         # Confirming applies the frozen snapshot; it never re-asks the brain.
-        assert ai_service.stream_calls == 1
-        assert ai_service.generate_calls == 0
+        assert ai_service.decide_calls == 1
+        assert ai_service.fetch_calls == 0
 
         messages = timing_logs(caplog)
         assert any("memory_action=none" in message for message in messages)
@@ -181,7 +181,7 @@ async def test_voice_never_speaks_the_action_fence():
     async with async_voice_client() as client:
         ai_service = ScriptedAIService(
             # Small tokens so the fence markers arrive split across chunks.
-            stream_tokens=[raw[index : index + 7] for index in range(0, len(raw), 7)],
+            reply_chunks=[raw[index : index + 7] for index in range(0, len(raw), 7)],
         )
         memory_service = FakeMemoryService()
         chat = _chat_service(ai_service, memory_service)
@@ -203,7 +203,7 @@ async def test_voice_base_turn_does_not_dump_saved_knows_into_the_prompt():
     answer = "You live in Somerville, Massachusetts."
     memory_content = "User lives in Somerville, Massachusetts."
     async with async_voice_client() as client:
-        ai_service = ScriptedAIService(stream_tokens=[answer])
+        ai_service = ScriptedAIService(reply_chunks=[answer])
         memory_service = FakeMemoryService()
         memory_service.long_term_memory.append(
             {
@@ -232,7 +232,7 @@ async def test_voice_base_turn_does_not_dump_saved_knows_into_the_prompt():
         # Knows is fetched on demand, never dumped into every base turn.
         assert memory_content not in prompt_text
         assert memory_service.relevant_memory_queries == []
-        assert ai_service.stream_calls == 1
+        assert ai_service.decide_calls == 1
 
 
 @pytest.mark.asyncio
