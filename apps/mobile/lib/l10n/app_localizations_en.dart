@@ -1216,6 +1216,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardTransactionsSectionTitle => 'Transactions';
 
   @override
+  String get dashboardSurfaceOverview => 'Overview';
+
+  @override
+  String get dashboardSurfaceTransactions => 'Transactions';
+
+  @override
   String get transactionsMiniAnalyticsTitle => 'This month at a glance';
 
   @override
@@ -1250,10 +1256,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardTransactionsNoImportedHistory => 'No imported history';
 
   @override
-  String get dashboardTransactionsModeMonths => 'By month';
+  String get dashboardTransactionsGroupByLabel => 'Group by';
 
   @override
-  String get dashboardTransactionsModeCategories => 'By category';
+  String get dashboardTransactionsModeList => 'List';
+
+  @override
+  String get dashboardTransactionsModeMonths => 'Month';
+
+  @override
+  String get dashboardTransactionsModeCategories => 'Category';
 
   @override
   String get dashboardTransactionsSearchHint =>
@@ -1270,6 +1282,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardTransactionsFilterAllAccounts => 'All accounts';
+
+  @override
+  String dashboardTransactionsAccountsSelectedCount(int count) {
+    return '$count accounts';
+  }
+
+  @override
+  String get dashboardTransactionsAccountsDone => 'Done';
+
+  @override
+  String get dashboardTransactionsSelectAccountsTitle => 'Accounts';
+
+  @override
+  String get dashboardTransactionsNoTransactionsMatch =>
+      'No transactions match.';
 
   @override
   String get dashboardTransactionsFilterRole => 'Role';
@@ -3046,6 +3073,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get monthDetailNetThisMonth => 'NET THIS MONTH';
+
+  @override
+  String get monthDetailSearchHint => 'Search this month';
+
+  @override
+  String get monthDetailNoSearchMatches => 'No transactions match this search.';
 
   @override
   String get monthDetailNoTransactionsLeft =>

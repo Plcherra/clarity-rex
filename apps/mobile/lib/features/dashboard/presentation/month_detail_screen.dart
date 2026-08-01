@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
-import '../../../core/layout/clarity_breakpoints.dart';
 import '../../../core/layout/finance_content_constraints.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../../core/formatting/formatting.dart';
-import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
-import '../../transactions/presentation/widgets/transaction_line_tile.dart';
 import '../domain/month_deletion_policy.dart';
+import 'month_detail_body.dart';
 
 class MonthDetailScreen extends StatefulWidget {
   const MonthDetailScreen({
@@ -195,17 +193,14 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                             label: context.l10n.monthDetailLoadingMonth,
                           ),
                         )
-                : _MonthDetailBody(
+                : MonthDetailBody(
                     lines: lines,
                     monthDeleteProtectionMessage:
                         monthDeletePolicy?.blockReason ==
                             MonthDeletionBlockReason.plaidSynced
                         ? context.l10n.monthDetailPlaidDeleteProtection
                         : null,
-                    controller: widget.controller,
                     transactionController: widget.transactionController,
-                    theme: theme,
-                    colorScheme: cs,
                   ),
           ),
         );
@@ -240,186 +235,5 @@ class _MonthDetailDataNotifier extends ChangeNotifier {
     _error = error;
     _loading = false;
     notifyListeners();
-  }
-}
-
-class _MonthDetailBody extends StatelessWidget {
-  const _MonthDetailBody({
-    required this.lines,
-    required this.monthDeleteProtectionMessage,
-    required this.controller,
-    required this.transactionController,
-    required this.theme,
-    required this.colorScheme,
-  });
-
-  final List<BankStatementLine> lines;
-  final String? monthDeleteProtectionMessage;
-  final DashboardUiController controller;
-  final TransactionUiController transactionController;
-  final ThemeData theme;
-  final ColorScheme colorScheme;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final monthTotal = lines.fold<double>(
-      0,
-      (sum, e) => sum + e.transaction.amount,
-    );
-    final totalColor = monthTotal < 0
-        ? ClarityColors.financeNegative
-        : monthTotal > 0
-        ? ClarityColors.financePositive
-        : colorScheme.onSurface;
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.78),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.monthDetailNetThisMonth,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface.withValues(alpha: 0.38),
-                  fontSize: 10,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                formatMoney(monthTotal),
-                style:
-                    (!isClarityDesktopLayout(context)
-                            ? theme.textTheme.titleLarge
-                            : theme.textTheme.headlineMedium)
-                        ?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.5,
-                          color: totalColor,
-                        ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                lines.length == 1
-                    ? l10n.commonTransactionCountOne
-                    : l10n.commonTransactionCount(lines.length),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.45),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        if (monthDeleteProtectionMessage case final message?) ...[
-          _PlaidDeleteProtectionNotice(message: message),
-          const SizedBox(height: 18),
-        ],
-        Text(
-          l10n.dashboardTransactionsSectionTitle,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.2,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.78),
-            ),
-          ),
-          child: lines.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 26,
-                  ),
-                  child: Text(
-                    l10n.monthDetailNoTransactionsLeft,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                )
-              : Column(
-                  children: [
-                    for (var i = 0; i < lines.length; i++) ...[
-                      if (i > 0)
-                        Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.35,
-                          ),
-                        ),
-                      TransactionLineTile(
-                        transaction: lines[i].transaction,
-                        displayCategory: lines[i].suggestedCategory,
-                        transactionController: transactionController,
-                      ),
-                    ],
-                  ],
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PlaidDeleteProtectionNotice extends StatelessWidget {
-  const _PlaidDeleteProtectionNotice({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.78)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.lock_outline_rounded,
-            size: 18,
-            color: cs.onSurface.withValues(alpha: 0.52),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurface.withValues(alpha: 0.62),
-                height: 1.35,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

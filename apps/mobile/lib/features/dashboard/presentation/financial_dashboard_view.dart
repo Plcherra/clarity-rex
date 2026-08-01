@@ -18,7 +18,7 @@ import '../../accounts/presentation/widgets/connect_bank_setup_card.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../transactions/presentation/widgets/transactions_month_mini_analytics.dart';
-import '../../transactions/domain/spend_categories.dart';
+import '../../transactions/presentation/widgets/transaction_line_tile.dart';
 import '../../transactions/domain/transaction_resolution.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../theme/clarity_radius.dart';
@@ -32,8 +32,10 @@ import 'charts/finance_charts.dart';
 
 part 'financial_dashboard_transactions.dart';
 part 'financial_dashboard_transaction_controls.dart';
+part 'financial_dashboard_account_filter.dart';
 part 'financial_dashboard_transaction_lists.dart';
 part 'financial_dashboard_shell.dart';
+part 'financial_dashboard_shell_overview.dart';
 part 'financial_dashboard_shell_bodies.dart';
 part 'financial_dashboard_summary_sections.dart';
 part 'financial_dashboard_savings_row.dart';
@@ -107,17 +109,6 @@ String _displayCategory(AppLocalizations l10n, ResolvedTransaction transaction) 
   final category = transaction.displayCategory.trim();
   if (category.isEmpty) return l10n.commonUnknown;
   return category;
-}
-
-bool _isSpendCategoryTransaction(ResolvedTransaction transaction) {
-  if (transaction.transaction.pending) return false;
-  final category = transaction.displayCategory.trim();
-  if (isUnresolvedCategoryLabel(category) ||
-      isIncomeCategoryLabel(category) ||
-      isIgnoredCategoryLabel(category)) {
-    return false;
-  }
-  return transaction.countsAsSpend;
 }
 
 DateTime? _latestTransactionDate(List<Transaction> transactions) {

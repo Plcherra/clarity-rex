@@ -2211,6 +2211,18 @@ abstract class AppLocalizations {
   /// **'Transactions'**
   String get dashboardTransactionsSectionTitle;
 
+  /// No description provided for @dashboardSurfaceOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get dashboardSurfaceOverview;
+
+  /// No description provided for @dashboardSurfaceTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get dashboardSurfaceTransactions;
+
   /// No description provided for @transactionsMiniAnalyticsTitle.
   ///
   /// In en, this message translates to:
@@ -2277,16 +2289,28 @@ abstract class AppLocalizations {
   /// **'No imported history'**
   String get dashboardTransactionsNoImportedHistory;
 
+  /// No description provided for @dashboardTransactionsGroupByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group by'**
+  String get dashboardTransactionsGroupByLabel;
+
+  /// No description provided for @dashboardTransactionsModeList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get dashboardTransactionsModeList;
+
   /// No description provided for @dashboardTransactionsModeMonths.
   ///
   /// In en, this message translates to:
-  /// **'By month'**
+  /// **'Month'**
   String get dashboardTransactionsModeMonths;
 
   /// No description provided for @dashboardTransactionsModeCategories.
   ///
   /// In en, this message translates to:
-  /// **'By category'**
+  /// **'Category'**
   String get dashboardTransactionsModeCategories;
 
   /// No description provided for @dashboardTransactionsSearchHint.
@@ -2318,6 +2342,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All accounts'**
   String get dashboardTransactionsFilterAllAccounts;
+
+  /// No description provided for @dashboardTransactionsAccountsSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} accounts'**
+  String dashboardTransactionsAccountsSelectedCount(int count);
+
+  /// No description provided for @dashboardTransactionsAccountsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get dashboardTransactionsAccountsDone;
+
+  /// No description provided for @dashboardTransactionsSelectAccountsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get dashboardTransactionsSelectAccountsTitle;
+
+  /// No description provided for @dashboardTransactionsNoTransactionsMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions match.'**
+  String get dashboardTransactionsNoTransactionsMatch;
 
   /// No description provided for @dashboardTransactionsFilterRole.
   ///
@@ -5355,6 +5403,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'NET THIS MONTH'**
   String get monthDetailNetThisMonth;
+
+  /// No description provided for @monthDetailSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search this month'**
+  String get monthDetailSearchHint;
+
+  /// No description provided for @monthDetailNoSearchMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions match this search.'**
+  String get monthDetailNoSearchMatches;
 
   /// No description provided for @monthDetailNoTransactionsLeft.
   ///

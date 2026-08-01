@@ -11,22 +11,47 @@ class _TransactionsModePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final l10n = context.l10n;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _ModeChip(
-          label: l10n.dashboardTransactionsModeMonths,
-          icon: Icons.calendar_month_outlined,
-          selected: selected == _TransactionsViewMode.months,
-          onTap: () => onSelected(_TransactionsViewMode.months),
+        Text(
+          l10n.dashboardTransactionsGroupByLabel,
+          style: theme.textTheme.labelMedium?.copyWith(
+            letterSpacing: 0.6,
+            color: cs.onSurface.withValues(alpha: 0.42),
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        _ModeChip(
-          label: l10n.dashboardTransactionsModeCategories,
-          icon: Icons.category_outlined,
-          selected: selected == _TransactionsViewMode.categories,
-          onTap: () => onSelected(_TransactionsViewMode.categories),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _ModeChip(
+                label: l10n.dashboardTransactionsModeList,
+                icon: Icons.view_list_outlined,
+                selected: selected == _TransactionsViewMode.list,
+                onTap: () => onSelected(_TransactionsViewMode.list),
+              ),
+              const SizedBox(width: 8),
+              _ModeChip(
+                label: l10n.dashboardTransactionsModeMonths,
+                icon: Icons.calendar_month_outlined,
+                selected: selected == _TransactionsViewMode.months,
+                onTap: () => onSelected(_TransactionsViewMode.months),
+              ),
+              const SizedBox(width: 8),
+              _ModeChip(
+                label: l10n.dashboardTransactionsModeCategories,
+                icon: Icons.category_outlined,
+                selected: selected == _TransactionsViewMode.categories,
+                onTap: () => onSelected(_TransactionsViewMode.categories),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -106,35 +131,25 @@ class _TransactionSearchField extends StatelessWidget {
 
 class _InlineFilterBar extends StatelessWidget {
   const _InlineFilterBar({
-    required this.categories,
     required this.accounts,
     required this.isAccountScope,
-    required this.showCategoryFilter,
-    required this.category,
-    required this.accountId,
+    required this.accountIds,
     required this.timeFilter,
     required this.sortMode,
     required this.roleFilter,
-    required this.onCategoryChanged,
-    required this.onAccountChanged,
+    required this.onAccountIdsChanged,
     required this.onTimeChanged,
     required this.onSortChanged,
     required this.onRoleChanged,
   });
 
-  final List<String> categories;
   final List<Account> accounts;
   final bool isAccountScope;
-
-  /// Hidden in By category mode — grouping already is by category.
-  final bool showCategoryFilter;
-  final String? category;
-  final String? accountId;
+  final Set<String> accountIds;
   final _TransactionsTimeFilter timeFilter;
   final _TransactionsSortMode sortMode;
   final FinancialRole? roleFilter;
-  final ValueChanged<String?> onCategoryChanged;
-  final ValueChanged<String?> onAccountChanged;
+  final ValueChanged<Set<String>> onAccountIdsChanged;
   final ValueChanged<_TransactionsTimeFilter> onTimeChanged;
   final ValueChanged<_TransactionsSortMode> onSortChanged;
   final ValueChanged<FinancialRole?> onRoleChanged;
@@ -143,28 +158,11 @@ class _InlineFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final chips = <Widget>[
-      if (showCategoryFilter)
-        _PopupFilterChip<String?>(
-          label: category ?? l10n.dashboardTransactionsFilterAllCategories,
-          active: category != null,
-          icon: Icons.category_outlined,
-          values: [null, ...categories],
-          labelFor: (value) =>
-              value ?? l10n.dashboardTransactionsFilterAllCategories,
-          onSelected: onCategoryChanged,
-        ),
       if (!isAccountScope)
-        _PopupFilterChip<String?>(
-          label:
-              _accountLabel(accountId) ??
-              l10n.dashboardTransactionsFilterAllAccounts,
-          active: accountId != null,
-          icon: Icons.account_balance_outlined,
-          values: [null, ...accounts.map((a) => a.id)],
-          labelFor: (value) =>
-              _accountLabel(value) ??
-              l10n.dashboardTransactionsFilterAllAccounts,
-          onSelected: onAccountChanged,
+        _AccountMultiFilterChip(
+          accounts: accounts,
+          selectedIds: accountIds,
+          onChanged: onAccountIdsChanged,
         ),
       _PopupFilterChip<_TransactionsTimeFilter>(
         label: _timeLabel(l10n, timeFilter),
@@ -196,7 +194,6 @@ class _InlineFilterBar extends StatelessWidget {
       ),
     ];
 
-    // One horizontal row on phone — a Wrap stacks into a tall "drawer".
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -208,14 +205,6 @@ class _InlineFilterBar extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String? _accountLabel(String? id) {
-    if (id == null) return null;
-    for (final account in accounts) {
-      if (account.id == id) return account.displayName;
-    }
-    return null;
   }
 }
 

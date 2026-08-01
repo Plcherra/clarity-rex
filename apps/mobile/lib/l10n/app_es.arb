@@ -1519,14 +1519,29 @@
   },
   "dashboardTransactionsLoadError": "No se pudieron cargar transacciones.",
   "dashboardTransactionsLoadingLabel": "Cargando transacciones",
-  "dashboardTransactionsModeCategories": "Por categoría",
-  "dashboardTransactionsModeMonths": "Por mes",
+  "dashboardSurfaceOverview": "Resumen",
+  "dashboardSurfaceTransactions": "Transacciones",
+  "dashboardTransactionsGroupByLabel": "Agrupar por",
+  "dashboardTransactionsModeList": "Lista",
+  "dashboardTransactionsModeCategories": "Categoría",
+  "dashboardTransactionsModeMonths": "Mes",
   "dashboardTransactionsNetLabel": "neto",
   "dashboardTransactionsNoCategoriesMatch": "Ninguna categoría coincide.",
   "dashboardTransactionsNoImportedHistory": "Sin historia importada",
   "dashboardTransactionsNoMonthsAfterFilter": "No se muestran meses después de filtrar este archivo.",
+  "dashboardTransactionsNoTransactionsMatch": "Ninguna transacción coincide.",
+  "dashboardTransactionsAccountsSelectedCount": "{count} cuentas",
+  "@dashboardTransactionsAccountsSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardTransactionsAccountsDone": "Listo",
+  "dashboardTransactionsSelectAccountsTitle": "Cuentas",
   "dashboardTransactionsSearchHint": "Buscar comerciante, categoría, mes o monto",
-  "dashboardTransactionsSectionTitle": "Actas",
+  "dashboardTransactionsSectionTitle": "Transacciones",
   "transactionsMiniAnalyticsTitle": "Este mes de un vistazo",
   "transactionsMiniAnalyticsSubtitle": "Mismos totales que el Panel para el mes actual",
   "transactionsMiniAnalyticsSpent": "Gastado",
@@ -2025,6 +2040,8 @@
   },
   "monthDetailLoadingMonth": "Mes de carga",
   "monthDetailNetThisMonth": "NETO ESTE MES",
+  "monthDetailSearchHint": "Buscar en este mes",
+  "monthDetailNoSearchMatches": "Ninguna transacción coincide con esta búsqueda.",
   "monthDetailNoTransactionsLeft": "No quedan transacciones para este mes.",
   "monthDetailNothingDeleted": "No se eliminaron transacciones.",
   "monthDetailPlaidDeleteProtection": "Las transacciones a cuadros se sincronizan desde su banco. Utilice resincronización o desconexión en lugar de eliminación local.",

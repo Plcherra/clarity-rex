@@ -695,6 +695,8 @@
   "dashboardSectionSpendingAnalysis": "Spending analysis",
   "dashboardSectionSpendingAnalysisHint": "Categories rising vs last month",
   "dashboardTransactionsSectionTitle": "Transactions",
+  "dashboardSurfaceOverview": "Overview",
+  "dashboardSurfaceTransactions": "Transactions",
   "transactionsMiniAnalyticsTitle": "This month at a glance",
   "transactionsMiniAnalyticsSubtitle": "Same totals as Dashboard for the current month",
   "transactionsMiniAnalyticsSpent": "Spent",
@@ -706,13 +708,26 @@
   "dashboardTransactionsLoadingLabel": "Loading transactions",
   "dashboardTransactionsLoadError": "Could not load transactions.",
   "dashboardTransactionsNoImportedHistory": "No imported history",
-  "dashboardTransactionsModeMonths": "By month",
-  "dashboardTransactionsModeCategories": "By category",
+  "dashboardTransactionsGroupByLabel": "Group by",
+  "dashboardTransactionsModeList": "List",
+  "dashboardTransactionsModeMonths": "Month",
+  "dashboardTransactionsModeCategories": "Category",
   "dashboardTransactionsSearchHint": "Search merchant, category, month, or amount",
   "dashboardTransactionsFilterCategory": "All categories",
   "dashboardTransactionsFilterAllCategories": "All categories",
   "dashboardTransactionsFilterAccount": "Account",
   "dashboardTransactionsFilterAllAccounts": "All accounts",
+  "dashboardTransactionsAccountsSelectedCount": "{count} accounts",
+  "@dashboardTransactionsAccountsSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardTransactionsAccountsDone": "Done",
+  "dashboardTransactionsSelectAccountsTitle": "Accounts",
+  "dashboardTransactionsNoTransactionsMatch": "No transactions match.",
   "dashboardTransactionsFilterRole": "Role",
   "dashboardTransactionsFilterAllRoles": "All roles",
   "dashboardTransactionsTimeFilterAllHistory": "All history",
@@ -1847,6 +1862,8 @@
   "monthDetailNothingDeleted": "No transactions were deleted.",
   "monthDetailLoadingMonth": "Loading month",
   "monthDetailNetThisMonth": "NET THIS MONTH",
+  "monthDetailSearchHint": "Search this month",
+  "monthDetailNoSearchMatches": "No transactions match this search.",
   "monthDetailNoTransactionsLeft": "No transactions left for this month.",
   "monthDetailDeleteTransactionTooltip": "Delete transaction",
   "monthDetailDeleteTransactionTitle": "Delete this transaction?",

@@ -1223,7 +1223,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Categorías que suben vs el mes pasado';
 
   @override
-  String get dashboardTransactionsSectionTitle => 'Actas';
+  String get dashboardTransactionsSectionTitle => 'Transacciones';
+
+  @override
+  String get dashboardSurfaceOverview => 'Resumen';
+
+  @override
+  String get dashboardSurfaceTransactions => 'Transacciones';
 
   @override
   String get transactionsMiniAnalyticsTitle => 'Este mes de un vistazo';
@@ -1262,10 +1268,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardTransactionsNoImportedHistory => 'Sin historia importada';
 
   @override
-  String get dashboardTransactionsModeMonths => 'Por mes';
+  String get dashboardTransactionsGroupByLabel => 'Agrupar por';
 
   @override
-  String get dashboardTransactionsModeCategories => 'Por categoría';
+  String get dashboardTransactionsModeList => 'Lista';
+
+  @override
+  String get dashboardTransactionsModeMonths => 'Mes';
+
+  @override
+  String get dashboardTransactionsModeCategories => 'Categoría';
 
   @override
   String get dashboardTransactionsSearchHint =>
@@ -1282,6 +1294,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dashboardTransactionsFilterAllAccounts => 'Todas las cuentas';
+
+  @override
+  String dashboardTransactionsAccountsSelectedCount(int count) {
+    return '$count cuentas';
+  }
+
+  @override
+  String get dashboardTransactionsAccountsDone => 'Listo';
+
+  @override
+  String get dashboardTransactionsSelectAccountsTitle => 'Cuentas';
+
+  @override
+  String get dashboardTransactionsNoTransactionsMatch =>
+      'Ninguna transacción coincide.';
 
   @override
   String get dashboardTransactionsFilterRole => 'Role';
@@ -3102,6 +3129,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get monthDetailNetThisMonth => 'NETO ESTE MES';
+
+  @override
+  String get monthDetailSearchHint => 'Buscar en este mes';
+
+  @override
+  String get monthDetailNoSearchMatches =>
+      'Ninguna transacción coincide con esta búsqueda.';
 
   @override
   String get monthDetailNoTransactionsLeft =>
