@@ -1,9 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
 
 import 'package:clarity/core/layout/clarity_breakpoints.dart';
-import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
@@ -138,7 +136,6 @@ LineTouchTooltipData financeChartLineTooltip({
   );
 }
 
-@visibleForTesting
 List<T> trimFinanceChartMonths<T>(List<T> items, {int months = 6}) {
   if (items.length <= months) {
     return items;
@@ -146,7 +143,6 @@ List<T> trimFinanceChartMonths<T>(List<T> items, {int months = 6}) {
   return items.sublist(items.length - months);
 }
 
-@visibleForTesting
 double financeChartMaxY(Iterable<double> values) {
   final maxY = values.fold<double>(
     0,

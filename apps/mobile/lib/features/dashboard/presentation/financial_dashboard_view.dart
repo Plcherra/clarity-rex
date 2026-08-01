@@ -25,6 +25,8 @@ import '../../../theme/clarity_radius.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
 import '../../../widgets/clarity_path_loader.dart';
+import '../domain/savings_snapshot.dart';
+import 'category_detail_screen.dart';
 import 'month_detail_screen.dart';
 import 'charts/finance_charts.dart';
 
@@ -34,6 +36,7 @@ part 'financial_dashboard_transaction_lists.dart';
 part 'financial_dashboard_shell.dart';
 part 'financial_dashboard_shell_bodies.dart';
 part 'financial_dashboard_summary_sections.dart';
+part 'financial_dashboard_savings_row.dart';
 part 'financial_dashboard_cards.dart';
 part 'financial_dashboard_charts.dart';
 

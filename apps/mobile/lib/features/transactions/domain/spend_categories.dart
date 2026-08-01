@@ -78,11 +78,7 @@ const List<String> kSelectableSpendCategories = [
 
 // --- suggestCategoryFromDescription needles (lowercase substrings) ---
 
-const List<String> incomePayrollKeywords = [
-  'indn:martins pedro',
-  'payroll',
-  'des:payroll',
-];
+const List<String> incomePayrollKeywords = ['payroll', 'des:payroll'];
 
 const List<String> appleBillKeywords = ['apple com bill', 'apple.com/bill'];
 

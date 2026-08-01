@@ -72,6 +72,29 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
     super.dispose();
   }
 
+  void _openCategoryDetail(String category) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => CategoryDetailScreen(
+          controller: widget.controller,
+          transactionController: widget.transactionController,
+          scope: widget.scope,
+          category: category,
+          referenceMonth: widget.snapshot.referenceMonth,
+          budget: _budgetForCategory(category),
+        ),
+      ),
+    );
+  }
+
+  BudgetCategoryPerformance? _budgetForCategory(String category) {
+    final normalized = category.trim().toLowerCase();
+    for (final entry in widget.budgetPerformance.categories) {
+      if (entry.displayLabel.trim().toLowerCase() == normalized) return entry;
+    }
+    return null;
+  }
+
   void _scrollToInsightAnchor(DashboardInsightAnchor anchor) {
     final key = switch (anchor) {
       DashboardInsightAnchor.connectedAccounts => null,
@@ -139,7 +162,10 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
     final categoryChart = _DashboardChartSection(
       title: l10n.dashboardOverviewSpendingByCategory,
       subtitle: l10n.dashboardChartCategorySpendSubtitle,
-      child: CategorySpendChart(categories: snapshot.topCategories),
+      child: CategorySpendChart(
+        categories: snapshot.topCategories,
+        onCategoryTap: _openCategoryDetail,
+      ),
     );
     final trendChart = _DashboardChartSection(
       title: l10n.dashboardOverviewSixMonthTrend,
@@ -149,7 +175,10 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
       sectionKey: _spendingPressureKey,
       title: l10n.dashboardOverviewSpendingPressure,
       subtitle: l10n.dashboardChartSpendingPressureSubtitle,
-      child: BiggestLeaksChart(leaks: snapshot.biggestLeaksThisMonth),
+      child: BiggestLeaksChart(
+        leaks: snapshot.biggestLeaksThisMonth,
+        onCategoryTap: _openCategoryDetail,
+      ),
     );
 
     return DecoratedBox(
@@ -250,7 +279,8 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
                               children: [
                                 _SectionTitle(
                                   theme: theme,
-                                  title: l10n.dashboardOverviewBudgetPerformance,
+                                  title:
+                                      l10n.dashboardOverviewBudgetPerformance,
                                 ),
                                 const SizedBox(height: 16),
                                 KeyedSubtree(

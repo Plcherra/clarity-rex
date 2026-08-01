@@ -6,15 +6,16 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('connected accounts are not treated as empty before first sync', () {
     final data = DashboardViewData(
-      snapshot: const DashboardSnapshot(
+      snapshot: DashboardSnapshot(
         totalBalance: 0,
         spentThisMonth: 0,
         incomeThisMonth: 0,
         availableThisMonth: 0,
-        topCategories: [],
-        biggestLeaksThisMonth: [],
+        topCategories: const [],
+        biggestLeaksThisMonth: const [],
         burnRunwayDays: null,
-        monthlyGroups: [],
+        monthlyGroups: const [],
+        referenceMonth: DateTime(2026, 6),
       ),
       budgetPerformance: const BudgetPerformanceSnapshot(
         periodType: BudgetPeriodType.monthly,

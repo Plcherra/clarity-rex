@@ -880,6 +880,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'Actividad este mes: no es lo mismo que el saldo';
 
   @override
+  String get dashboardOverviewSavings => 'Ahorros';
+
+  @override
+  String dashboardOverviewSavingsMovedIn(String amount) {
+    return '$amount ingresados';
+  }
+
+  @override
+  String dashboardOverviewSavingsTakenOut(String amount) {
+    return '$amount retirados';
+  }
+
+  @override
+  String get dashboardOverviewSavingsUnchanged => 'Sin movimientos este mes';
+
+  @override
   String get dashboardInsightsStripTitle => 'Qué vigilar';
 
   @override
@@ -1080,10 +1096,68 @@ class AppLocalizationsEs extends AppLocalizations {
   String get chatShowLess => 'Ver menos';
 
   @override
-  String get dashboardChartCategorySpendSubtitle => 'Total de este mes';
+  String get dashboardChartCategorySpendSubtitle =>
+      'Total de este mes · toca una categoría';
 
   @override
-  String get dashboardChartSpendingPressureSubtitle => 'Presión mes a mes';
+  String get dashboardChartSpendingPressureSubtitle =>
+      'Presión mes a mes · toca una categoría';
+
+  @override
+  String dashboardChartCategoryDrilldownHint(String category) {
+    return 'Ver transacciones de $category';
+  }
+
+  @override
+  String get categoryDetailLoading => 'Cargando categoría…';
+
+  @override
+  String get categoryDetailSpentThisMonth => 'GASTADO ESTE MES';
+
+  @override
+  String get categoryDetailNoTransactions =>
+      'No hay transacciones en esta categoría este mes.';
+
+  @override
+  String get categoryDetailWhereItWent => 'A dónde fue';
+
+  @override
+  String get categoryDetailNewThisMonth =>
+      'Nueva este mes: no hubo nada el mes pasado';
+
+  @override
+  String get categoryDetailNoLastMonthSpending =>
+      'Nada en esta categoría el mes pasado';
+
+  @override
+  String categoryDetailUpFromLastMonth(String change) {
+    return '$change más que el mes pasado';
+  }
+
+  @override
+  String categoryDetailDownFromLastMonth(String change) {
+    return '$change menos que el mes pasado';
+  }
+
+  @override
+  String categoryDetailShareOfSpending(String percent) {
+    return '$percent de todo lo que gastaste este mes';
+  }
+
+  @override
+  String categoryDetailAverageTransaction(String amount) {
+    return '$amount por transacción en promedio';
+  }
+
+  @override
+  String categoryDetailOverBudget(String amount, String budget) {
+    return '$amount por encima del presupuesto de $budget';
+  }
+
+  @override
+  String categoryDetailWithinBudget(String amount, String budget) {
+    return 'Quedan $amount del presupuesto de $budget';
+  }
 
   @override
   String get dashboardSectionCoreCharts => 'Gráficos principales';

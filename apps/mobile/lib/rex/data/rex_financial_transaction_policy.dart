@@ -1,7 +1,6 @@
-import 'package:clarity/core/models/transaction.dart';
 import 'package:clarity/core/models/account.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
-import 'package:clarity/features/transactions/domain/merchant_normalization.dart';
+import 'package:clarity/features/transactions/domain/merchant_rollup.dart';
 import 'package:clarity/features/transactions/domain/spend_categories.dart';
 import 'package:clarity/features/transactions/domain/transaction_resolution.dart';
 import 'package:clarity/rex/data/rex_financial_context_query.dart';
@@ -10,6 +9,7 @@ const int kMaxRexTransactionContextRows = 120;
 const int kMaxRexDrilldownGroups = 18;
 const int kMaxRexDrilldownSampleIds = 8;
 const int kMaxCategorySpendRows = 12;
+
 /// Enough merchants for Rex to tell a mixed bucket apart (coffee vs fast food),
 /// while a category row stays small enough to survive payload capping.
 const int kMaxMerchantsPerCategorySpend = 6;
@@ -117,34 +117,50 @@ List<Map<String, dynamic>> buildCategorySpendThisMonth({
   int maxCategories = kMaxCategorySpendRows,
   int maxMerchantsPerCategory = kMaxMerchantsPerCategorySpend,
 }) {
-  final accumulators = <String, _CategorySpendAccumulator>{};
+  final rowsByCategory = <String, List<ResolvedTransaction>>{};
 
   for (final resolved in resolvedTransactions) {
     if (!_isVisibleFinancialCategorySlice(resolved)) {
       continue;
     }
-    final month = _monthKeyForDate(resolved.transaction.date);
-    if (month != referenceMonth) {
+    if (_monthKeyForDate(resolved.transaction.date) != referenceMonth) {
       continue;
     }
-
-    final category = resolved.displayCategory.trim();
-    final accumulator = accumulators.putIfAbsent(
-      category,
-      () => _CategorySpendAccumulator(category: category),
-    );
-    accumulator.add(
-      resolved,
-      merchantName: merchantNamesByTransactionId[_transactionId(resolved)],
-    );
+    rowsByCategory
+        .putIfAbsent(resolved.displayCategory.trim(), () => [])
+        .add(resolved);
   }
 
-  final sorted = accumulators.values.toList()
-    ..sort((a, b) => b.spent.compareTo(a.spent));
+  final totals = {
+    for (final entry in rowsByCategory.entries)
+      entry.key: entry.value.fold<double>(
+        0,
+        (sum, row) => sum + row.transaction.amount.abs(),
+      ),
+  };
+  final categories = rowsByCategory.keys.toList()
+    ..sort((a, b) => totals[b]!.compareTo(totals[a]!));
 
   return [
-    for (final group in sorted.take(maxCategories))
-      group.toContext(maxMerchants: maxMerchantsPerCategory),
+    for (final category in categories.take(maxCategories))
+      {
+        'category': category,
+        'spent': _moneyValue(totals[category]!),
+        'transaction_count': rowsByCategory[category]!.length,
+        'top_merchants': [
+          for (final merchant in merchantSpendRollups(
+            rowsByCategory[category]!,
+            namesByTransactionKey: merchantNamesByTransactionId,
+            keyOf: _transactionId,
+            limit: maxMerchantsPerCategory,
+          ))
+            {
+              'merchant': merchant.merchant,
+              'spent': _moneyValue(merchant.spent),
+              'transaction_count': merchant.transactionCount,
+            },
+        ],
+      },
   ];
 }
 
@@ -325,69 +341,4 @@ String _dateOnlyValue(DateTime value) {
   return '${value.year.toString().padLeft(4, '0')}-'
       '${value.month.toString().padLeft(2, '0')}-'
       '${value.day.toString().padLeft(2, '0')}';
-}
-
-class _CategorySpendAccumulator {
-  _CategorySpendAccumulator({required this.category});
-
-  final String category;
-  int transactionCount = 0;
-  double spent = 0;
-  final _merchants = <String, _MerchantSpend>{};
-
-  void add(ResolvedTransaction resolved, {String? merchantName}) {
-    transactionCount += 1;
-    spent += resolved.transaction.amount.abs();
-    final named = merchantName?.trim() ?? '';
-    final key = named.isNotEmpty
-        ? named.toLowerCase()
-        : _merchantKey(resolved.transaction);
-    final merchant = _merchants.putIfAbsent(
-      key,
-      () => _MerchantSpend(label: named.isNotEmpty ? named : _merchantLabel(key)),
-    );
-    merchant.spent += resolved.transaction.amount.abs();
-    merchant.transactionCount += 1;
-  }
-
-  Map<String, dynamic> toContext({required int maxMerchants}) {
-    final merchants = _merchants.values.toList()
-      ..sort((a, b) => b.spent.compareTo(a.spent));
-    return {
-      'category': category,
-      'spent': _moneyValue(spent),
-      'transaction_count': transactionCount,
-      'top_merchants': [
-        for (final merchant in merchants.take(maxMerchants))
-          {
-            'merchant': merchant.label,
-            'spent': _moneyValue(merchant.spent),
-            'transaction_count': merchant.transactionCount,
-          },
-      ],
-    };
-  }
-}
-
-class _MerchantSpend {
-  _MerchantSpend({required this.label});
-
-  final String label;
-  double spent = 0;
-  int transactionCount = 0;
-}
-
-/// Group repeat visits together: raw bank descriptions carry card digits and
-/// store codes, so a daily coffee shop would otherwise look like 20 merchants.
-String _merchantKey(Transaction transaction) {
-  final normalized = merchantKeyLowerFromDescription(transaction.description);
-  return normalized.isNotEmpty ? normalized : 'unknown merchant';
-}
-
-String _merchantLabel(String key) {
-  return [
-    for (final word in key.split(' '))
-      if (word.isNotEmpty)
-        '${word[0].toUpperCase()}${word.substring(1)}',
-  ].join(' ');
 }

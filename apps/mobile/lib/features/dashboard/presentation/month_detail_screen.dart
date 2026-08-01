@@ -8,7 +8,7 @@ import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
-import '../../transactions/presentation/widgets/transaction_category_dropdown.dart';
+import '../../transactions/presentation/widgets/transaction_line_tile.dart';
 import '../domain/month_deletion_policy.dart';
 
 class MonthDetailScreen extends StatefulWidget {
@@ -144,10 +144,14 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                             ),
                             FilledButton(
                               style: FilledButton.styleFrom(
-                                backgroundColor: Theme.of(ctx).colorScheme.error,
+                                backgroundColor: Theme.of(
+                                  ctx,
+                                ).colorScheme.error,
                               ),
                               onPressed: () => Navigator.of(ctx).pop(true),
-                              child: Text(dialogL10n.monthDetailDeleteMonthButton),
+                              child: Text(
+                                dialogL10n.monthDetailDeleteMonthButton,
+                              ),
                             ),
                           ],
                         );
@@ -181,7 +185,9 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
             child: lines == null
                 ? _dataNotifier.error != null
                       ? Center(
-                          child: Text(context.l10n.dashboardTransactionsLoadError),
+                          child: Text(
+                            context.l10n.dashboardTransactionsLoadError,
+                          ),
                         )
                       : Center(
                           child: ClarityDiamondLoader(
@@ -295,14 +301,15 @@ class _MonthDetailBody extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 formatMoney(monthTotal),
-                style: (!isClarityDesktopLayout(context)
-                        ? theme.textTheme.titleLarge
-                        : theme.textTheme.headlineMedium)
-                    ?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.5,
-                  color: totalColor,
-                ),
+                style:
+                    (!isClarityDesktopLayout(context)
+                            ? theme.textTheme.titleLarge
+                            : theme.textTheme.headlineMedium)
+                        ?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.5,
+                          color: totalColor,
+                        ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -362,8 +369,9 @@ class _MonthDetailBody extends StatelessWidget {
                             alpha: 0.35,
                           ),
                         ),
-                      _LineTile(
-                        line: lines[i],
+                      TransactionLineTile(
+                        transaction: lines[i].transaction,
+                        displayCategory: lines[i].suggestedCategory,
                         transactionController: transactionController,
                       ),
                     ],
@@ -371,139 +379,6 @@ class _MonthDetailBody extends StatelessWidget {
                 ),
         ),
       ],
-    );
-  }
-}
-
-class _LineTile extends StatelessWidget {
-  const _LineTile({required this.line, required this.transactionController});
-
-  final BankStatementLine line;
-  final TransactionUiController transactionController;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final tx = line.transaction;
-    final muted = cs.onSurface.withValues(alpha: 0.42);
-    final amountColor = tx.amount < 0
-        ? ClarityColors.financeNegative
-        : ClarityColors.financePositive;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 48,
-                child: Text(
-                  formatShortDate(tx.date),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: muted,
-                    height: 1.35,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      tx.description,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        height: 1.3,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TransactionCategoryField(
-                      controller: transactionController,
-                      transaction: tx,
-                      displayCategory: line.suggestedCategory,
-                    ),
-                    const SizedBox(height: 6),
-                    TransactionRoleField(
-                      controller: transactionController,
-                      transaction: tx,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    formatMoney(tx.amount),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: amountColor,
-                    ),
-                  ),
-                  if (!tx.isPlaid)
-                    IconButton(
-                      tooltip: context.l10n.monthDetailDeleteTransactionTooltip,
-                      icon: const Icon(Icons.delete_outline_rounded),
-                      color: cs.error,
-                      onPressed: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) {
-                            final dialogL10n = ctx.l10n;
-                            return AlertDialog(
-                              title: Text(
-                                dialogL10n.monthDetailDeleteTransactionTitle,
-                              ),
-                              content: Text(
-                                dialogL10n.monthDetailDeleteTransactionBody,
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(ctx).pop(false),
-                                  child: Text(dialogL10n.commonCancel),
-                                ),
-                                FilledButton(
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: Theme.of(
-                                      ctx,
-                                    ).colorScheme.error,
-                                  ),
-                                  onPressed: () => Navigator.of(ctx).pop(true),
-                                  child: Text(dialogL10n.commonDelete),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                        if (confirm != true) return;
-                        final deleted = await transactionController
-                            .deleteTransaction(tx);
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              deleted
-                                  ? context.l10n.monthDetailTransactionDeleted
-                                  : context
-                                        .l10n
-                                        .monthDetailDeleteTransactionFailed,
-                            ),
-                          ),
-                        );
-                      },
-                      visualDensity: VisualDensity.compact,
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

@@ -29,15 +29,16 @@ void main() {
     final l10n = lookupAppLocalizations(const Locale('en'));
     final items = generateDashboardInsightItems(
       l10n: l10n,
-      snapshot: const DashboardSnapshot(
+      snapshot: DashboardSnapshot(
         totalBalance: 0,
         spentThisMonth: 0,
         incomeThisMonth: 0,
         availableThisMonth: 0,
-        topCategories: [],
-        biggestLeaksThisMonth: [],
+        topCategories: const [],
+        biggestLeaksThisMonth: const [],
         burnRunwayDays: null,
-        monthlyGroups: [],
+        monthlyGroups: const [],
+        referenceMonth: DateTime(2026, 7),
       ),
       budgetPerformance: const BudgetPerformanceSnapshot(
         periodType: BudgetPeriodType.monthly,
@@ -74,6 +75,7 @@ void main() {
         ],
         burnRunwayDays: 10,
         monthlyGroups: const [],
+        referenceMonth: DateTime(2026, 7),
       ),
       budgetPerformance: const BudgetPerformanceSnapshot(
         periodType: BudgetPeriodType.monthly,

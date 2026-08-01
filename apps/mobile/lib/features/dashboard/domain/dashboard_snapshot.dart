@@ -2,6 +2,7 @@ import 'balance_resolve.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import 'dashboard_metrics.dart';
 import 'monthly_cash_flow_series.dart';
+import 'savings_snapshot.dart';
 import '../../../core/models/models.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
@@ -56,8 +57,14 @@ class DashboardSnapshot {
     required this.biggestLeaksThisMonth,
     required this.burnRunwayDays,
     required this.monthlyGroups,
+    required this.referenceMonth,
     this.monthlyCashFlow = const [],
+    this.savings,
   });
+
+  /// The month every "this month" number here was measured in. Drill-downs read
+  /// it so a detail screen can never show a different month than the card.
+  final DateTime referenceMonth;
 
   final double totalBalance;
   final double spentThisMonth;
@@ -73,6 +80,9 @@ class DashboardSnapshot {
   /// Chart series, oldest month first. Counted like [spentThisMonth] and
   /// [incomeThisMonth] so a chart can never disagree with the overview card.
   final List<MonthlyCashFlowPoint> monthlyCashFlow;
+
+  /// Null unless a savings account is connected in this scope.
+  final SavingsSnapshot? savings;
 }
 
 DashboardSnapshot buildDashboardSnapshot({
@@ -173,6 +183,13 @@ DashboardSnapshot buildDashboardSnapshot({
     biggestLeaksThisMonth: leaks,
     burnRunwayDays: runway,
     monthlyGroups: monthsNewestFirst,
+    referenceMonth: reference,
     monthlyCashFlow: buildMonthlyCashFlowSeries(resolved),
+    savings: buildSavingsSnapshot(
+      scope: scope,
+      reference: reference,
+      accounts: accounts,
+      resolved: resolved,
+    ),
   );
 }

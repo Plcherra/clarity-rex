@@ -62,6 +62,56 @@ void main() {
       expect(pearl, isNot(dollarTree));
     });
 
+    test('drops the city and region wherever the card was used', () {
+      // One shop, four countries' worth of statement formatting.
+      expect(
+        merchantKeyLowerFromDescription('BOM DOUGH COFFEE MIAMI FL'),
+        'bom dough coffee',
+      );
+      expect(
+        merchantKeyLowerFromDescription('BOM DOUGH COFFEE TORONTO ON CAN'),
+        'bom dough coffee',
+      );
+      expect(
+        merchantKeyLowerFromDescription('BOM DOUGH COFFEE SAO PAULO SP BRA'),
+        'bom dough coffee',
+      );
+      expect(
+        merchantKeyLowerFromDescription('BOM DOUGH COFFEE SAN SEBASTIAN ESP'),
+        'bom dough coffee',
+      );
+    });
+
+    test('keeps the name when a service phone stands in for a city', () {
+      expect(
+        merchantKeyLowerFromDescription('APPLE.COM/BILL 866-712-7753 CA'),
+        'apple com bill',
+      );
+    });
+
+    test('a merchant name is not shortened when there is no region code', () {
+      expect(
+        merchantKeyLowerFromDescription('TRADER JOES 505'),
+        'trader joes',
+      );
+    });
+
+    test('branch variants of one shop are the same family', () {
+      expect(
+        merchantKeysAreSameFamily('bom dough coffee', 'bom dough coffee 14th'),
+        isTrue,
+      );
+      expect(
+        merchantKeysAreSameFamily(
+          'bom dough llc',
+          'bom dough llc des payroll indn martins pedro co ppd',
+        ),
+        isTrue,
+      );
+      expect(merchantKeysAreSameFamily('uber', 'uber eats'), isFalse);
+      expect(merchantKeysAreSameFamily('uber eats', 'uber trip'), isFalse);
+    });
+
     test('returns an empty key for empty or all-noise descriptions', () {
       expect(merchantKeyLowerFromDescription(''), '');
       expect(merchantKeyLowerFromDescription('  '), '');

@@ -8,7 +8,7 @@ import 'helpers/l10n_test_wrapper.dart';
 
 void main() {
   testWidgets('mini analytics shows dashboard snapshot totals', (tester) async {
-    const snapshot = DashboardSnapshot(
+    final snapshot = DashboardSnapshot(
       totalBalance: 1200,
       spentThisMonth: 420,
       incomeThisMonth: 3000,
@@ -20,12 +20,11 @@ void main() {
       biggestLeaksThisMonth: [],
       burnRunwayDays: 12,
       monthlyGroups: [],
+      referenceMonth: DateTime(2026, 7),
     );
 
     await tester.pumpWidget(
-      wrapWithL10n(
-        const TransactionsMonthMiniAnalytics(snapshot: snapshot),
-      ),
+      wrapWithL10n(TransactionsMonthMiniAnalytics(snapshot: snapshot)),
     );
 
     expect(find.text('This month at a glance'), findsOneWidget);
@@ -39,7 +38,7 @@ void main() {
   testWidgets('mini analytics hides when snapshot has no activity', (
     tester,
   ) async {
-    const snapshot = DashboardSnapshot(
+    final snapshot = DashboardSnapshot(
       totalBalance: 0,
       spentThisMonth: 0,
       incomeThisMonth: 0,
@@ -48,12 +47,11 @@ void main() {
       biggestLeaksThisMonth: [],
       burnRunwayDays: null,
       monthlyGroups: [],
+      referenceMonth: DateTime(2026, 7),
     );
 
     await tester.pumpWidget(
-      wrapWithL10n(
-        const TransactionsMonthMiniAnalytics(snapshot: snapshot),
-      ),
+      wrapWithL10n(TransactionsMonthMiniAnalytics(snapshot: snapshot)),
     );
 
     expect(find.text('This month at a glance'), findsNothing);
@@ -62,7 +60,7 @@ void main() {
   testWidgets('mini analytics sparkline uses the cash flow series', (
     tester,
   ) async {
-    const snapshot = DashboardSnapshot(
+    final snapshot = DashboardSnapshot(
       totalBalance: 500,
       spentThisMonth: 300,
       incomeThisMonth: 1000,
@@ -71,6 +69,7 @@ void main() {
       biggestLeaksThisMonth: [],
       burnRunwayDays: 5,
       monthlyGroups: [],
+      referenceMonth: DateTime(2026, 7),
       monthlyCashFlow: [
         MonthlyCashFlowPoint(yearMonth: '2026-01', income: 900, spend: 100),
         MonthlyCashFlowPoint(yearMonth: '2026-02', income: 900, spend: 200),
@@ -79,9 +78,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      wrapWithL10n(
-        TransactionsMonthMiniAnalytics(snapshot: snapshot),
-      ),
+      wrapWithL10n(TransactionsMonthMiniAnalytics(snapshot: snapshot)),
     );
 
     expect(find.text('Six-month spend trend'), findsOneWidget);

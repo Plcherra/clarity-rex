@@ -873,6 +873,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Activity this month — not the same as balance';
 
   @override
+  String get dashboardOverviewSavings => 'Savings';
+
+  @override
+  String dashboardOverviewSavingsMovedIn(String amount) {
+    return '$amount moved in';
+  }
+
+  @override
+  String dashboardOverviewSavingsTakenOut(String amount) {
+    return '$amount taken out';
+  }
+
+  @override
+  String get dashboardOverviewSavingsUnchanged => 'No movement this month';
+
+  @override
   String get dashboardInsightsStripTitle => 'What to watch';
 
   @override
@@ -1069,11 +1085,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatShowLess => 'Show less';
 
   @override
-  String get dashboardChartCategorySpendSubtitle => 'This month total';
+  String get dashboardChartCategorySpendSubtitle =>
+      'This month total · tap a category';
 
   @override
   String get dashboardChartSpendingPressureSubtitle =>
-      'Month-over-month pressure';
+      'Month-over-month pressure · tap a category';
+
+  @override
+  String dashboardChartCategoryDrilldownHint(String category) {
+    return 'See $category transactions';
+  }
+
+  @override
+  String get categoryDetailLoading => 'Loading category…';
+
+  @override
+  String get categoryDetailSpentThisMonth => 'SPENT THIS MONTH';
+
+  @override
+  String get categoryDetailNoTransactions =>
+      'No transactions in this category this month.';
+
+  @override
+  String get categoryDetailWhereItWent => 'Where it went';
+
+  @override
+  String get categoryDetailNewThisMonth =>
+      'New this month — nothing here last month';
+
+  @override
+  String get categoryDetailNoLastMonthSpending =>
+      'Nothing in this category last month';
+
+  @override
+  String categoryDetailUpFromLastMonth(String change) {
+    return 'Up $change vs last month';
+  }
+
+  @override
+  String categoryDetailDownFromLastMonth(String change) {
+    return 'Down $change vs last month';
+  }
+
+  @override
+  String categoryDetailShareOfSpending(String percent) {
+    return '$percent of everything you spent this month';
+  }
+
+  @override
+  String categoryDetailAverageTransaction(String amount) {
+    return '$amount per transaction on average';
+  }
+
+  @override
+  String categoryDetailOverBudget(String amount, String budget) {
+    return '$amount over the $budget budget';
+  }
+
+  @override
+  String categoryDetailWithinBudget(String amount, String budget) {
+    return '$amount left of the $budget budget';
+  }
 
   @override
   String get dashboardSectionCoreCharts => 'Core charts';

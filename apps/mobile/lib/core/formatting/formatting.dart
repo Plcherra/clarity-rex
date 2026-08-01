@@ -32,6 +32,9 @@ String formatMoney(double? value, {Locale? locale}) {
   return formatted;
 }
 
+/// Turns a fraction into a rounded percentage, e.g. `0.42` becomes `42%`.
+String formatPercent(double fraction) => '${(fraction * 100).round()}%';
+
 /// Turns `YYYY-MM` into a localized month label, e.g. `April 2026`.
 String formatYearMonthLabel(String yearMonth, {Locale? locale}) {
   final parts = yearMonth.split('-');

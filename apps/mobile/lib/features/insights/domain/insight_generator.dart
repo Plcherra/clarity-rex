@@ -43,7 +43,7 @@ InsightItem? _momLeakInsight(
     if (pct <= 0) return null;
     body = l10n.dashboardInsightsMomLeakUp(
       leak.name,
-      _formatPercentChange(pct),
+      formatPercent(pct),
       formatMoney(leak.amountThisMonth),
     );
   }
@@ -114,7 +114,3 @@ InsightItem? _budgetOverspendInsight(
   );
 }
 
-String _formatPercentChange(double fraction) {
-  final percent = (fraction * 100).round();
-  return '$percent%';
-}

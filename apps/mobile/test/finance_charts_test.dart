@@ -1,3 +1,4 @@
+import 'package:clarity/core/models/models.dart';
 import 'package:clarity/features/budgets/domain/budget_models.dart';
 import 'package:clarity/features/dashboard/domain/monthly_cash_flow_series.dart';
 import 'package:clarity/features/dashboard/presentation/charts/finance_charts.dart';
@@ -201,6 +202,65 @@ void main() {
         find.text('No category spending yet.'),
       );
       expect(text.style?.color, ClarityColors.dark.textMuted);
+    });
+
+    testWidgets('tapping a category bar opens that category', (tester) async {
+      final tapped = <String>[];
+      await tester.pumpWidget(
+        wrapWithClarityTheme(
+          CategorySpendChart(
+            categories: const [
+              CategorySpend(name: 'Grocery / Supermarket', amount: 320),
+              CategorySpend(name: 'Shopping', amount: 180),
+            ],
+            onCategoryTap: tapped.add,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Shopping'));
+
+      expect(tapped, ['Shopping']);
+    });
+
+    testWidgets('tapping a spending pressure bar opens that category', (
+      tester,
+    ) async {
+      final tapped = <String>[];
+      await tester.pumpWidget(
+        wrapWithClarityTheme(
+          BiggestLeaksChart(
+            leaks: const [
+              CategoryLeakStat(
+                name: 'Coffee / Quick Food',
+                amountThisMonth: 182,
+                amountLastMonth: 90,
+                percentChangeFromLastMonth: 1.02,
+              ),
+            ],
+            onCategoryTap: tapped.add,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Coffee / Quick Food'));
+
+      expect(tapped, ['Coffee / Quick Food']);
+    });
+
+    testWidgets('bars stay flat when there is nowhere to drill into', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrapWithClarityTheme(
+          const CategorySpendChart(
+            categories: [CategorySpend(name: 'Shopping', amount: 180)],
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+      expect(find.byType(InkWell), findsNothing);
     });
   });
 }

@@ -1,6 +1,7 @@
 import '../../../core/models/models.dart';
 import 'internal_payment_matcher.dart';
 import 'internal_transfer_matcher.dart';
+import 'self_transfer_names.dart';
 import 'spend_categories.dart';
 
 bool _looksLikeRefundDescription(String description) {
@@ -21,6 +22,7 @@ FinancialRole effectiveFinancialRole({
   required String effectiveCategoryLabel,
   required Map<String, Account> accountsById,
   required List<Transaction> allTransactions,
+  SelfTransferNames selfTransferNames = SelfTransferNames.empty,
 }) {
   final stored = t.financialRole;
   if (stored != null) return stored;
@@ -46,6 +48,10 @@ FinancialRole effectiveFinancialRole({
     return FinancialRole.transfer;
   }
 
+  // The user paying themselves, recognised by a name their own transfers have
+  // already proven — covers the days only one side of the move was imported.
+  if (selfTransferNames.matches(t.description)) return FinancialRole.transfer;
+
   final internalTransfer = findConfirmedInternalTransferMatch(
     t: t,
     allTransactions: allTransactions,
@@ -63,6 +69,13 @@ FinancialRole effectiveFinancialRole({
     );
     if (match != null) return FinancialRole.creditCardPayment;
     return FinancialRole.expense; // conservative until confirmed
+  }
+
+  // Nobody is paid onto a credit card: inflows there are rewards, statement
+  // credits, or refunds. Counting them as income inflates what the user earned.
+  if (t.amount > 0 &&
+      accountsById[t.accountId]?.type == AccountType.creditCard) {
+    return FinancialRole.adjustment;
   }
 
   if (isIncomeCategoryLabel(effectiveCategoryLabel)) {

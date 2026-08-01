@@ -485,6 +485,24 @@
   "dashboardOverviewFromConnectedAccounts": "From your connected accounts",
   "dashboardOverviewThisMonthLabel": "This month",
   "dashboardOverviewActivityNotBalanceNote": "Activity this month — not the same as balance",
+  "dashboardOverviewSavings": "Savings",
+  "dashboardOverviewSavingsMovedIn": "{amount} moved in",
+  "@dashboardOverviewSavingsMovedIn": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardOverviewSavingsTakenOut": "{amount} taken out",
+  "@dashboardOverviewSavingsTakenOut": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardOverviewSavingsUnchanged": "No movement this month",
   "dashboardInsightsStripTitle": "What to watch",
   "dashboardInsightsNetNegative": "Spending exceeds income by {amount} this month.",
   "@dashboardInsightsNetNegative": {
@@ -586,8 +604,76 @@
   "assistantFinanceEditsEnabledSubtitle": "When off, Rex can advise but won't propose transaction or budget changes.",
   "chatShowMore": "Show more",
   "chatShowLess": "Show less",
-  "dashboardChartCategorySpendSubtitle": "This month total",
-  "dashboardChartSpendingPressureSubtitle": "Month-over-month pressure",
+  "dashboardChartCategorySpendSubtitle": "This month total · tap a category",
+  "dashboardChartSpendingPressureSubtitle": "Month-over-month pressure · tap a category",
+  "dashboardChartCategoryDrilldownHint": "See {category} transactions",
+  "@dashboardChartCategoryDrilldownHint": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailLoading": "Loading category…",
+  "categoryDetailSpentThisMonth": "SPENT THIS MONTH",
+  "categoryDetailNoTransactions": "No transactions in this category this month.",
+  "categoryDetailWhereItWent": "Where it went",
+  "categoryDetailNewThisMonth": "New this month — nothing here last month",
+  "categoryDetailNoLastMonthSpending": "Nothing in this category last month",
+  "categoryDetailUpFromLastMonth": "Up {change} vs last month",
+  "@categoryDetailUpFromLastMonth": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailDownFromLastMonth": "Down {change} vs last month",
+  "@categoryDetailDownFromLastMonth": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailShareOfSpending": "{percent} of everything you spent this month",
+  "@categoryDetailShareOfSpending": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailAverageTransaction": "{amount} per transaction on average",
+  "@categoryDetailAverageTransaction": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailOverBudget": "{amount} over the {budget} budget",
+  "@categoryDetailOverBudget": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "budget": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailWithinBudget": "{amount} left of the {budget} budget",
+  "@categoryDetailWithinBudget": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "budget": {
+        "type": "String"
+      }
+    }
+  },
   "dashboardSectionCoreCharts": "Core charts",
   "dashboardSectionTrendCharts": "Trends",
   "dashboardSectionTrendChartsHint": "Income mix and spending history",

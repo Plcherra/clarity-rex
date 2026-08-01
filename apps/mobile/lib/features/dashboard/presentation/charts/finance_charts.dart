@@ -13,9 +13,16 @@ export 'finance_chart_primitives.dart';
 export 'finance_chart_range_switch.dart';
 
 class CategorySpendChart extends StatelessWidget {
-  const CategorySpendChart({required this.categories, super.key});
+  const CategorySpendChart({
+    required this.categories,
+    this.onCategoryTap,
+    super.key,
+  });
 
   final List<CategorySpend> categories;
+
+  /// Opens the transactions behind a bar. Bars stay flat when this is null.
+  final void Function(String category)? onCategoryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +45,9 @@ class CategorySpendChart extends StatelessWidget {
             amount: item.amount,
             maxAmount: maxAmount,
             color: context.clarityColors.accent,
+            onTap: onCategoryTap == null
+                ? null
+                : () => onCategoryTap!(item.name),
           ),
       ],
     );
@@ -45,9 +55,12 @@ class CategorySpendChart extends StatelessWidget {
 }
 
 class BiggestLeaksChart extends StatelessWidget {
-  const BiggestLeaksChart({required this.leaks, super.key});
+  const BiggestLeaksChart({required this.leaks, this.onCategoryTap, super.key});
 
   final List<CategoryLeakStat> leaks;
+
+  /// Opens the transactions behind a bar. Bars stay flat when this is null.
+  final void Function(String category)? onCategoryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +83,9 @@ class BiggestLeaksChart extends StatelessWidget {
             amount: item.amountThisMonth,
             maxAmount: maxAmount,
             color: ClarityColors.financeSpending,
+            onTap: onCategoryTap == null
+                ? null
+                : () => onCategoryTap!(item.name),
           ),
       ],
     );
@@ -205,19 +221,25 @@ class _HorizontalAmountBar extends StatelessWidget {
     required this.amount,
     required this.maxAmount,
     required this.color,
+    this.onTap,
   });
 
   final String label;
   final double amount;
   final double maxAmount;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final fraction = maxAmount <= 0 ? 0.0 : (amount / maxAmount).clamp(0.0, 1.0);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+    final muted = context.clarityColors.textMuted;
+    final fraction = maxAmount <= 0
+        ? 0.0
+        : (amount / maxAmount).clamp(0.0, 1.0);
+
+    final bar = Padding(
+      padding: EdgeInsets.fromLTRB(0, onTap == null ? 0 : 6, 0, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -235,10 +257,17 @@ class _HorizontalAmountBar extends StatelessWidget {
               ),
               Text(
                 formatMoney(amount),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: context.clarityColors.textMuted,
-                ),
+                style: theme.textTheme.labelSmall?.copyWith(color: muted),
               ),
+              if (onTap != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 2),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: muted,
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 6),
@@ -252,6 +281,17 @@ class _HorizontalAmountBar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+
+    if (onTap == null) return bar;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Semantics(
+        button: true,
+        label: context.l10n.dashboardChartCategoryDrilldownHint(label),
+        child: bar,
       ),
     );
   }

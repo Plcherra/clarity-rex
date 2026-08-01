@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/l10n/app_l10n.dart';
-import '../../../../core/models/models.dart';
 import '../../../dashboard/domain/dashboard_snapshot.dart';
 import '../../../dashboard/domain/monthly_cash_flow_series.dart';
 import '../../../dashboard/presentation/charts/finance_charts.dart';
@@ -252,7 +251,6 @@ class _SpendSparkline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.clarityColors;
     final spots = [
       for (var i = 0; i < values.length; i++) FlSpot(i.toDouble(), values[i]),
     ];

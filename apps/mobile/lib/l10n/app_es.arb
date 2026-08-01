@@ -1180,6 +1180,24 @@
   "dashboardOverviewAccountBalance": "Saldo de cuenta",
   "dashboardOverviewAccountHealth": "Estado de la cuenta",
   "dashboardOverviewActivityNotBalanceNote": "Actividad este mes: no es lo mismo que el saldo",
+  "dashboardOverviewSavings": "Ahorros",
+  "dashboardOverviewSavingsMovedIn": "{amount} ingresados",
+  "@dashboardOverviewSavingsMovedIn": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardOverviewSavingsTakenOut": "{amount} retirados",
+  "@dashboardOverviewSavingsTakenOut": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardOverviewSavingsUnchanged": "Sin movimientos este mes",
   "dashboardInsightsStripTitle": "Qué vigilar",
   "dashboardInsightsNetNegative": "Los gastos superan los ingresos por {amount} este mes.",
   "@dashboardInsightsNetNegative": {
@@ -1281,8 +1299,76 @@
   "assistantFinanceEditsEnabledSubtitle": "Si está desactivado, Rex puede asesorar pero no propondrá cambios en transacciones o presupuestos.",
   "chatShowMore": "Ver más",
   "chatShowLess": "Ver menos",
-  "dashboardChartCategorySpendSubtitle": "Total de este mes",
-  "dashboardChartSpendingPressureSubtitle": "Presión mes a mes",
+  "dashboardChartCategorySpendSubtitle": "Total de este mes · toca una categoría",
+  "dashboardChartSpendingPressureSubtitle": "Presión mes a mes · toca una categoría",
+  "dashboardChartCategoryDrilldownHint": "Ver transacciones de {category}",
+  "@dashboardChartCategoryDrilldownHint": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailLoading": "Cargando categoría…",
+  "categoryDetailSpentThisMonth": "GASTADO ESTE MES",
+  "categoryDetailNoTransactions": "No hay transacciones en esta categoría este mes.",
+  "categoryDetailWhereItWent": "A dónde fue",
+  "categoryDetailNewThisMonth": "Nueva este mes: no hubo nada el mes pasado",
+  "categoryDetailNoLastMonthSpending": "Nada en esta categoría el mes pasado",
+  "categoryDetailUpFromLastMonth": "{change} más que el mes pasado",
+  "@categoryDetailUpFromLastMonth": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailDownFromLastMonth": "{change} menos que el mes pasado",
+  "@categoryDetailDownFromLastMonth": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailShareOfSpending": "{percent} de todo lo que gastaste este mes",
+  "@categoryDetailShareOfSpending": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailAverageTransaction": "{amount} por transacción en promedio",
+  "@categoryDetailAverageTransaction": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailOverBudget": "{amount} por encima del presupuesto de {budget}",
+  "@categoryDetailOverBudget": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "budget": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDetailWithinBudget": "Quedan {amount} del presupuesto de {budget}",
+  "@categoryDetailWithinBudget": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "budget": {
+        "type": "String"
+      }
+    }
+  },
   "dashboardSectionCoreCharts": "Gráficos principales",
   "dashboardSectionTrendCharts": "Tendencias",
   "dashboardSectionTrendChartsHint": "Mezcla de ingresos e historial de gastos",

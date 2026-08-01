@@ -1643,6 +1643,30 @@ abstract class AppLocalizations {
   /// **'Activity this month — not the same as balance'**
   String get dashboardOverviewActivityNotBalanceNote;
 
+  /// No description provided for @dashboardOverviewSavings.
+  ///
+  /// In en, this message translates to:
+  /// **'Savings'**
+  String get dashboardOverviewSavings;
+
+  /// No description provided for @dashboardOverviewSavingsMovedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} moved in'**
+  String dashboardOverviewSavingsMovedIn(String amount);
+
+  /// No description provided for @dashboardOverviewSavingsTakenOut.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} taken out'**
+  String dashboardOverviewSavingsTakenOut(String amount);
+
+  /// No description provided for @dashboardOverviewSavingsUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'No movement this month'**
+  String get dashboardOverviewSavingsUnchanged;
+
   /// No description provided for @dashboardInsightsStripTitle.
   ///
   /// In en, this message translates to:
@@ -1974,14 +1998,92 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardChartCategorySpendSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'This month total'**
+  /// **'This month total · tap a category'**
   String get dashboardChartCategorySpendSubtitle;
 
   /// No description provided for @dashboardChartSpendingPressureSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Month-over-month pressure'**
+  /// **'Month-over-month pressure · tap a category'**
   String get dashboardChartSpendingPressureSubtitle;
+
+  /// No description provided for @dashboardChartCategoryDrilldownHint.
+  ///
+  /// In en, this message translates to:
+  /// **'See {category} transactions'**
+  String dashboardChartCategoryDrilldownHint(String category);
+
+  /// No description provided for @categoryDetailLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading category…'**
+  String get categoryDetailLoading;
+
+  /// No description provided for @categoryDetailSpentThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'SPENT THIS MONTH'**
+  String get categoryDetailSpentThisMonth;
+
+  /// No description provided for @categoryDetailNoTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions in this category this month.'**
+  String get categoryDetailNoTransactions;
+
+  /// No description provided for @categoryDetailWhereItWent.
+  ///
+  /// In en, this message translates to:
+  /// **'Where it went'**
+  String get categoryDetailWhereItWent;
+
+  /// No description provided for @categoryDetailNewThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'New this month — nothing here last month'**
+  String get categoryDetailNewThisMonth;
+
+  /// No description provided for @categoryDetailNoLastMonthSpending.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in this category last month'**
+  String get categoryDetailNoLastMonthSpending;
+
+  /// No description provided for @categoryDetailUpFromLastMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Up {change} vs last month'**
+  String categoryDetailUpFromLastMonth(String change);
+
+  /// No description provided for @categoryDetailDownFromLastMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Down {change} vs last month'**
+  String categoryDetailDownFromLastMonth(String change);
+
+  /// No description provided for @categoryDetailShareOfSpending.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} of everything you spent this month'**
+  String categoryDetailShareOfSpending(String percent);
+
+  /// No description provided for @categoryDetailAverageTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} per transaction on average'**
+  String categoryDetailAverageTransaction(String amount);
+
+  /// No description provided for @categoryDetailOverBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} over the {budget} budget'**
+  String categoryDetailOverBudget(String amount, String budget);
+
+  /// No description provided for @categoryDetailWithinBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} left of the {budget} budget'**
+  String categoryDetailWithinBudget(String amount, String budget);
 
   /// No description provided for @dashboardSectionCoreCharts.
   ///

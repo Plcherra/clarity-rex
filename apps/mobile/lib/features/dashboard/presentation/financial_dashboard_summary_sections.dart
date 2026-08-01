@@ -123,6 +123,10 @@ class _FinancialOverviewCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (snapshot.savings case final savings?) ...[
+                    const SizedBox(height: 12),
+                    _SavingsSummaryRow(savings: savings),
+                  ],
                   const SizedBox(height: 8),
                   Text(
                     l10n.dashboardOverviewActivityNotBalanceNote,
