@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from app.services.category_name_normalization import categories_match
+
 
 def context_dict(financial_context: Optional[dict], key: str) -> dict:
     if not isinstance(financial_context, dict):
@@ -32,11 +34,15 @@ def find_category(
 ) -> Optional[dict]:
     if not name:
         return None
-    return _best_match(
-        context_list(financial_context, "categories"),
-        name,
-        keys=("name", "normalized_name"),
-    )
+    categories = context_list(financial_context, "categories")
+    # Prefer the plural-aware key so "work reimbursement" finds
+    # "Work Reimbursements" before a looser substring match does.
+    for record in categories:
+        for key in ("normalized_name", "name"):
+            value = str(record.get(key) or "").strip()
+            if value and categories_match(name, value):
+                return record
+    return _best_match(categories, name, keys=("name", "normalized_name"))
 
 
 def find_budget(

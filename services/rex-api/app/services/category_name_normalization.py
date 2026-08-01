@@ -68,6 +68,52 @@ def normalized_category_key(raw: str) -> str:
     return re.sub(r"\s+", " ", key).strip()
 
 
+def category_match_key(raw: str) -> str:
+    """Singularised key so 'work reimbursement' reaches 'Work Reimbursements'."""
+    key = normalized_category_key(raw)
+    if not key:
+        return ""
+    return " ".join(_singular_token(token) for token in key.split())
+
+
+def categories_match(left: str, right: str) -> bool:
+    """True when two labels name the same bucket, ignoring plural/case noise."""
+    a = category_match_key(left)
+    b = category_match_key(right)
+    if not a or not b:
+        return False
+    return a == b or a in b or b in a
+
+
+def category_lookup_keys(raw: str) -> list[str]:
+    """Exact and plural variants to try against stored normalized_name rows."""
+    base = normalized_category_key(raw)
+    stem = category_match_key(raw)
+    keys: list[str] = []
+    for candidate in (base, stem, _plural_key(stem)):
+        if candidate and candidate not in keys:
+            keys.append(candidate)
+    return keys
+
+
+def _singular_token(word: str) -> str:
+    if len(word) > 4 and word.endswith(("ches", "shes", "ses", "xes", "zes")):
+        return word[:-2]
+    if len(word) > 3 and word.endswith("s") and not word.endswith("ss"):
+        return word[:-1]
+    return word
+
+
+def _plural_key(key: str) -> str:
+    words = key.split()
+    if not words:
+        return key
+    last = words[-1]
+    if last.endswith("s"):
+        return key
+    return " ".join([*words[:-1], f"{last}s"])
+
+
 def _title_case_word(word: str) -> str:
     if not word or word == "/":
         return word

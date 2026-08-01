@@ -37,6 +37,12 @@ class FakeSupabase:
             matches = [row for row in self.categories if row.get(key) == wanted]
             if matches:
                 return matches[:1]
+        # Plural-aware fallback scans the catalog the same way production does.
+        if "select" in query and not any(
+            str(query.get(key) or "").startswith("eq.")
+            for key in ("normalized_name", "name")
+        ):
+            return list(self.categories)
         return []
 
     def call(self, method: str, table: str) -> dict | None:
@@ -67,6 +73,29 @@ async def test_create_category_reuses_the_category_the_user_already_has() -> Non
     assert result == [
         {"id": "cat-fast-food", "name": "Fast Food", "normalized_name": "fast food"}
     ]
+    assert fake.call("POST", "categories") is None
+
+
+@pytest.mark.asyncio
+async def test_singular_spoken_name_reuses_the_plural_category() -> None:
+    """User said 'work reimbursement'; Knows already has Work Reimbursements."""
+    fake = FakeSupabase(
+        [
+            {
+                "id": "cat-reimb",
+                "name": "Work Reimbursements",
+                "normalized_name": "work reimbursements",
+            }
+        ]
+    )
+
+    result = await service_with(fake).execute(
+        "create_category",
+        {"name": "work reimbursement", "type": "expense"},
+        confirmed=True,
+    )
+
+    assert result[0]["id"] == "cat-reimb"
     assert fake.call("POST", "categories") is None
 
 

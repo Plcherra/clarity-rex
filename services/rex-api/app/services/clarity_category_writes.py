@@ -19,6 +19,8 @@ from typing import Any, Awaitable, Callable, Optional
 
 from app.services.category_name_normalization import (
     NormalizedCategoryName,
+    categories_match,
+    category_lookup_keys,
     normalize_category_name,
 )
 from app.services.clarity_control_errors import ClarityControlServiceError
@@ -127,15 +129,33 @@ async def _find_category(
     request: RequestFn,
     normalized: NormalizedCategoryName,
 ) -> Optional[dict[str, Any]]:
-    for filters in (
-        {"normalized_name": f"eq.{normalized.normalized_name}"},
-        {"name": f"eq.{normalized.display_name}"},
-    ):
+    for key in category_lookup_keys(normalized.normalized_name):
         rows = await request(
             "GET",
             "categories",
-            query={**filters, "select": "*", "limit": "1"},
+            query={
+                "normalized_name": f"eq.{key}",
+                "select": "*",
+                "limit": "1",
+            },
         )
         if rows:
             return rows[0]
+    rows = await request(
+        "GET",
+        "categories",
+        query={"name": f"eq.{normalized.display_name}", "select": "*", "limit": "1"},
+    )
+    if rows:
+        return rows[0]
+    # Last pass: plural/case forms the exact key list may still miss.
+    rows = await request(
+        "GET",
+        "categories",
+        query={"select": "*", "limit": "200"},
+    )
+    for row in rows:
+        label = str(row.get("normalized_name") or row.get("name") or "")
+        if categories_match(normalized.normalized_name, label):
+            return row
     return None

@@ -64,8 +64,39 @@ async def test_fetch_spend_insight_says_when_a_category_has_no_spend() -> None:
         brain=brain,
     )
     pack = brain.last_fetch_pack
-    assert 'No category named "Travel" has spend this month' in pack
+    assert 'No category in Clarity matches "Travel"' in pack
     assert "Categories with spend this month: Coffee; Groceries" in pack
+
+
+@pytest.mark.asyncio
+async def test_fetch_finds_a_zero_spend_category_by_spoken_singular() -> None:
+    """$0 this month is not 'missing' — Work Reimbursements still exists."""
+    brain = FakeGrokBrain("Moving those into Work Reimbursements.")
+    context = financial_context(
+        categories=[
+            {"id": "cat-coffee", "name": "Coffee", "type": "expense"},
+            {
+                "id": "cat-reimb",
+                "name": "Work Reimbursements",
+                "normalized_name": "work reimbursements",
+                "type": "expense",
+            },
+        ]
+    )
+    await finalize_finance_turn(
+        rex_action(
+            "fetch_spend_insight",
+            {"category": "work reimbursement", "merchant": "sultanas"},
+        ),
+        settings=CARD,
+        context=context,
+        user_text="Move sultanas to work reimbursement",
+        brain=brain,
+    )
+    pack = brain.last_fetch_pack
+    assert 'Category "Work Reimbursements" exists in Clarity' in pack
+    assert "valid destination" in pack
+    assert "missing" in pack  # instruction: do not say missing
 
 
 @pytest.mark.asyncio

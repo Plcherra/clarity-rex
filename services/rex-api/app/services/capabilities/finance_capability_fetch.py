@@ -14,12 +14,14 @@ from app.services.capabilities.finance_context_lookup import (
     context_dict,
     context_list,
     find_account,
+    find_category,
     matching_transactions,
     merchant_month_rollups,
     spend_total,
     transaction_coverage,
     transaction_line,
 )
+from app.services.category_name_normalization import categories_match
 
 FETCH_PACK_CHAR_BUDGET = 2200
 _MAX_TRANSACTION_ROWS = 8
@@ -148,20 +150,35 @@ def _category_lines(
         return [f"- Top spending categories this month: {summary}"]
 
     if request.category:
-        wanted = request.category.strip().lower()
         matches = [
             item
             for item in spend
-            if wanted in str(item.get("category") or "").strip().lower()
+            if categories_match(request.category, str(item.get("category") or ""))
         ]
         if matches:
             return [f"- {_category_spend_line(item)}" for item in matches]
+        # Zero spend is not "missing": Work Reimbursements with $0 still exists
+        # in the user's category list and is a valid move target.
+        catalog = find_category(financial_context, request.category)
+        if catalog is not None:
+            label = str(catalog.get("name") or request.category).strip()
+            return [
+                f'- Category "{label}" exists in Clarity with no spend this '
+                "month in the rollups. It is still a valid destination for "
+                "categorize_transaction / bulk_categorize — do not say the "
+                "category is missing.",
+            ]
         return [
-            f"- No category named \"{request.category}\" has spend this month in "
-            "Clarity.",
+            f'- No category in Clarity matches "{request.category}".',
             "- Categories with spend this month: "
             + "; ".join(
                 str(item.get("category") or "") for item in spend[:_MAX_CATEGORIES]
+            ),
+            "- Known categories: "
+            + "; ".join(
+                str(item.get("name") or "")
+                for item in context_list(financial_context, "categories")[:12]
+                if str(item.get("name") or "").strip()
             ),
         ]
     return [f"- {_category_spend_line(item)}" for item in spend[:_MAX_CATEGORIES]]
