@@ -5,7 +5,6 @@ import '../../../core/layout/clarity_breakpoints.dart';
 import '../../../core/layout/clarity_native_layout.dart';
 import '../../../core/layout/web_centered_dialog.dart';
 import '../../../core/l10n/app_l10n.dart';
-import '../../../rex/presentation/pages/companion_settings_screen.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/presentation/mfa_enrollment_screen.dart';
 import '../application/locale_controller.dart';
@@ -37,10 +36,6 @@ final class ProfileScreen extends StatelessWidget {
         builder: (context) => MfaEnrollmentScreen(controller: authController),
       ),
     );
-  }
-
-  Future<void> _openCompanion(BuildContext context) {
-    return openCompanionSettings(context, profileController: profileController);
   }
 
   Future<void> _openLanguage(BuildContext context) {
@@ -270,7 +265,6 @@ final class ProfileScreen extends StatelessWidget {
                     displayName: name,
                     onEditName: () => _editName(context),
                     onOpenMfa: () => _openMfaSettings(context),
-                    onOpenCompanion: () => _openCompanion(context),
                     onOpenLanguage: () => _openLanguage(context),
                     onSignOut:
                         signOut == null ? null : () => _confirmSignOut(context),
@@ -283,7 +277,6 @@ final class ProfileScreen extends StatelessWidget {
                     displayName: name,
                     onEditName: () => _editName(context),
                     onOpenMfa: () => _openMfaSettings(context),
-                    onOpenCompanion: () => _openCompanion(context),
                     onOpenAppearance: () => _openAppearance(context),
                     onOpenLanguage: () => _openLanguage(context),
                     onSignOut:

@@ -6,7 +6,6 @@ import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/auth/presentation/auth_screen.dart';
 import 'package:clarity/features/auth/presentation/email_confirmation_screen.dart';
 import 'package:clarity/features/onboarding/presentation/onboarding_screen.dart';
-import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/features/profile/presentation/profile_screen.dart';
 import 'package:clarity/features/shell/presentation/home_shell.dart';
 import 'package:clarity/rex/assistant_providers.dart';
@@ -19,7 +18,6 @@ import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -232,18 +230,18 @@ void main() {
     expect(find.text('Dark'), findsOneWidget);
 
     // Language sets the whole interface, so it stays in Profile. Voice usage
-    // moved to Companion.
+    // and everything about Rex live behind the assistant gear instead.
     expect(find.text('Voice usage'), findsNothing);
     expect(find.text('Language'), findsNWidgets(2));
     expect(find.text('English'), findsOneWidget);
-    expect(find.text('Suggestions, saves, and voice usage'), findsOneWidget);
+    expect(find.text('Companion'), findsNothing);
 
     await tester.scrollUntilVisible(find.text('Sign out'), 120);
     await tester.pumpAndSettle();
     expect(find.text('Sign out'), findsOneWidget);
   });
 
-  testWidgets('the Profile Companion row opens Companion settings', (
+  testWidgets('the assistant gear is the only door to Companion settings', (
     tester,
   ) async {
     final app = AppComposition(initialAuthenticated: true);
@@ -267,24 +265,20 @@ void main() {
       ),
     );
 
-    // Leave the dashboard first; its loading animation never settles.
-    await tester.tap(find.text('Accounts'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Profile'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.psychology_alt_outlined));
+    await tester.pump();
 
-    final companionRow = find.text('Suggestions, saves, and voice usage');
-    await tester.scrollUntilVisible(companionRow, 120);
-    await tester.pumpAndSettle();
-    await tester.tap(companionRow);
+    await tester.tap(find.byTooltip('Companion settings'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.byType(CompanionSettingsScreen), findsOneWidget);
     expect(find.text('Auto suggestions'), findsOneWidget);
-    expect(find.text('Allow Rex to edit finances'), findsOneWidget);
-    expect(find.text('Proactive financial insights'), findsOneWidget);
     expect(find.text('Voice usage'), findsOneWidget);
+    // Rex may always propose a finance change and always surfaces insights,
+    // so neither is a switch any more.
+    expect(find.text('Allow Rex to edit finances'), findsNothing);
+    expect(find.text('Proactive financial insights'), findsNothing);
     expect(find.text('Language'), findsNothing);
   });
 

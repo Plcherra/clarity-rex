@@ -5,10 +5,7 @@ from app.services.prompt_constants import (
     FINANCIAL_CONTEXT_PREFIX,
     MAX_FINANCIAL_CONTEXT_CHARACTERS,
 )
-from app.services.prompt_financial_write_playbook import (
-    FINANCIAL_WRITE_PLAYBOOK,
-    FINANCIAL_WRITES_DISABLED_NOTE,
-)
+from app.services.prompt_financial_write_playbook import FINANCIAL_WRITE_PLAYBOOK
 
 _TRANSACTION_CHAR_BUDGET_RATIO = 0.4
 
@@ -20,22 +17,13 @@ class PromptFinancialContextMixin:
         if not financial_context:
             return None
 
-        companion_settings = self._dict_value(financial_context, "companion_settings")
-        finance_edits_enabled = companion_settings.get("finance_edits_enabled")
-        if finance_edits_enabled is False:
-            write_playbook = FINANCIAL_WRITES_DISABLED_NOTE
-            write_rule = (
-                "For create/update/delete requests, advise only and do not emit "
-                "clarity_action blocks for transactions, categories, or budgets."
-            )
-        else:
-            write_playbook = FINANCIAL_WRITE_PLAYBOOK
-            write_rule = (
-                "For create/update/delete requests, ask for confirmation and append a "
-                "fenced ```clarity_action``` JSON object with action, payload, "
-                "confirmation_text, and risk_level. Use only actions listed in "
-                "available_controls."
-            )
+        write_playbook = FINANCIAL_WRITE_PLAYBOOK
+        write_rule = (
+            "For create/update/delete requests, ask for confirmation and append a "
+            "fenced ```clarity_action``` JSON object with action, payload, "
+            "confirmation_text, and risk_level. Use only actions listed in "
+            "available_controls."
+        )
 
         header = (
             "Rex is inside Clarity. Use this as first-party Clarity financial context. "

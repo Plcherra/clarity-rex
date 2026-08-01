@@ -5,12 +5,8 @@ from app.services.insight_sync_service import InsightSyncService
 
 
 class FakeInsightRepository:
-    def __init__(self, *, proactive_enabled: bool = False) -> None:
-        self.proactive_enabled = proactive_enabled
+    def __init__(self) -> None:
         self.upserts: list[GeneratedInsight] = []
-
-    async def fetch_proactive_insights_enabled(self) -> bool:
-        return self.proactive_enabled
 
     async def upsert_insight(self, insight: GeneratedInsight) -> str:
         self.upserts.append(insight)
@@ -18,12 +14,11 @@ class FakeInsightRepository:
 
 
 @pytest.mark.asyncio
-async def test_sync_upserts_accountability_signals_when_opt_in_enabled():
-    repository = FakeInsightRepository(proactive_enabled=True)
+async def test_sync_upserts_accountability_signals():
+    repository = FakeInsightRepository()
     service = InsightSyncService(repository)
 
     result = await service.sync(
-        proactive_insights_enabled=True,
         financial_context={"period": {"reference_month": "2026-07"}},
         accountability_signals=[
             {
@@ -42,27 +37,33 @@ async def test_sync_upserts_accountability_signals_when_opt_in_enabled():
 
 
 @pytest.mark.asyncio
-async def test_sync_skips_when_opt_in_disabled():
-    repository = FakeInsightRepository(proactive_enabled=False)
+async def test_sync_needs_no_opt_in():
+    """Insights run for everyone; nothing is hidden behind a preference."""
+    repository = FakeInsightRepository()
     service = InsightSyncService(repository)
 
     result = await service.sync(
-        proactive_insights_enabled=False,
-        financial_context={"period": {"reference_month": "2026-07"}},
+        financial_context={
+            "period": {"reference_month": "2026-07"},
+            "cash_flow": {
+                "income_this_month": 100.0,
+                "spent_this_month": 200.0,
+                "available_this_month": -100.0,
+            },
+        },
     )
 
-    assert result.skipped is True
-    assert result.reason == "opt_in_required"
-    assert repository.upserts == []
+    assert result.skipped is False
+    assert result.reason is None
+    assert repository.upserts
 
 
 @pytest.mark.asyncio
-async def test_sync_upserts_when_opt_in_enabled():
-    repository = FakeInsightRepository(proactive_enabled=True)
+async def test_sync_upserts_generated_insights():
+    repository = FakeInsightRepository()
     service = InsightSyncService(repository)
 
     result = await service.sync(
-        proactive_insights_enabled=True,
         financial_context={
             "period": {"reference_month": "2026-07"},
             "cash_flow": {

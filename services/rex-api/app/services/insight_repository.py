@@ -97,14 +97,3 @@ class InsightRepository(SupabaseMemoryTransport):
             prefer="return=representation",
         )
         return rows[0] if rows else None
-
-    async def fetch_proactive_insights_enabled(self) -> bool:
-        rows = await self._list_records(
-            "profiles",
-            select="proactive_insights_enabled",
-            filters={"id": self.user_id},
-            limit=1,
-        )
-        if not rows:
-            return False
-        return bool(rows[0].get("proactive_insights_enabled"))

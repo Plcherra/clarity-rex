@@ -17,14 +17,10 @@ from app.services.capabilities.finance_capability_mutate import (
     finance_mutate_allowed,
 )
 from app.services.capabilities.finance_mutate_outcome import (
-    FINANCE_EDITS_DISABLED,
     UNRESOLVED_TARGET,
     FinanceMutateOutcome,
 )
 from app.services.category_name_normalization import normalized_category_key
-from app.services.clarity_action_proposal_filter import (
-    filter_clarity_action_proposals,
-)
 
 
 def is_finance_action(action: BrainAction) -> bool:
@@ -82,9 +78,6 @@ def collect_finance_proposals(
     for action in actions:
         if not is_finance_mutate_action(action):
             continue
-        if not settings.finance_edits_enabled:
-            reasons.append(FINANCE_EDITS_DISABLED)
-            continue
         if not finance_mutate_allowed(action, settings):
             # Off mode: Rex's own offer stays unspoken, which is the setting
             # working, not a change the user asked for going missing.
@@ -99,15 +92,8 @@ def collect_finance_proposals(
         proposals.append(
             clarity_action_parser.normalize_proposal(raw, index=len(proposals) + 1)
         )
-    distinct = without_redundant_category_creates(proposals)
-    kept = filter_clarity_action_proposals(
-        distinct,
-        finance_edits_enabled=settings.finance_edits_enabled,
-    )
-    if len(kept) < len(distinct):
-        reasons.append(FINANCE_EDITS_DISABLED)
     return FinanceMutateOutcome(
-        proposals=kept,
+        proposals=without_redundant_category_creates(proposals),
         blocked_reasons=tuple(reasons),
     )
 

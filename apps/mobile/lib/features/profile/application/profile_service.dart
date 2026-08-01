@@ -54,7 +54,7 @@ final class ProfileService {
             'email': email ?? user.email,
             'full_name': fullName,
             'avatar_url': avatarUrl,
-            if (preferredLocale != null) 'preferred_locale': preferredLocale,
+            'preferred_locale': ?preferredLocale,
           })
           .select()
           .single();
@@ -76,7 +76,6 @@ final class ProfileService {
     String? fullName,
     String? avatarUrl,
     String? preferredLocale,
-    bool? proactiveInsightsEnabled,
     AssistantProposalSettings? assistantSettings,
   }) async {
     final user = _currentUser;
@@ -85,12 +84,6 @@ final class ProfileService {
     if (fullName != null) payload['full_name'] = fullName;
     if (avatarUrl != null) payload['avatar_url'] = avatarUrl;
     if (preferredLocale != null) payload['preferred_locale'] = preferredLocale;
-    if (proactiveInsightsEnabled != null) {
-      payload['proactive_insights_enabled'] = proactiveInsightsEnabled;
-      payload['proactive_insights_enabled_at'] = proactiveInsightsEnabled
-          ? DateTime.now().toUtc().toIso8601String()
-          : null;
-    }
     if (assistantSettings != null) {
       payload['assistant_settings'] = assistantSettings.toJson();
     }
@@ -120,10 +113,6 @@ final class ProfileService {
         cause: e,
       );
     }
-  }
-
-  Future<ProfileRecord> updateProactiveInsightsEnabled(bool enabled) async {
-    return updateCurrentProfile(proactiveInsightsEnabled: enabled);
   }
 
   Future<ProfileRecord> updateAssistantProposalSettings(

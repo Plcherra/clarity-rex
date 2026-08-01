@@ -4,7 +4,6 @@ final class AssistantProposalSettings {
     this.threads = true,
     this.goals = true,
     this.memory = true,
-    this.financeEditsEnabled = true,
   });
 
   static const off = 'off';
@@ -15,7 +14,6 @@ final class AssistantProposalSettings {
   final bool threads;
   final bool goals;
   final bool memory;
-  final bool financeEditsEnabled;
 
   bool get enabled => mode != off;
 
@@ -38,7 +36,6 @@ final class AssistantProposalSettings {
       threads: payload['auto_proposals_threads'] as bool? ?? true,
       goals: payload['auto_proposals_goals'] as bool? ?? true,
       memory: payload['auto_proposals_memory'] as bool? ?? true,
-      financeEditsEnabled: payload['finance_edits_enabled'] as bool? ?? true,
     );
   }
 
@@ -47,7 +44,6 @@ final class AssistantProposalSettings {
     'auto_proposals_threads': threads,
     'auto_proposals_goals': goals,
     'auto_proposals_memory': memory,
-    'finance_edits_enabled': financeEditsEnabled,
   };
 
   AssistantProposalSettings copyWith({
@@ -55,14 +51,12 @@ final class AssistantProposalSettings {
     bool? threads,
     bool? goals,
     bool? memory,
-    bool? financeEditsEnabled,
   }) {
     return AssistantProposalSettings(
       mode: mode ?? this.mode,
       threads: threads ?? this.threads,
       goals: goals ?? this.goals,
       memory: memory ?? this.memory,
-      financeEditsEnabled: financeEditsEnabled ?? this.financeEditsEnabled,
     );
   }
 
@@ -72,13 +66,11 @@ final class AssistantProposalSettings {
         other.mode == mode &&
         other.threads == threads &&
         other.goals == goals &&
-        other.memory == memory &&
-        other.financeEditsEnabled == financeEditsEnabled;
+        other.memory == memory;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(mode, threads, goals, memory, financeEditsEnabled);
+  int get hashCode => Object.hash(mode, threads, goals, memory);
 }
 
 enum AssistantProposalMode { off, text, card }

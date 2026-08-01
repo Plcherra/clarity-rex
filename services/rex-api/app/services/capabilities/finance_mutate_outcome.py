@@ -10,15 +10,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-FINANCE_EDITS_DISABLED = "finance_edits_disabled"
 UNRESOLVED_TARGET = "unresolved_target"
 
 _REASON_TEXT = {
-    FINANCE_EDITS_DISABLED: (
-        "I can't change your categories, budgets, or transactions while finance "
-        "edits are turned off. Turn them on in Companion settings and ask me "
-        "again."
-    ),
     UNRESOLVED_TARGET: (
         "I couldn't match that to a category, budget, or transaction Clarity "
         "sent me this turn, so nothing there is prepared. Name the exact "

@@ -1761,12 +1761,6 @@ abstract class AppLocalizations {
   /// **'No saved alerts yet. Turn on proactive insights in Profile to keep alerts over time.'**
   String get insightsSavedEmpty;
 
-  /// No description provided for @insightsOptInRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Optional: turn on proactive insights in Profile to save alerts over time.'**
-  String get insightsOptInRequired;
-
   /// No description provided for @insightsReviewDashboard.
   ///
   /// In en, this message translates to:
@@ -1875,35 +1869,11 @@ abstract class AppLocalizations {
   /// **'Invalid mark-read response.'**
   String get insightsApiInvalidMarkReadResponse;
 
-  /// No description provided for @profileProactiveInsightsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Proactive financial insights'**
-  String get profileProactiveInsightsTitle;
-
-  /// No description provided for @profileProactiveInsightsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Save deterministic alerts when your data changes. No background monitoring runs until you turn this on.'**
-  String get profileProactiveInsightsSubtitle;
-
   /// No description provided for @companionScreenTitle.
   ///
   /// In en, this message translates to:
   /// **'Companion'**
   String get companionScreenTitle;
-
-  /// No description provided for @companionAbilitiesSection.
-  ///
-  /// In en, this message translates to:
-  /// **'What Rex can do'**
-  String get companionAbilitiesSection;
-
-  /// No description provided for @profileCompanionSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Suggestions, saves, and voice usage'**
-  String get profileCompanionSubtitle;
 
   /// No description provided for @assistantCompanionSettingsTitle.
   ///
@@ -1920,7 +1890,7 @@ abstract class AppLocalizations {
   /// No description provided for @assistantCompanionSettingsGearLabel.
   ///
   /// In en, this message translates to:
-  /// **'Companion save settings'**
+  /// **'Companion settings'**
   String get assistantCompanionSettingsGearLabel;
 
   /// No description provided for @assistantCompanionSettingsTabLabel.
@@ -1988,18 +1958,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Memory (facts & preferences)'**
   String get assistantAutoProposalsTypeMemory;
-
-  /// No description provided for @assistantFinanceEditsEnabledLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Allow Rex to edit finances'**
-  String get assistantFinanceEditsEnabledLabel;
-
-  /// No description provided for @assistantFinanceEditsEnabledSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'When off, Rex can advise but won\'t propose transaction or budget changes.'**
-  String get assistantFinanceEditsEnabledSubtitle;
 
   /// No description provided for @chatShowMore.
   ///

@@ -21,11 +21,9 @@ class FakeInsightSyncService:
         *,
         list_error: MemoryServiceError | None = None,
         list_rows: list[dict] | None = None,
-        proactive_enabled: bool = False,
     ) -> None:
         self.list_error = list_error
         self.list_rows = list_rows or []
-        self.proactive_enabled = proactive_enabled
         self.sync_calls: list[dict] = []
 
     async def list_insights(self, *, limit: int = 50) -> list[dict]:
@@ -36,19 +34,15 @@ class FakeInsightSyncService:
     async def sync(
         self,
         *,
-        proactive_insights_enabled: bool,
         financial_context=None,
         accountability_signals=None,
     ) -> InsightSyncResult:
         self.sync_calls.append(
             {
-                "proactive_insights_enabled": proactive_insights_enabled,
                 "financial_context": financial_context,
                 "accountability_signals": accountability_signals,
             }
         )
-        if not proactive_insights_enabled:
-            return InsightSyncResult(skipped=True, reason="opt_in_required")
         return InsightSyncResult(created=1, total_generated=1)
 
     async def mark_read(self, insight_id: str):
@@ -63,9 +57,6 @@ class FakeInsightSyncService:
             "payload_json": {},
             "read_at": "2026-07-02T00:00:00Z",
         }
-
-    async def fetch_proactive_enabled(self) -> bool:
-        return self.proactive_enabled
 
 
 def test_list_insights_returns_empty_items(client):
@@ -97,20 +88,20 @@ def test_list_insights_storage_unavailable_returns_structured_detail(client):
     }
 
 
-def test_sync_skips_when_opt_in_disabled(client):
-    fake = FakeInsightSyncService(proactive_enabled=False)
+def test_sync_asks_the_profile_for_no_permission_first(client):
+    """The route no longer reads an opt-in before it will generate anything."""
+    fake = FakeInsightSyncService()
     app.dependency_overrides[get_insight_sync_service] = lambda: fake
 
     response = client.post("/insights/sync", json={"financial_context": {}})
 
     assert response.status_code == 200
-    assert response.json()["skipped"] is True
-    assert response.json()["reason"] == "opt_in_required"
-    assert fake.sync_calls[0]["proactive_insights_enabled"] is False
+    assert response.json()["skipped"] is False
+    assert "proactive_insights_enabled" not in fake.sync_calls[0]
 
 
-def test_sync_runs_when_opt_in_enabled(client):
-    fake = FakeInsightSyncService(proactive_enabled=True)
+def test_sync_runs(client):
+    fake = FakeInsightSyncService()
     app.dependency_overrides[get_insight_sync_service] = lambda: fake
 
     response = client.post(

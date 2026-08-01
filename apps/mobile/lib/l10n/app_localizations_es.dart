@@ -958,10 +958,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Aún no hay alertas guardadas. Activa los insights proactivos en Perfil para conservarlos con el tiempo.';
 
   @override
-  String get insightsOptInRequired =>
-      'Opcional: activa los insights proactivos en Perfil para guardar alertas con el tiempo.';
-
-  @override
   String get insightsReviewDashboard => 'Revisar en el Panel';
 
   @override
@@ -1026,20 +1022,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Respuesta de marcar como leído no válida.';
 
   @override
-  String get profileProactiveInsightsTitle => 'Insights financieros proactivos';
-
-  @override
-  String get profileProactiveInsightsSubtitle =>
-      'Guarda alertas deterministas cuando cambien tus datos. No hay monitoreo en segundo plano hasta que lo actives.';
-
-  @override
   String get companionScreenTitle => 'Compañero';
-
-  @override
-  String get companionAbilitiesSection => 'Qué puede hacer Rex';
-
-  @override
-  String get profileCompanionSubtitle => 'Sugerencias, guardado y uso de voz';
 
   @override
   String get assistantCompanionSettingsTitle => 'Guardado del compañero';
@@ -1049,8 +1032,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige cómo Rex sugiere metas, hilos abiertos y memoria en el chat. Off = solo chat. Texto = di sí en el chat. Tarjeta = tarjeta de confirmación.';
 
   @override
-  String get assistantCompanionSettingsGearLabel =>
-      'Ajustes de guardado del compañero';
+  String get assistantCompanionSettingsGearLabel => 'Ajustes del compañero';
 
   @override
   String get assistantCompanionSettingsTabLabel => 'Guardados';
@@ -1089,14 +1071,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get assistantAutoProposalsTypeMemory =>
       'Memoria (hechos y preferencias)';
-
-  @override
-  String get assistantFinanceEditsEnabledLabel =>
-      'Permitir que Rex edite finanzas';
-
-  @override
-  String get assistantFinanceEditsEnabledSubtitle =>
-      'Si está desactivado, Rex puede asesorar pero no propondrá cambios en transacciones o presupuestos.';
 
   @override
   String get chatShowMore => 'Ver más';

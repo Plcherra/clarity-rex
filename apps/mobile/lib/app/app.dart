@@ -56,8 +56,6 @@ final class ClarityApp extends StatelessWidget {
         chatApiProvider.overrideWithValue(
           ChatApi(
             resolveLocale: () => AppLocale.rexLocaleTag(localeController),
-            resolveProactiveInsightsEnabled: () =>
-                profileController.profile?.proactiveInsightsEnabled ?? false,
           ),
         ),
         streamingVoiceApiProvider.overrideWithValue(

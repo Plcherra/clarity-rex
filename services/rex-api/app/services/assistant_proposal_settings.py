@@ -31,7 +31,6 @@ class AssistantProposalSettings:
     threads: bool = True
     goals: bool = True
     memory: bool = True
-    finance_edits_enabled: bool = True
 
     def auto_proposals_enabled(self) -> bool:
         return self.mode in {AUTO_PROPOSALS_TEXT, AUTO_PROPOSALS_CARD}
@@ -87,7 +86,6 @@ class AssistantProposalSettings:
             "auto_proposals_threads": self.threads,
             "auto_proposals_goals": self.goals,
             "auto_proposals_memory": self.memory,
-            "finance_edits_enabled": self.finance_edits_enabled,
         }
 
 
@@ -165,10 +163,6 @@ def parse_assistant_settings(raw: Optional[dict[str, Any]]) -> AssistantProposal
         threads=_coerce_bool(payload.get("auto_proposals_threads"), default=True),
         goals=_coerce_bool(payload.get("auto_proposals_goals"), default=True),
         memory=_coerce_bool(payload.get("auto_proposals_memory"), default=True),
-        finance_edits_enabled=_coerce_bool(
-            payload.get("finance_edits_enabled"),
-            default=True,
-        ),
     )
 
 
@@ -244,7 +238,6 @@ def resolve_proposal_settings_resolution(
             if env.rex_auto_proposals_memory is not None
             else resolved.memory
         ),
-        finance_edits_enabled=resolved.finance_edits_enabled,
     )
     return ProposalSettingsResolution(
         settings=overridden,

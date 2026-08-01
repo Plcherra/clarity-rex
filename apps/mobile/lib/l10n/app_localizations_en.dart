@@ -951,10 +951,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'No saved alerts yet. Turn on proactive insights in Profile to keep alerts over time.';
 
   @override
-  String get insightsOptInRequired =>
-      'Optional: turn on proactive insights in Profile to save alerts over time.';
-
-  @override
   String get insightsReviewDashboard => 'Review on Dashboard';
 
   @override
@@ -1018,20 +1014,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Invalid mark-read response.';
 
   @override
-  String get profileProactiveInsightsTitle => 'Proactive financial insights';
-
-  @override
-  String get profileProactiveInsightsSubtitle =>
-      'Save deterministic alerts when your data changes. No background monitoring runs until you turn this on.';
-
-  @override
   String get companionScreenTitle => 'Companion';
-
-  @override
-  String get companionAbilitiesSection => 'What Rex can do';
-
-  @override
-  String get profileCompanionSubtitle => 'Suggestions, saves, and voice usage';
 
   @override
   String get assistantCompanionSettingsTitle => 'Companion saves';
@@ -1041,7 +1024,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose how Rex suggests goals, open threads, and memory during chat. Off = chat only. Text = say yes in chat. Card = confirm card.';
 
   @override
-  String get assistantCompanionSettingsGearLabel => 'Companion save settings';
+  String get assistantCompanionSettingsGearLabel => 'Companion settings';
 
   @override
   String get assistantCompanionSettingsTabLabel => 'Saves';
@@ -1079,13 +1062,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantAutoProposalsTypeMemory => 'Memory (facts & preferences)';
-
-  @override
-  String get assistantFinanceEditsEnabledLabel => 'Allow Rex to edit finances';
-
-  @override
-  String get assistantFinanceEditsEnabledSubtitle =>
-      'When off, Rex can advise but won\'t propose transaction or budget changes.';
 
   @override
   String get chatShowMore => 'Show more';

@@ -9,7 +9,6 @@ from app.services.insight_generator import (
     generate_dashboard_insights,
 )
 from app.services.insight_repository import InsightRepository
-from app.services.memory_errors import MemoryServiceError
 
 
 @dataclass(frozen=True)
@@ -28,13 +27,14 @@ class InsightSyncService:
     async def sync(
         self,
         *,
-        proactive_insights_enabled: bool,
         financial_context: Optional[dict[str, Any]] = None,
         accountability_signals: Optional[list[dict[str, Any]]] = None,
     ) -> InsightSyncResult:
-        if not proactive_insights_enabled:
-            return InsightSyncResult(skipped=True, reason="opt_in_required")
+        """Insights are part of the product, not a preference to discover.
 
+        This used to be gated on a profile opt-in that defaulted off, so most
+        people never saw an insight and had no way to know one existed.
+        """
         generated = self._generate(
             financial_context=financial_context,
             accountability_signals=accountability_signals,
@@ -98,9 +98,3 @@ class InsightSyncService:
 
     async def mark_read(self, insight_id: str) -> Optional[dict[str, Any]]:
         return await self.repository.mark_read(insight_id)
-
-    async def fetch_proactive_enabled(self) -> bool:
-        try:
-            return await self.repository.fetch_proactive_insights_enabled()
-        except MemoryServiceError:
-            return False

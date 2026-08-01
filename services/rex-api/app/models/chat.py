@@ -18,7 +18,6 @@ class ChatRequest(BaseModel):
     deep_think: bool = False
     locale: Optional[str] = None
     write_confirmation: Optional[dict[str, Any]] = None
-    user_enabled_proactive_insights: bool = False
 
     @field_validator("financial_context")
     @classmethod

@@ -28,10 +28,8 @@ class SimpleRexBrain:
         financial_context: Optional[dict],
         channel: RexBrainChannel,
         locale: Optional[str] = None,
-        user_enabled_proactive_insights: bool = False,
     ) -> list[dict]:
         _ = channel
-        _ = user_enabled_proactive_insights
         return self.chat_context_service.build_prompt_messages(
             message=message,
             conversation_id=conversation_id,

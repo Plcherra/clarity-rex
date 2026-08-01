@@ -104,7 +104,6 @@ class ChatService(ChatVoiceMetadataMixin):
         user_requested_deep_thinking: bool = False,
         locale: Optional[str] = None,
         write_confirmation: Optional[dict] = None,
-        user_enabled_proactive_insights: bool = False,
     ) -> dict:
         return await self.turn_orchestrator.send_message(
             message=message,
@@ -117,7 +116,6 @@ class ChatService(ChatVoiceMetadataMixin):
             user_requested_deep_thinking=user_requested_deep_thinking,
             locale=locale,
             write_confirmation=write_confirmation,
-            user_enabled_proactive_insights=user_enabled_proactive_insights,
         )
 
     async def stream_message(
@@ -133,7 +131,6 @@ class ChatService(ChatVoiceMetadataMixin):
         include_turn_trace: bool = False,
         locale: Optional[str] = None,
         write_confirmation: Optional[dict] = None,
-        user_enabled_proactive_insights: bool = False,
     ) -> AsyncIterator[dict]:
         async for event in self.turn_orchestrator.stream_message(
             message=message,
@@ -147,7 +144,6 @@ class ChatService(ChatVoiceMetadataMixin):
             include_turn_trace=include_turn_trace,
             locale=locale,
             write_confirmation=write_confirmation,
-            user_enabled_proactive_insights=user_enabled_proactive_insights,
         ):
             yield event
 

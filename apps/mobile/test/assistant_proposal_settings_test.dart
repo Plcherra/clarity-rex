@@ -38,9 +38,9 @@ void main() {
     expect(settings.toJson().containsKey('response_style'), isFalse);
   });
 
-  test('defaults finance edits to enabled', () {
-    final settings = AssistantProposalSettings.fromJson({});
-    expect(settings.financeEditsEnabled, isTrue);
+  test('omits the retired finance-edits switch from profile json', () {
+    const settings = AssistantProposalSettings();
+    expect(settings.toJson().containsKey('finance_edits_enabled'), isFalse);
   });
 
   test('round-trips off mode profile json', () {

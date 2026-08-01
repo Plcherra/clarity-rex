@@ -16,7 +16,6 @@ class ProfileDesktopSections extends StatelessWidget {
     required this.displayName,
     required this.onEditName,
     required this.onOpenMfa,
-    required this.onOpenCompanion,
     required this.onOpenLanguage,
     this.onSignOut,
     this.onDeleteAccount,
@@ -27,7 +26,6 @@ class ProfileDesktopSections extends StatelessWidget {
   final String? displayName;
   final VoidCallback onEditName;
   final VoidCallback onOpenMfa;
-  final VoidCallback onOpenCompanion;
   final VoidCallback onOpenLanguage;
   final VoidCallback? onSignOut;
   final VoidCallback? onDeleteAccount;
@@ -60,14 +58,6 @@ class ProfileDesktopSections extends StatelessWidget {
                     subtitle: l10n.profileMfaSubtitle,
                     onTap: onOpenMfa,
                   ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              ProfileSectionLabel(l10n.companionScreenTitle),
-              const SizedBox(height: 8),
-              ProfileActionGroup(
-                children: [
-                  ProfileCompanionTile(onTap: onOpenCompanion),
                 ],
               ),
               const OwnerUsageProfileEntry(),
@@ -135,7 +125,6 @@ class ProfileCompactSections extends StatelessWidget {
     required this.displayName,
     required this.onEditName,
     required this.onOpenMfa,
-    required this.onOpenCompanion,
     required this.onOpenAppearance,
     required this.onOpenLanguage,
     this.onSignOut,
@@ -147,7 +136,6 @@ class ProfileCompactSections extends StatelessWidget {
   final String? displayName;
   final VoidCallback onEditName;
   final VoidCallback onOpenMfa;
-  final VoidCallback onOpenCompanion;
   final VoidCallback onOpenAppearance;
   final VoidCallback onOpenLanguage;
   final VoidCallback? onSignOut;
@@ -188,7 +176,6 @@ class ProfileCompactSections extends StatelessWidget {
         const SizedBox(height: 8),
         ProfileActionGroup(
           children: [
-            ProfileCompanionTile(onTap: onOpenCompanion),
             ListenableBuilder(
               listenable: themeModeController,
               builder: (context, _) {
@@ -234,24 +221,6 @@ class ProfileCompactSections extends StatelessWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-/// The way into Companion settings from Profile.
-class ProfileCompanionTile extends StatelessWidget {
-  const ProfileCompanionTile({super.key, required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return ProfileActionTile(
-      icon: Icons.auto_awesome_outlined,
-      title: l10n.companionScreenTitle,
-      subtitle: l10n.profileCompanionSubtitle,
-      onTap: onTap,
     );
   }
 }

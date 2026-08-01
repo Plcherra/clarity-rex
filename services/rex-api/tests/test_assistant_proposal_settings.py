@@ -20,14 +20,13 @@ def test_parse_assistant_settings_defaults_to_off_mode() -> None:
     assert settings.threads is True
     assert settings.goals is True
     assert settings.memory is True
-    assert settings.finance_edits_enabled is True
     assert settings.auto_proposals_enabled() is False
     assert settings.uses_confirm_cards() is False
     assert not hasattr(settings, "response_style")
 
 
 def test_parse_assistant_settings_missing_mode_key_is_off() -> None:
-    settings = parse_assistant_settings({"finance_edits_enabled": True})
+    settings = parse_assistant_settings({"auto_proposals_goals": True})
     assert settings.mode == AUTO_PROPOSALS_OFF
 
 
@@ -36,9 +35,14 @@ def test_parse_assistant_settings_invalid_mode_is_off() -> None:
     assert settings.mode == AUTO_PROPOSALS_OFF
 
 
-def test_parse_assistant_settings_finance_edits_disabled() -> None:
+def test_parse_assistant_settings_ignores_the_retired_finance_edits_key() -> None:
+    """Finance edits are no longer a preference, so an old profile row is inert.
+
+    Rex could always only propose a change; the user still confirms it. Reading
+    the key back would resurrect a gate that stopped explicit requests.
+    """
     settings = parse_assistant_settings({"finance_edits_enabled": False})
-    assert settings.finance_edits_enabled is False
+    assert not hasattr(settings, "finance_edits_enabled")
 
 
 def test_parse_assistant_settings_off_mode() -> None:

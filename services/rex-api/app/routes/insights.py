@@ -87,9 +87,7 @@ async def sync_insights(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> InsightSyncResponse:
     try:
-        proactive_enabled = await service.fetch_proactive_enabled()
         result: InsightSyncResult = await service.sync(
-            proactive_insights_enabled=proactive_enabled,
             financial_context=payload.financial_context,
             accountability_signals=payload.accountability_signals,
         )

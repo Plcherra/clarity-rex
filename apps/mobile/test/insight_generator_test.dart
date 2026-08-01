@@ -1,5 +1,4 @@
 import 'package:clarity/features/budgets/domain/budget_models.dart';
-import 'package:clarity/features/dashboard/domain/dashboard_metrics.dart';
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_snapshot.dart';
 import 'package:clarity/features/insights/domain/insight_generator.dart';

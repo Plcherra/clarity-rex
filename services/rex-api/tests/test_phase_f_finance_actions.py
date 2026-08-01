@@ -277,20 +277,25 @@ async def test_delete_budget_resolves_by_name() -> None:
 
 
 @pytest.mark.asyncio
-async def test_finance_edits_disabled_says_the_setting_is_off() -> None:
+async def test_a_finance_change_needs_no_permission_toggle() -> None:
+    """There is no finance-edits switch: proposing is always allowed.
+
+    The user confirms every change, so a setting that blocked the proposal only
+    blocked changes they had explicitly asked for.
+    """
     finalized = await finalize_finance_turn(
         "Moving those now.\n"
         + rex_action(
             "categorize_transaction",
             {"merchant": "Starbucks", "category": "Coffee"},
+            explicit=True,
         ),
-        settings=AssistantProposalSettings(mode="card", finance_edits_enabled=False),
+        settings=AssistantProposalSettings(mode="card"),
         context=financial_context(),
         user_text="Recategorize my Starbucks charges as coffee",
     )
-    assert clarity_proposals(finalized) == []
-    assert "finance edits are turned off" in finalized["response"]
-    assert "Companion settings" in finalized["response"]
+    assert clarity_proposals(finalized)
+    assert "Companion settings" not in finalized["response"]
 
 
 @pytest.mark.asyncio
@@ -416,10 +421,10 @@ def test_tiny_system_prompt_names_finance_fetch_and_change_rules() -> None:
     assert "fetch_spend_insight" in prompt
     assert "fetch_account_summary" in prompt
     assert "categorize_transaction" in prompt
-    assert "never invent amounts" in prompt.lower()
+    assert "answer only from what comes back" in prompt.lower()
     assert "cannot create transactions" in prompt.lower()
     assert "update_category" in prompt
-    assert "never promise one in prose alone" in prompt.lower()
+    assert "describing it does nothing" in prompt.lower()
     assert "user's own buckets" in prompt.lower()
 
     off_prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))

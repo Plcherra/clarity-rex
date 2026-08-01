@@ -72,14 +72,6 @@ class InsightsController extends Notifier<InsightsState> {
       if (syncFirst) {
         await syncFromReadModel();
       }
-      if (state.syncSkipped && state.syncReason == 'opt_in_required') {
-        state = state.copyWith(
-          items: const [],
-          isLoading: false,
-          clearError: true,
-        );
-        return;
-      }
       final items = await ref.read(insightsApiProvider).listInsights();
       state = state.copyWith(
         items: items,

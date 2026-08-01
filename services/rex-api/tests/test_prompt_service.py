@@ -467,7 +467,8 @@ def test_prompt_service_includes_financial_write_playbook():
     assert "update_transaction" in system_content
 
 
-def test_prompt_service_omits_financial_write_playbook_when_edits_disabled():
+def test_prompt_service_keeps_the_write_playbook_for_a_retired_off_switch():
+    """An old profile carrying finance_edits_enabled=false must not mute writes."""
     service = PromptService()
 
     messages = service.build_messages(
@@ -485,9 +486,8 @@ def test_prompt_service_omits_financial_write_playbook_when_edits_disabled():
     )
 
     system_content = messages[0]["content"]
-    assert "Financial write playbook:" not in system_content
-    assert "Financial edits are disabled in companion settings" in system_content
-    assert "do not emit clarity_action blocks" in system_content
+    assert "Financial write playbook:" in system_content
+    assert "Financial edits are disabled" not in system_content
 
 
 def test_prompt_service_injects_structured_memory_before_generic_memory():

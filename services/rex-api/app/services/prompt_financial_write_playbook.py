@@ -18,8 +18,3 @@ FINANCIAL_WRITE_PLAYBOOK = (
     "- Keep visible reply text short: explain what you found, ask for confirmation; "
     "put machine payload only inside the clarity_action fence."
 )
-
-FINANCIAL_WRITES_DISABLED_NOTE = (
-    "Financial edits are disabled in companion settings. Advise only; do not emit "
-    "clarity_action blocks for transactions, categories, or budgets."
-)

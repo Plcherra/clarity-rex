@@ -48,12 +48,6 @@ class _InsightsFeedScreenState extends ConsumerState<InsightsFeedScreen> {
     final cs = theme.colorScheme;
     final liveItems = widget.liveItems;
     final savedItems = state.items;
-    // Only nudge opt-in when there is nothing useful live and sync was skipped.
-    final showOptInBanner =
-        liveItems.isEmpty &&
-        state.syncSkipped &&
-        state.syncReason == 'opt_in_required' &&
-        !state.storageUnavailable;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -91,13 +85,6 @@ class _InsightsFeedScreenState extends ConsumerState<InsightsFeedScreen> {
                       _InsightsBanner(
                         message: state.errorMessage!,
                         tone: _InsightsBannerTone.error,
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    if (showOptInBanner) ...[
-                      _InsightsBanner(
-                        message: l10n.insightsOptInRequired,
-                        tone: _InsightsBannerTone.info,
                       ),
                       const SizedBox(height: 12),
                     ],

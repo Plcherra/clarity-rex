@@ -48,20 +48,6 @@ final class CompanionSettingsScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _setProactiveInsights(BuildContext context, bool enabled) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final failedCopy = context.l10n.profileUpdateFailed;
-    try {
-      await profileController.updateProactiveInsightsEnabled(enabled);
-    } on Object {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(profileController.errorMessage ?? failedCopy),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -95,34 +81,6 @@ final class CompanionSettingsScreen extends StatelessWidget {
                   settings: settings,
                   loading: loading,
                   onChanged: (next) => _save(context, next),
-                ),
-                const SizedBox(height: 18),
-                ProfileSectionLabel(l10n.companionAbilitiesSection),
-                const SizedBox(height: 8),
-                ProfileActionGroup(
-                  children: [
-                    CompanionSwitchRow(
-                      icon: Icons.tune_rounded,
-                      title: l10n.assistantFinanceEditsEnabledLabel,
-                      subtitle: l10n.assistantFinanceEditsEnabledSubtitle,
-                      value: settings.financeEditsEnabled,
-                      onChanged: loading
-                          ? null
-                          : (on) => _save(
-                              context,
-                              settings.copyWith(financeEditsEnabled: on),
-                            ),
-                    ),
-                    CompanionSwitchRow(
-                      icon: Icons.notifications_active_outlined,
-                      title: l10n.profileProactiveInsightsTitle,
-                      subtitle: l10n.profileProactiveInsightsSubtitle,
-                      value: profile?.proactiveInsightsEnabled ?? false,
-                      onChanged: loading
-                          ? null
-                          : (on) => _setProactiveInsights(context, on),
-                    ),
-                  ],
                 ),
                 const SizedBox(height: 18),
                 ProfileSectionLabel(l10n.profileRexVoiceSection),
