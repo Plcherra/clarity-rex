@@ -42,7 +42,7 @@ final class ProfileService {
   Future<ProfileRecord> upsertCurrentProfile({
     String? email,
     String? fullName,
-    String? avatarUrl,
+    String? avatarPath,
     String? preferredLocale,
   }) async {
     final user = _currentUser;
@@ -53,7 +53,7 @@ final class ProfileService {
             'id': user.id,
             'email': email ?? user.email,
             'full_name': fullName,
-            'avatar_url': avatarUrl,
+            'avatar_path': avatarPath,
             'preferred_locale': ?preferredLocale,
           })
           .select()
@@ -74,7 +74,6 @@ final class ProfileService {
   Future<ProfileRecord> updateCurrentProfile({
     String? email,
     String? fullName,
-    String? avatarUrl,
     String? preferredLocale,
     AssistantProposalSettings? assistantSettings,
   }) async {
@@ -82,7 +81,6 @@ final class ProfileService {
     final payload = <String, dynamic>{};
     if (email != null) payload['email'] = email;
     if (fullName != null) payload['full_name'] = fullName;
-    if (avatarUrl != null) payload['avatar_url'] = avatarUrl;
     if (preferredLocale != null) payload['preferred_locale'] = preferredLocale;
     if (assistantSettings != null) {
       payload['assistant_settings'] = assistantSettings.toJson();
@@ -119,6 +117,32 @@ final class ProfileService {
     AssistantProposalSettings settings,
   ) async {
     return updateCurrentProfile(assistantSettings: settings);
+  }
+
+  /// Points the profile at a stored photo, or clears it when [path] is null.
+  ///
+  /// Separate from [updateCurrentProfile], where a null argument means "leave
+  /// this field alone" — removing a photo has to be able to mean null.
+  Future<ProfileRecord> setAvatarPath(String? path) async {
+    final user = _currentUser;
+    try {
+      final row = await _supabaseService.client
+          .from('profiles')
+          .update({'avatar_path': path})
+          .eq('id', user.id)
+          .select()
+          .single();
+      return ProfileRecord.fromJson(row);
+    } on SupabaseDataException {
+      rethrow;
+    } on Object catch (e) {
+      throw SupabaseDataException(
+        table: 'profiles',
+        action: 'setAvatarPath',
+        message: 'Could not update the profile photo.',
+        cause: e,
+      );
+    }
   }
 
   Stream<ProfileRecord?> watchCurrentProfile() {

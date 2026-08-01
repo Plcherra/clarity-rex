@@ -19,7 +19,11 @@ void main() {
   testWidgets('authenticated home shell boots on web without provider errors', (
     tester,
   ) async {
-    expect(kIsWeb, isTrue, reason: 'This test must run on the browser platform');
+    expect(
+      kIsWeb,
+      isTrue,
+      reason: 'This test must run on the browser platform',
+    );
 
     final app = AppComposition(initialAuthenticated: true);
     addTearDown(app.dispose);
@@ -27,7 +31,7 @@ void main() {
       id: 'user-1',
       email: 'test@example.com',
       fullName: 'Test User',
-      avatarUrl: null,
+      avatarPath: null,
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
     );

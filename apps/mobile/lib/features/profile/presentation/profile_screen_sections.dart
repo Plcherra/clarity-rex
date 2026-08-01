@@ -14,7 +14,9 @@ class ProfileDesktopSections extends StatelessWidget {
     required this.themeModeController,
     required this.localeController,
     required this.displayName,
+    required this.email,
     required this.onEditName,
+    required this.onChangeEmail,
     required this.onOpenMfa,
     required this.onOpenLanguage,
     this.onSignOut,
@@ -24,7 +26,9 @@ class ProfileDesktopSections extends StatelessWidget {
   final ThemeModeController themeModeController;
   final LocaleController localeController;
   final String? displayName;
+  final String email;
   final VoidCallback onEditName;
+  final VoidCallback onChangeEmail;
   final VoidCallback onOpenMfa;
   final VoidCallback onOpenLanguage;
   final VoidCallback? onSignOut;
@@ -51,6 +55,12 @@ class ProfileDesktopSections extends StatelessWidget {
                         ? l10n.profileAddYourName
                         : displayName!,
                     onTap: onEditName,
+                  ),
+                  ProfileActionTile(
+                    icon: Icons.alternate_email_rounded,
+                    title: l10n.profileEmailTitle,
+                    subtitle: email.isEmpty ? l10n.profileEmailUnknown : email,
+                    onTap: onChangeEmail,
                   ),
                   ProfileActionTile(
                     icon: Icons.verified_user_outlined,
@@ -123,7 +133,9 @@ class ProfileCompactSections extends StatelessWidget {
     required this.themeModeController,
     required this.localeController,
     required this.displayName,
+    required this.email,
     required this.onEditName,
+    required this.onChangeEmail,
     required this.onOpenMfa,
     required this.onOpenAppearance,
     required this.onOpenLanguage,
@@ -134,7 +146,9 @@ class ProfileCompactSections extends StatelessWidget {
   final ThemeModeController themeModeController;
   final LocaleController localeController;
   final String? displayName;
+  final String email;
   final VoidCallback onEditName;
+  final VoidCallback onChangeEmail;
   final VoidCallback onOpenMfa;
   final VoidCallback onOpenAppearance;
   final VoidCallback onOpenLanguage;
@@ -162,6 +176,12 @@ class ProfileCompactSections extends StatelessWidget {
                   ? l10n.profileAddYourName
                   : displayName!,
               onTap: onEditName,
+            ),
+            ProfileActionTile(
+              icon: Icons.alternate_email_rounded,
+              title: l10n.profileEmailTitle,
+              subtitle: email.isEmpty ? l10n.profileEmailUnknown : email,
+              onTap: onChangeEmail,
             ),
             ProfileActionTile(
               icon: Icons.verified_user_outlined,

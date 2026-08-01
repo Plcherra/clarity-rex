@@ -6,6 +6,7 @@ import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/auth/presentation/auth_screen.dart';
 import 'package:clarity/features/auth/presentation/email_confirmation_screen.dart';
 import 'package:clarity/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:clarity/features/profile/presentation/profile_avatar.dart';
 import 'package:clarity/features/profile/presentation/profile_screen.dart';
 import 'package:clarity/features/shell/presentation/home_shell.dart';
 import 'package:clarity/rex/assistant_providers.dart';
@@ -139,7 +140,7 @@ void main() {
       id: 'user-1',
       email: 'test@example.com',
       fullName: 'Test User',
-      avatarUrl: null,
+      avatarPath: null,
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
     );
@@ -168,7 +169,7 @@ void main() {
       id: 'user-1',
       email: 'test@example.com',
       fullName: 'Test User',
-      avatarUrl: null,
+      avatarPath: null,
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
     );
@@ -197,7 +198,7 @@ void main() {
       id: 'user-1',
       email: 'test@example.com',
       fullName: 'Test User',
-      avatarUrl: null,
+      avatarPath: null,
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
     );
@@ -229,6 +230,11 @@ void main() {
     expect(find.text('Appearance'), findsNWidgets(2));
     expect(find.text('Dark'), findsOneWidget);
 
+    // Name, email, and photo are all editable from here.
+    expect(find.byType(ProfileAvatar), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('test@example.com'), findsOneWidget);
+
     // Language sets the whole interface, so it stays in Profile. Voice usage
     // and everything about Rex live behind the assistant gear instead.
     expect(find.text('Voice usage'), findsNothing);
@@ -241,6 +247,56 @@ void main() {
     expect(find.text('Sign out'), findsOneWidget);
   });
 
+  testWidgets('the Email row opens the change-email prompt', (tester) async {
+    final app = AppComposition(initialAuthenticated: true);
+    addTearDown(app.dispose);
+    app.profileController.profile = ProfileRecord(
+      id: 'user-1',
+      email: 'test@example.com',
+      fullName: 'Test User',
+      avatarPath: null,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+    );
+
+    await tester.pumpWidget(
+      ClarityApp(
+        ui: app.ui,
+        authController: app.authController,
+        profileController: app.profileController,
+        themeModeController: app.themeModeController,
+        localeController: app.localeController,
+      ),
+    );
+
+    // Explicit pumps rather than pumpAndSettle throughout: the dialog
+    // autofocuses a text field, and a blinking cursor is an animation that
+    // never settles.
+    await tester.pump();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Profile'),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await tester.tap(find.text('Email'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('New email'), findsOneWidget);
+    // The prompt promises a link, never that the address already changed.
+    expect(
+      find.text(
+        'Clarity sends a confirmation link. Your email only changes once you '
+        'open it.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('the assistant gear is the only door to Companion settings', (
     tester,
   ) async {
@@ -250,7 +306,7 @@ void main() {
       id: 'user-1',
       email: 'test@example.com',
       fullName: 'Test User',
-      avatarUrl: null,
+      avatarPath: null,
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
     );
@@ -291,7 +347,7 @@ void main() {
       id: 'user-1',
       email: 'test@example.com',
       fullName: 'Test User',
-      avatarUrl: null,
+      avatarPath: null,
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
     );
@@ -334,7 +390,7 @@ void main() {
       id: 'user-1',
       email: 'test@example.com',
       fullName: 'Test User',
-      avatarUrl: null,
+      avatarPath: null,
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
     );
@@ -354,7 +410,10 @@ void main() {
 
     expect(find.byKey(AssistantTab.overview.key), findsOneWidget);
     expect(find.text('Overview'), findsOneWidget);
-    expect(find.byKey(const ValueKey<String>('assistant-tab-chats')), findsNothing);
+    expect(
+      find.byKey(const ValueKey<String>('assistant-tab-chats')),
+      findsNothing,
+    );
     expect(find.byTooltip('Conversations'), findsNothing);
   });
 
@@ -410,13 +469,11 @@ void main() {
           ),
           voiceCallProvider.overrideWith(() => voiceController),
           localeControllerProvider.overrideWithValue(harness.localeController),
-          actionResultMessageFormatterProvider.overrideWith(
-            (ref) {
-              final l10n = lookupAppLocalizations(const Locale('en'));
-              return (action, result) =>
-                  actionResultMessage(l10n, action, result);
-            },
-          ),
+          actionResultMessageFormatterProvider.overrideWith((ref) {
+            final l10n = lookupAppLocalizations(const Locale('en'));
+            return (action, result) =>
+                actionResultMessage(l10n, action, result);
+          }),
         ],
         child: wrapWithL10n(
           AssistantScreen(profileController: harness.profileController),
@@ -440,7 +497,9 @@ void main() {
     expect(find.byTooltip('End voice'), findsOneWidget);
   });
 
-  testWidgets('home shell uses centered bottom dock at desktop width', (tester) async {
+  testWidgets('home shell uses centered bottom dock at desktop width', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -454,7 +513,7 @@ void main() {
       id: 'user-1',
       email: 'test@example.com',
       fullName: 'Test User',
-      avatarUrl: null,
+      avatarPath: null,
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
     );
@@ -475,7 +534,9 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
-  testWidgets('home shell keeps bottom navigation on narrow width', (tester) async {
+  testWidgets('home shell keeps bottom navigation on narrow width', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -489,7 +550,7 @@ void main() {
       id: 'user-1',
       email: 'test@example.com',
       fullName: 'Test User',
-      avatarUrl: null,
+      avatarPath: null,
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
     );
@@ -523,13 +584,10 @@ Future<void> _pumpAssistantScreen(
       overrides: [
         conversationApiProvider.overrideWithValue(conversationApi),
         localeControllerProvider.overrideWithValue(harness.localeController),
-        actionResultMessageFormatterProvider.overrideWith(
-          (ref) {
-            final l10n = lookupAppLocalizations(const Locale('en'));
-            return (action, result) =>
-                actionResultMessage(l10n, action, result);
-          },
-        ),
+        actionResultMessageFormatterProvider.overrideWith((ref) {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          return (action, result) => actionResultMessage(l10n, action, result);
+        }),
       ],
       child: wrapWithL10n(
         AssistantScreen(profileController: harness.profileController),

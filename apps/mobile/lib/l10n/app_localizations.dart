@@ -1322,6 +1322,114 @@ abstract class AppLocalizations {
   /// **'Add your name'**
   String get profileAddYourName;
 
+  /// No description provided for @profileEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get profileEmailTitle;
+
+  /// No description provided for @profileEmailUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'No email on this account'**
+  String get profileEmailUnknown;
+
+  /// No description provided for @profileEmailChangeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Change email'**
+  String get profileEmailChangeAction;
+
+  /// No description provided for @profileEmailChangeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Clarity sends a confirmation link. Your email only changes once you open it.'**
+  String get profileEmailChangeBody;
+
+  /// No description provided for @profileEmailNewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New email'**
+  String get profileEmailNewLabel;
+
+  /// No description provided for @profileEmailChangeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmation sent. Your email changes once you open the link.'**
+  String get profileEmailChangeSent;
+
+  /// No description provided for @profileEmailChangeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the email change.'**
+  String get profileEmailChangeFailed;
+
+  /// No description provided for @profileEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That does not look like an email address.'**
+  String get profileEmailInvalid;
+
+  /// No description provided for @profileEmailSame.
+  ///
+  /// In en, this message translates to:
+  /// **'That is already your email.'**
+  String get profileEmailSame;
+
+  /// No description provided for @profileChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get profileChangePhoto;
+
+  /// No description provided for @profileTakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo'**
+  String get profileTakePhoto;
+
+  /// No description provided for @profileChoosePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a photo'**
+  String get profileChoosePhoto;
+
+  /// No description provided for @profileRemovePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get profileRemovePhoto;
+
+  /// No description provided for @profilePhotoUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo updated'**
+  String get profilePhotoUpdated;
+
+  /// No description provided for @profilePhotoRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo removed'**
+  String get profilePhotoRemoved;
+
+  /// No description provided for @profilePhotoUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Clarity can use JPEG, PNG, or WebP images.'**
+  String get profilePhotoUnsupported;
+
+  /// No description provided for @profilePhotoTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'That photo is too large. Try one under 2 MB.'**
+  String get profilePhotoTooLarge;
+
+  /// No description provided for @profilePhotoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update your photo.'**
+  String get profilePhotoFailed;
+
   /// No description provided for @profileMfaTitle.
   ///
   /// In en, this message translates to:

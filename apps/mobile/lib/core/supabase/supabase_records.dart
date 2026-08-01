@@ -5,7 +5,7 @@ final class ProfileRecord {
     required this.id,
     this.email,
     this.fullName,
-    this.avatarUrl,
+    this.avatarPath,
     this.preferredLocale,
     this.assistantSettings = const AssistantProposalSettings(),
     required this.createdAt,
@@ -15,7 +15,12 @@ final class ProfileRecord {
   final String id;
   final String? email;
   final String? fullName;
-  final String? avatarUrl;
+
+  /// Object path in the private `avatars` bucket, never a URL.
+  ///
+  /// The only URL that loads it is signed and expires, so one cannot be stored.
+  final String? avatarPath;
+
   final String? preferredLocale;
   final AssistantProposalSettings assistantSettings;
   final DateTime createdAt;
@@ -26,7 +31,7 @@ final class ProfileRecord {
       id: _string(json, 'id'),
       email: _nullableString(json, 'email'),
       fullName: _nullableString(json, 'full_name'),
-      avatarUrl: _nullableString(json, 'avatar_url'),
+      avatarPath: _nullableString(json, 'avatar_path'),
       preferredLocale: _nullableString(json, 'preferred_locale'),
       assistantSettings: AssistantProposalSettings.fromJson(
         json['assistant_settings'] as Map<String, dynamic>?,
@@ -40,14 +45,14 @@ final class ProfileRecord {
     'id': userId,
     'email': email,
     'full_name': fullName,
-    'avatar_url': avatarUrl,
+    'avatar_path': avatarPath,
     if (preferredLocale != null) 'preferred_locale': preferredLocale,
   };
 
   Map<String, dynamic> toUpdateJson() => {
     if (email != null) 'email': email,
     if (fullName != null) 'full_name': fullName,
-    if (avatarUrl != null) 'avatar_url': avatarUrl,
+    if (avatarPath != null) 'avatar_path': avatarPath,
     if (preferredLocale != null) 'preferred_locale': preferredLocale,
   };
 }

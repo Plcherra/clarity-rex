@@ -16,6 +16,7 @@ import '../features/dashboard/application/dashboard_spend_reference_controller.d
 import '../features/finance/application/financial_read_model_service.dart';
 import '../features/finance/data/financial_audit_service.dart';
 import '../features/plaid/application/plaid_link_service.dart';
+import '../features/profile/application/avatar_storage_service.dart';
 import '../features/profile/application/locale_controller.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/profile/application/profile_service.dart';
@@ -113,9 +114,14 @@ final class AppComposition {
     l10n: () => lookupForLocale(localeController.locale),
   );
 
+  late final AvatarStorageService avatarStorageService = AvatarStorageService(
+    supabaseService: supabaseService,
+  );
+
   late final ProfileController profileController = ProfileController(
     profileService: profileService,
     authService: authService,
+    avatarStorage: avatarStorageService,
     localeController: localeController,
     syncAfterProfileChanged: () async {
       // No local profile or merchant-memory hydration remains after auth/profile

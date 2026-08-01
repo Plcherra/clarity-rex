@@ -682,6 +682,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileAddYourName => 'Add your name';
 
   @override
+  String get profileEmailTitle => 'Email';
+
+  @override
+  String get profileEmailUnknown => 'No email on this account';
+
+  @override
+  String get profileEmailChangeAction => 'Change email';
+
+  @override
+  String get profileEmailChangeBody =>
+      'Clarity sends a confirmation link. Your email only changes once you open it.';
+
+  @override
+  String get profileEmailNewLabel => 'New email';
+
+  @override
+  String get profileEmailChangeSent =>
+      'Confirmation sent. Your email changes once you open the link.';
+
+  @override
+  String get profileEmailChangeFailed => 'Could not start the email change.';
+
+  @override
+  String get profileEmailInvalid => 'That does not look like an email address.';
+
+  @override
+  String get profileEmailSame => 'That is already your email.';
+
+  @override
+  String get profileChangePhoto => 'Change photo';
+
+  @override
+  String get profileTakePhoto => 'Take a photo';
+
+  @override
+  String get profileChoosePhoto => 'Choose a photo';
+
+  @override
+  String get profileRemovePhoto => 'Remove photo';
+
+  @override
+  String get profilePhotoUpdated => 'Photo updated';
+
+  @override
+  String get profilePhotoRemoved => 'Photo removed';
+
+  @override
+  String get profilePhotoUnsupported =>
+      'Clarity can use JPEG, PNG, or WebP images.';
+
+  @override
+  String get profilePhotoTooLarge =>
+      'That photo is too large. Try one under 2 MB.';
+
+  @override
+  String get profilePhotoFailed => 'Could not update your photo.';
+
+  @override
   String get profileMfaTitle => 'Multi-factor authentication';
 
   @override

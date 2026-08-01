@@ -5,12 +5,15 @@ import '../../../core/layout/clarity_breakpoints.dart';
 import '../../../core/layout/clarity_native_layout.dart';
 import '../../../core/layout/web_centered_dialog.dart';
 import '../../../core/l10n/app_l10n.dart';
+import '../../../widgets/clarity_text_prompt.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/presentation/mfa_enrollment_screen.dart';
 import '../application/locale_controller.dart';
 import '../application/profile_controller.dart';
 import '../application/theme_mode_controller.dart';
 import 'language_picker.dart';
+import 'profile_email_actions.dart';
+import 'profile_photo_actions.dart';
 import 'profile_screen_sections.dart';
 import 'profile_screen_widgets.dart';
 
@@ -96,44 +99,18 @@ final class ProfileScreen extends StatelessWidget {
   Future<void> _editName(BuildContext context) async {
     final l10n = context.l10n;
     final currentName = profileController.profile?.fullName?.trim() ?? '';
-    final controller = TextEditingController(text: currentName);
+    final nextName = await showClarityTextPrompt(
+      context,
+      title: l10n.profileEditNameTitle,
+      fieldLabel: l10n.authFullNameLabel,
+      initialValue: currentName,
+    );
+    if (nextName == null || nextName.isEmpty || nextName == currentName) {
+      return;
+    }
+    if (!context.mounted) return;
+
     try {
-      final nextName = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) => wrapWebCenteredDialog(
-          dialogContext,
-          AlertDialog(
-            title: Text(l10n.profileEditNameTitle),
-            content: TextField(
-              controller: controller,
-              autofocus: true,
-              textInputAction: TextInputAction.done,
-              decoration: InputDecoration(
-                labelText: l10n.authFullNameLabel,
-                border: const OutlineInputBorder(),
-              ),
-              onSubmitted: (value) {
-                Navigator.of(dialogContext).pop(value.trim());
-              },
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: Text(l10n.commonCancel),
-              ),
-              FilledButton(
-                onPressed: () {
-                  Navigator.of(dialogContext).pop(controller.text.trim());
-                },
-                child: Text(l10n.commonSave),
-              ),
-            ],
-          ),
-        ),
-      );
-      if (nextName == null || nextName.isEmpty || nextName == currentName) {
-        return;
-      }
       await profileController.updateCurrentProfile(fullName: nextName);
       if (!context.mounted) return;
       ScaffoldMessenger.of(
@@ -148,9 +125,15 @@ final class ProfileScreen extends StatelessWidget {
           ),
         ),
       );
-    } finally {
-      controller.dispose();
     }
+  }
+
+  Future<void> _changeEmail(BuildContext context, String currentEmail) {
+    return showProfileEmailChange(
+      context,
+      authController: authController,
+      currentEmail: currentEmail,
+    );
   }
 
   Future<void> _confirmSignOut(BuildContext context) async {
@@ -214,9 +197,9 @@ final class ProfileScreen extends StatelessWidget {
     if (!context.mounted) return;
     final error = authController.errorMessage;
     if (error != null && error.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     }
   }
 
@@ -229,8 +212,13 @@ final class ProfileScreen extends StatelessWidget {
       builder: (context, _) {
         final profile = profileController.profile;
         final name = profile?.fullName?.trim();
+        // The identity email leads: it is what the account signs in with, and
+        // it moves the moment a change is confirmed, while the profile row is
+        // a copy that catches up afterwards.
         final email =
-            profile?.email?.trim() ?? authController.currentUser?.email ?? '';
+            authController.currentUser?.email?.trim() ??
+            profile?.email?.trim() ??
+            '';
 
         return Scaffold(
           backgroundColor: Theme.of(context).colorScheme.surface,
@@ -244,18 +232,19 @@ final class ProfileScreen extends StatelessWidget {
             thumbVisibility: desktop,
             child: ListView(
               padding: ClarityNativeLayout.active(context)
-                  ? ClarityNativeLayout.pagePadding(
-                      context,
-                      top: 8,
-                      bottom: 28,
-                    )
+                  ? ClarityNativeLayout.pagePadding(context, top: 8, bottom: 28)
                   : const EdgeInsets.fromLTRB(20, 8, 20, 28),
               children: [
                 ProfileHeader(
                   name: name == null || name.isEmpty
                       ? l10n.profileDefaultUserName
                       : name,
-                  email: email,
+                  photoUrl: profileController.avatarSignedUrl,
+                  isPhotoBusy: profileController.isUpdatingAvatar,
+                  onEditPhoto: () => showProfilePhotoActions(
+                    context,
+                    controller: profileController,
+                  ),
                 ),
                 const SizedBox(height: 18),
                 if (desktop)
@@ -263,11 +252,14 @@ final class ProfileScreen extends StatelessWidget {
                     themeModeController: themeModeController,
                     localeController: localeController,
                     displayName: name,
+                    email: email,
                     onEditName: () => _editName(context),
+                    onChangeEmail: () => _changeEmail(context, email),
                     onOpenMfa: () => _openMfaSettings(context),
                     onOpenLanguage: () => _openLanguage(context),
-                    onSignOut:
-                        signOut == null ? null : () => _confirmSignOut(context),
+                    onSignOut: signOut == null
+                        ? null
+                        : () => _confirmSignOut(context),
                     onDeleteAccount: () => _confirmDeleteAccount(context),
                   )
                 else
@@ -275,12 +267,15 @@ final class ProfileScreen extends StatelessWidget {
                     themeModeController: themeModeController,
                     localeController: localeController,
                     displayName: name,
+                    email: email,
                     onEditName: () => _editName(context),
+                    onChangeEmail: () => _changeEmail(context, email),
                     onOpenMfa: () => _openMfaSettings(context),
                     onOpenAppearance: () => _openAppearance(context),
                     onOpenLanguage: () => _openLanguage(context),
-                    onSignOut:
-                        signOut == null ? null : () => _confirmSignOut(context),
+                    onSignOut: signOut == null
+                        ? null
+                        : () => _confirmSignOut(context),
                     onDeleteAccount: () => _confirmDeleteAccount(context),
                   ),
               ],

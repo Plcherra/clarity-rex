@@ -5,19 +5,29 @@ import '../../../core/layout/clarity_native_layout.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
 import '../application/theme_mode_controller.dart';
+import 'profile_avatar.dart';
 
+/// Photo and name only: the email has its own editable row right below, and
+/// repeating it here made the same address appear twice on one screen.
 final class ProfileHeader extends StatelessWidget {
-  const ProfileHeader({super.key, required this.name, required this.email});
+  const ProfileHeader({
+    super.key,
+    required this.name,
+    required this.onEditPhoto,
+    this.photoUrl,
+    this.isPhotoBusy = false,
+  });
 
   final String name;
-  final String email;
+  final VoidCallback onEditPhoto;
+  final String? photoUrl;
+  final bool isPhotoBusy;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final colors = context.clarityColors;
-    final initial = name.trim().isEmpty ? 'C' : name.trim()[0].toUpperCase();
 
     return ClarityCard(
       padding: ClarityNativeLayout.active(context)
@@ -27,24 +37,11 @@ final class ProfileHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SizedBox(
-              width: 58,
-              height: 58,
-              child: Center(
-                child: Text(
-                  initial,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
+          ProfileAvatar(
+            name: name,
+            imageUrl: photoUrl,
+            isBusy: isPhotoBusy,
+            onTap: onEditPhoto,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -69,17 +66,6 @@ final class ProfileHeader extends StatelessWidget {
                     height: 1.08,
                   ),
                 ),
-                if (email.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    email,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),

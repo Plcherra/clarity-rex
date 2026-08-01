@@ -687,6 +687,65 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileAddYourName => 'Añade tu nombre';
 
   @override
+  String get profileEmailTitle => 'Correo';
+
+  @override
+  String get profileEmailUnknown => 'Esta cuenta no tiene correo';
+
+  @override
+  String get profileEmailChangeAction => 'Cambiar correo';
+
+  @override
+  String get profileEmailChangeBody =>
+      'Clarity envía un enlace de confirmación. Tu correo solo cambia cuando lo abres.';
+
+  @override
+  String get profileEmailNewLabel => 'Correo nuevo';
+
+  @override
+  String get profileEmailChangeSent =>
+      'Confirmación enviada. Tu correo cambia cuando abras el enlace.';
+
+  @override
+  String get profileEmailChangeFailed =>
+      'No se pudo iniciar el cambio de correo.';
+
+  @override
+  String get profileEmailInvalid => 'Eso no parece una dirección de correo.';
+
+  @override
+  String get profileEmailSame => 'Ese ya es tu correo.';
+
+  @override
+  String get profileChangePhoto => 'Cambiar foto';
+
+  @override
+  String get profileTakePhoto => 'Tomar una foto';
+
+  @override
+  String get profileChoosePhoto => 'Elegir una foto';
+
+  @override
+  String get profileRemovePhoto => 'Quitar foto';
+
+  @override
+  String get profilePhotoUpdated => 'Foto actualizada';
+
+  @override
+  String get profilePhotoRemoved => 'Foto eliminada';
+
+  @override
+  String get profilePhotoUnsupported =>
+      'Clarity acepta imágenes JPEG, PNG o WebP.';
+
+  @override
+  String get profilePhotoTooLarge =>
+      'Esa foto es muy grande. Prueba con una de menos de 2 MB.';
+
+  @override
+  String get profilePhotoFailed => 'No se pudo actualizar tu foto.';
+
+  @override
   String get profileMfaTitle => 'Autenticación multifactor';
 
   @override

@@ -52,6 +52,7 @@ class AuthController extends ChangeNotifier {
   String? mfaInfoMessage;
   String? pendingConfirmationEmail;
   String? prefillEmail;
+
   /// Held only while waiting for email confirm so "I've confirmed" can sign in.
   String? _pendingConfirmationPassword;
   MfaEnrollment? pendingMfaEnrollment;
@@ -191,6 +192,19 @@ class AuthController extends ChangeNotifier {
       _pendingConfirmationPassword = null;
       _clearMfaState();
     });
+  }
+
+  /// Asks Supabase to email a confirmation link for a new address.
+  ///
+  /// Returns true when the email went out — not when the address changed. It
+  /// changes only after the link is opened, which happens outside the app.
+  Future<bool> requestEmailChange(String email) async {
+    var sent = false;
+    await _runAuthAction(() async {
+      await _authService.requestEmailChange(email: email);
+      sent = true;
+    });
+    return sent;
   }
 
   Future<void> cancelMfaSignIn() async {

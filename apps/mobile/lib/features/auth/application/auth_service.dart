@@ -113,6 +113,21 @@ class AuthService {
     );
   }
 
+  /// Starts moving the account to a new address.
+  ///
+  /// Nothing has changed when this returns: Supabase emails a confirmation
+  /// link, and the address only moves once the link is opened. Callers must
+  /// not tell the user their email changed here.
+  Future<void> requestEmailChange({required String email}) async {
+    if (!_supabaseService.isConfigured || currentSession == null) {
+      throw const AuthException('You must be signed in to change your email.');
+    }
+    await _supabaseService.auth.updateUser(
+      UserAttributes(email: email.trim()),
+      emailRedirectTo: AuthConfig.emailRedirectUrl,
+    );
+  }
+
   Future<void> resendConfirmationEmail({required String email}) {
     return _supabaseService.auth.resend(
       type: OtpType.signup,
@@ -206,7 +221,9 @@ class AuthService {
 
   Future<void> deleteAccount() async {
     if (!_supabaseService.isConfigured || currentSession == null) {
-      throw const AuthException('You must be signed in to delete your account.');
+      throw const AuthException(
+        'You must be signed in to delete your account.',
+      );
     }
     final response = await _supabaseService.functions.invoke('delete-account');
     if (response.status < 200 || response.status >= 300) {

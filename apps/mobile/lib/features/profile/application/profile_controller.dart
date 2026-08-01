@@ -7,6 +7,7 @@ import '../../../core/supabase/supabase_exceptions.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../auth/application/auth_service.dart';
 import '../domain/assistant_proposal_settings.dart';
+import 'avatar_storage_service.dart';
 import 'locale_controller.dart';
 import 'profile_service.dart';
 
@@ -17,9 +18,11 @@ final class ProfileController extends ChangeNotifier {
     required this.profileService,
     required this.authService,
     required this.syncAfterProfileChanged,
+    required AvatarStorageService avatarStorage,
     LocaleController? localeController,
     SharedPreferencesAsync? preferences,
-  }) : _localeController = localeController,
+  }) : _avatarStorage = avatarStorage,
+       _localeController = localeController,
        _preferences = preferences ?? SharedPreferencesAsync() {
     _authSubscription = authService.authStateChanges.listen((_) async {
       await hydrateProfileForCurrentUser();
@@ -29,6 +32,7 @@ final class ProfileController extends ChangeNotifier {
   final ProfileService profileService;
   final AuthService authService;
   final Future<void> Function() syncAfterProfileChanged;
+  final AvatarStorageService _avatarStorage;
   final LocaleController? _localeController;
   final SharedPreferencesAsync _preferences;
   StreamSubscription<dynamic>? _authSubscription;
@@ -36,10 +40,22 @@ final class ProfileController extends ChangeNotifier {
 
   ProfileRecord? profile;
   bool isLoading = false;
+
   /// True while companion Auto Suggestions mode/settings are persisting.
   bool isUpdatingAssistantSettings = false;
+
+  /// True while a photo is uploading or being removed.
+  bool isUpdatingAvatar = false;
+
+  /// A temporary link to the stored photo, or null when there is none.
+  ///
+  /// Signed rather than stored, so it has to be fetched after the profile
+  /// loads and refreshed whenever the photo changes.
+  String? avatarSignedUrl;
+
   String? errorMessage;
   String? _cachedOnboardingName;
+  String? _signedAvatarPath;
 
   bool get hasCompleteProfile {
     if (profile?.fullName?.trim().isNotEmpty ?? false) {
@@ -73,11 +89,12 @@ final class ProfileController extends ChangeNotifier {
 
       profile = await profileService.fetchCurrentProfile();
       await _cacheOnboardingName(profile?.fullName);
+      await _syncEmailFromIdentity();
+      await _refreshAvatarUrl();
       await _localeController?.resolveAfterProfileHydrate(
         profilePreferredLocale: profile?.preferredLocale,
         seedProfileIfMissing:
-            profile?.preferredLocale == null &&
-                authService.currentUser != null
+            profile?.preferredLocale == null && authService.currentUser != null
             ? (localeTag) => updatePreferredLocale(localeTag)
             : null,
       );
@@ -91,6 +108,7 @@ final class ProfileController extends ChangeNotifier {
           profile = null;
           _cachedOnboardingName = null;
         }
+        await _refreshAvatarUrl();
         await _localeController?.resolveAfterProfileHydrate(
           profilePreferredLocale: profile?.preferredLocale,
         );
@@ -112,7 +130,7 @@ final class ProfileController extends ChangeNotifier {
   Future<void> upsertCurrentProfile({
     String? email,
     String? fullName,
-    String? avatarUrl,
+    String? avatarPath,
     String? preferredLocale,
   }) async {
     isLoading = true;
@@ -124,7 +142,7 @@ final class ProfileController extends ChangeNotifier {
       profile = await profileService.upsertCurrentProfile(
         email: email,
         fullName: fullName,
-        avatarUrl: avatarUrl,
+        avatarPath: avatarPath,
         preferredLocale: preferredLocale,
       );
       await _cacheOnboardingName(profile?.fullName);
@@ -141,7 +159,6 @@ final class ProfileController extends ChangeNotifier {
   Future<void> updateCurrentProfile({
     String? email,
     String? fullName,
-    String? avatarUrl,
     String? preferredLocale,
   }) async {
     isLoading = true;
@@ -153,7 +170,6 @@ final class ProfileController extends ChangeNotifier {
       profile = await profileService.updateCurrentProfile(
         email: email,
         fullName: fullName,
-        avatarUrl: avatarUrl,
         preferredLocale: preferredLocale,
       );
       await _cacheOnboardingName(profile?.fullName);
@@ -195,6 +211,96 @@ final class ProfileController extends ChangeNotifier {
       isLoading = false;
       isUpdatingAssistantSettings = false;
       notifyListeners();
+    }
+  }
+
+  /// Stores a picked photo and points the profile at it.
+  Future<void> setAvatarFromBytes({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    final previousPath = profile?.avatarPath;
+
+    isUpdatingAvatar = true;
+    errorMessage = null;
+    notifyListeners();
+    try {
+      final path = await _avatarStorage.upload(
+        bytes: bytes,
+        fileName: fileName,
+      );
+      profile = await profileService.setAvatarPath(path);
+      await _refreshAvatarUrl(force: true);
+      // Only after the profile points at the new photo. Deleting first would
+      // leave the profile aimed at nothing if the upload then failed.
+      await _avatarStorage.remove(previousPath);
+    } catch (e) {
+      errorMessage = e.toString();
+      rethrow;
+    } finally {
+      isUpdatingAvatar = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> removeAvatar() async {
+    final previousPath = profile?.avatarPath;
+    if (previousPath == null || previousPath.isEmpty) return;
+
+    isUpdatingAvatar = true;
+    errorMessage = null;
+    notifyListeners();
+    try {
+      profile = await profileService.setAvatarPath(null);
+      await _refreshAvatarUrl(force: true);
+      await _avatarStorage.remove(previousPath);
+    } catch (e) {
+      errorMessage = e.toString();
+      rethrow;
+    } finally {
+      isUpdatingAvatar = false;
+      notifyListeners();
+    }
+  }
+
+  /// Catches the profile row up to the email the account actually signs in
+  /// with.
+  ///
+  /// An email change is confirmed by opening a link, which happens outside the
+  /// app entirely — so the identity email can move without the app ever being
+  /// told. The copy on the profile row exists for display and joins, and has
+  /// to follow rather than be trusted.
+  Future<void> _syncEmailFromIdentity() async {
+    final current = profile;
+    if (current == null) return;
+    final identityEmail = authService.currentUser?.email?.trim();
+    if (identityEmail == null || identityEmail.isEmpty) return;
+    if (current.email?.trim() == identityEmail) return;
+    try {
+      profile = await profileService.updateCurrentProfile(email: identityEmail);
+    } on Object {
+      // Display already reads the identity email first, so a failed catch-up
+      // shows nothing wrong and is retried on the next hydrate.
+    }
+  }
+
+  /// Signs a fresh link when the stored photo has changed.
+  ///
+  /// The profile stream fires for every profile edit, and signing on each one
+  /// would be a round trip to say the photo is still the photo.
+  Future<void> _refreshAvatarUrl({bool force = false}) async {
+    final path = profile?.avatarPath;
+    if (!force && path == _signedAvatarPath) return;
+    _signedAvatarPath = path;
+    try {
+      avatarSignedUrl = await _avatarStorage.signedUrl(path);
+    } on Object {
+      // A photo that will not load is not worth failing the screen over; the
+      // header falls back to initials on its own. Forgetting the path is what
+      // lets the next hydrate try again instead of treating one bad round trip
+      // as the answer forever.
+      avatarSignedUrl = null;
+      _signedAvatarPath = null;
     }
   }
 
