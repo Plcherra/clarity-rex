@@ -39,6 +39,17 @@ List<PlanMilestone> goalStepsFor(
   return const [];
 }
 
+/// Steps still open for one goal, or null when the goal is not in the list.
+///
+/// Null and zero mean different things here: a goal we cannot find is not a
+/// goal with nothing left to do.
+int? openGoalStepCount(List<PlanHierarchyItem> hierarchy, String planId) {
+  for (final item in hierarchy) {
+    if (item.plan.id == planId) return item.openMilestones.length;
+  }
+  return null;
+}
+
 bool isGoalStepDone(PlanMilestone milestone) {
   final status = milestone.status.trim().toLowerCase();
   return status == 'completed' ||

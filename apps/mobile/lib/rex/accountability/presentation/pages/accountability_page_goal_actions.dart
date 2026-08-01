@@ -65,8 +65,24 @@ extension _GoalMutations on _AccountabilityPageState {
     if (!mounted) return saved;
     if (!saved) {
       _showMutationResult(null);
+      return saved;
+    }
+    if (done) {
+      unawaited(
+        showClarityCelebrationBurst(context, scale: _stepScale(milestone)),
+      );
     }
     return saved;
+  }
+
+  /// Clearing the last step earns the full burst: the goal is now in reach,
+  /// which is a bigger moment than any single step before it.
+  ClarityCelebrationScale _stepScale(PlanMilestone milestone) {
+    final hierarchy = ref.read(accountabilityProvider).overview?.planHierarchy;
+    final remaining = openGoalStepCount(hierarchy ?? const [], milestone.planId);
+    return remaining == 0
+        ? ClarityCelebrationScale.finish
+        : ClarityCelebrationScale.step;
   }
 
   /// From the list, where there is no sheet open to show the tick landing.

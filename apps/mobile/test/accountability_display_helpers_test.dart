@@ -93,6 +93,33 @@ void main() {
       );
       expect(goalStepsFor(hierarchy, 'missing'), isEmpty);
     });
+
+    test('open step count separates "none left" from "goal not found"', () {
+      // The celebration escalates on the last step, so an unknown goal must
+      // not read as a finished one.
+      final hierarchy = [
+        PlanHierarchyItem(
+          plan: _plan('plan-cleared'),
+          openMilestones: const [],
+          completedMilestones: [_step(id: 'done-1', status: 'completed')],
+          counts: const {},
+        ),
+        PlanHierarchyItem(
+          plan: _plan('plan-busy'),
+          openMilestones: [
+            _step(id: 'open-1', status: 'open'),
+            _step(id: 'open-2', status: 'open'),
+          ],
+          completedMilestones: const [],
+          counts: const {},
+        ),
+      ];
+
+      expect(openGoalStepCount(hierarchy, 'plan-cleared'), 0);
+      expect(openGoalStepCount(hierarchy, 'plan-busy'), 2);
+      expect(openGoalStepCount(hierarchy, 'missing'), isNull);
+      expect(openGoalStepCount(const [], 'plan-cleared'), isNull);
+    });
   });
 }
 

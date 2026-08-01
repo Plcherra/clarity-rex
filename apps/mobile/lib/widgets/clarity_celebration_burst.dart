@@ -4,34 +4,77 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// A short burst over the whole screen when something is finished.
+/// How much of a moment this is.
 ///
-/// Reaching a goal is the one moment in the app worth marking, and a snackbar
-/// does not mark it. Painted rather than pulled from a package: it is a few
-/// dozen particles on one controller, and a dependency for that is a poor
-/// trade.
+/// Ticking one step off a list of eight deserves acknowledging, but not with
+/// the same shower as finishing the whole thing. Spend the big one rarely or
+/// it stops reading as an occasion.
+enum ClarityCelebrationScale { step, finish }
+
+/// A short burst over the screen when something is finished.
+///
+/// Progress the user made is worth marking, and a snackbar does not mark it.
+/// Painted rather than pulled from a package: it is a few dozen particles on
+/// one controller, and a dependency for that is a poor trade.
 ///
 /// Silently does nothing when the system asks for reduced motion.
-Future<void> showClarityCelebrationBurst(BuildContext context) async {
+Future<void> showClarityCelebrationBurst(
+  BuildContext context, {
+  ClarityCelebrationScale scale = ClarityCelebrationScale.finish,
+}) async {
   if (MediaQuery.disableAnimationsOf(context)) return;
   final overlay = Overlay.maybeOf(context);
   if (overlay == null) return;
 
-  unawaited(HapticFeedback.mediumImpact());
+  final spec = _specFor(scale);
+  unawaited(spec.haptic());
 
   final entry = OverlayEntry(
-    builder: (_) => const IgnorePointer(child: _CelebrationBurst()),
+    builder: (_) => IgnorePointer(child: _CelebrationBurst(spec: spec)),
   );
   overlay.insert(entry);
-  await Future<void>.delayed(_burstDuration);
+  await Future<void>.delayed(spec.duration);
   entry.remove();
 }
 
-const _burstDuration = Duration(milliseconds: 1500);
-const _particleCount = 46;
+class _BurstSpec {
+  const _BurstSpec({
+    required this.duration,
+    required this.particleCount,
+    required this.reach,
+    required this.haptic,
+  });
+
+  final Duration duration;
+  final int particleCount;
+
+  /// Share of the screen's shortest side the particles travel.
+  final double reach;
+
+  final Future<void> Function() haptic;
+}
+
+_BurstSpec _specFor(ClarityCelebrationScale scale) {
+  return switch (scale) {
+    ClarityCelebrationScale.step => _BurstSpec(
+      duration: const Duration(milliseconds: 900),
+      particleCount: 16,
+      reach: 0.42,
+      haptic: HapticFeedback.selectionClick,
+    ),
+    ClarityCelebrationScale.finish => _BurstSpec(
+      duration: const Duration(milliseconds: 1500),
+      particleCount: 46,
+      reach: 0.9,
+      haptic: HapticFeedback.mediumImpact,
+    ),
+  };
+}
 
 class _CelebrationBurst extends StatefulWidget {
-  const _CelebrationBurst();
+  const _CelebrationBurst({required this.spec});
+
+  final _BurstSpec spec;
 
   @override
   State<_CelebrationBurst> createState() => _CelebrationBurstState();
@@ -41,7 +84,7 @@ class _CelebrationBurstState extends State<_CelebrationBurst>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: _burstDuration,
+    duration: widget.spec.duration,
   )..forward();
 
   late final List<_Particle> _particles = _spawn();
@@ -57,8 +100,9 @@ class _CelebrationBurstState extends State<_CelebrationBurst>
     // different, the way real confetti does.
     final random = math.Random();
     final palette = _paletteFor(Theme.of(context));
-    return List.generate(_particleCount, (index) {
-      final angle = (index / _particleCount) * math.pi * 2;
+    final count = widget.spec.particleCount;
+    return List.generate(count, (index) {
+      final angle = (index / count) * math.pi * 2;
       return _Particle(
         angle: angle + random.nextDouble() * 0.5 - 0.25,
         speed: 0.35 + random.nextDouble() * 0.65,
@@ -80,6 +124,7 @@ class _CelebrationBurstState extends State<_CelebrationBurst>
           painter: _BurstPainter(
             particles: _particles,
             progress: _controller.value,
+            reachFactor: widget.spec.reach,
           ),
         ),
       ),
@@ -116,15 +161,20 @@ class _Particle {
 }
 
 class _BurstPainter extends CustomPainter {
-  _BurstPainter({required this.particles, required this.progress});
+  _BurstPainter({
+    required this.particles,
+    required this.progress,
+    required this.reachFactor,
+  });
 
   final List<_Particle> particles;
   final double progress;
+  final double reachFactor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final origin = Offset(size.width / 2, size.height * 0.42);
-    final reach = size.shortestSide * 0.9;
+    final reach = size.shortestSide * reachFactor;
     final paint = Paint()..style = PaintingStyle.fill;
 
     for (final particle in particles) {

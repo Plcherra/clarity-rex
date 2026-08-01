@@ -68,6 +68,19 @@ def test_tiny_system_off_includes_explicit_mutate_only() -> None:
     assert "coach" not in prompt.lower()
 
 
+def test_every_mode_asks_for_a_goal_deadline() -> None:
+    """A goal with no date has nothing to press against.
+
+    The Goals tab already refuses to create one without a date, so a goal Rex
+    saves must not be the exception — it would land with no progress bar and
+    none of the pressure the user asked a goal to give them.
+    """
+    for mode in ("off", "text", "card"):
+        prompt = build_tiny_system_prompt(AssistantProposalSettings(mode=mode))
+        assert "target_date" in prompt, mode
+        assert "ask for one when they have not" in prompt, mode
+
+
 def test_grok_turn_brain_builds_thin_messages() -> None:
     brain = GrokTurnBrain(ai_service=object())
     messages = brain.build_messages(
