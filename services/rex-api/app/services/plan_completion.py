@@ -17,13 +17,18 @@ def with_completion_time(
     *,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Stamp completed_at on the turn a record becomes completed.
+    """Stamp completed_at when finishing; clear it when reopening.
 
-    An explicit completed_at from the caller wins; reopening a record leaves
-    the old stamp alone because the transport cannot write a null.
+    Reopen must write null — otherwise Goals still shows "Achieved on …" even
+    after status is active again, and the undo control looks broken.
     """
     status = str(payload.get("status") or "").strip().lower()
-    if status != COMPLETED_STATUS or payload.get("completed_at"):
+    if not status:
         return payload
-    moment = now or datetime.now(timezone.utc)
-    return {**payload, "completed_at": moment.isoformat()}
+    if status == COMPLETED_STATUS:
+        if payload.get("completed_at"):
+            return payload
+        moment = now or datetime.now(timezone.utc)
+        return {**payload, "completed_at": moment.isoformat()}
+    # Any non-completed status means the goal is open again.
+    return {**payload, "completed_at": None}

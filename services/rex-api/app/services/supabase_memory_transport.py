@@ -12,6 +12,9 @@ logger = logging.getLogger(__name__)
 
 PROTECTED_WRITE_FIELDS = {"id", "user_id", "created_at", "updated_at"}
 
+# Fields that must be writable as JSON null (e.g. clearing completed_at on reopen).
+NULLABLE_CLEAR_FIELDS = frozenset({"completed_at"})
+
 
 class SupabaseMemoryTransport:
     async def _create_record(self, table: str, body: dict, select: str) -> dict:
@@ -284,7 +287,8 @@ class SupabaseMemoryTransport:
         return {
             key: value
             for key, value in payload.items()
-            if value is not None and key not in PROTECTED_WRITE_FIELDS
+            if key not in PROTECTED_WRITE_FIELDS
+            and (value is not None or key in NULLABLE_CLEAR_FIELDS)
         }
 
     def _strip_protected_write_fields(

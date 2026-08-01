@@ -77,7 +77,13 @@ def test_other_edits_never_stamp_a_completion():
     assert with_completion_time({"title": "Buy dumbbells"}) == {
         "title": "Buy dumbbells"
     }
-    assert with_completion_time({"status": "active"}) == {"status": "active"}
+
+
+def test_reopening_clears_the_completion_stamp():
+    assert with_completion_time({"status": "active"}) == {
+        "status": "active",
+        "completed_at": None,
+    }
 
 
 def test_a_caller_supplied_completion_time_is_kept():

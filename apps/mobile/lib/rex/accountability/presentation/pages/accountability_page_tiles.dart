@@ -73,10 +73,9 @@ class _AchievedGoalTile extends StatelessWidget {
       showMeta: false,
       trailing: IconButton(
         onPressed: onReopen,
-        visualDensity: VisualDensity.compact,
-        iconSize: 18,
+        iconSize: 22,
         tooltip: l10n.accountabilityReopenGoal,
-        icon: Icon(Icons.undo_rounded, color: colors.textMuted),
+        icon: Icon(Icons.undo_rounded, color: colors.accent),
       ),
     );
   }
@@ -155,77 +154,89 @@ class _AccountabilityTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
     final theme = Theme.of(context);
+    final radius = BorderRadius.circular(RexUiTokens.memoryTileRadius);
 
-    return Material(
-      color: colors.surfaceSoft.withValues(alpha: 0.22),
-      borderRadius: BorderRadius.circular(RexUiTokens.memoryTileRadius),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(RexUiTokens.memoryTileRadius),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: RexUiTokens.memoryTilePaddingH,
-            vertical: RexUiTokens.memoryTilePaddingV,
-          ),
+    // Header tap opens the goal. Menu / reopen / step checkboxes sit outside
+    // that InkWell — nesting them inside stole the gesture and made them look
+    // dead after a finish animation.
+    final header = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(padding: const EdgeInsets.only(top: 2), child: leading),
+        if (icon != null) ...[
+          const SizedBox(width: RexUiTokens.space8),
+          Icon(icon, color: colors.accent, size: 16),
+        ],
+        const SizedBox(width: RexUiTokens.space8),
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: leading,
-                  ),
-                  if (icon != null) ...[
-                    const SizedBox(width: RexUiTokens.space8),
-                    Icon(icon, color: colors.accent, size: 16),
-                  ],
-                  const SizedBox(width: RexUiTokens.space8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: colors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (subtitle != null) ...[
-                          const SizedBox(height: RexUiTokens.space2),
-                          Text(
-                            subtitle!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.textMuted,
-                              height: 1.25,
-                            ),
-                          ),
-                        ],
-                        if (showMeta) ...[
-                          const SizedBox(height: RexUiTokens.space2),
-                          _TileMetaRow(
-                            deadline: deadline,
-                            priority: priority,
-                            suffix: metaSuffix,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: RexUiTokens.space4),
-                  _StatusChip(status: status),
-                  trailing,
-                ],
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              ?footer,
+              if (subtitle != null) ...[
+                const SizedBox(height: RexUiTokens.space2),
+                Text(
+                  subtitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.textMuted,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+              if (showMeta) ...[
+                const SizedBox(height: RexUiTokens.space2),
+                _TileMetaRow(
+                  deadline: deadline,
+                  priority: priority,
+                  suffix: metaSuffix,
+                ),
+              ],
             ],
           ),
+        ),
+        const SizedBox(width: RexUiTokens.space4),
+        _StatusChip(status: status),
+      ],
+    );
+
+    return Material(
+      color: colors.surfaceSoft.withValues(alpha: 0.22),
+      borderRadius: radius,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: RexUiTokens.memoryTilePaddingH,
+          vertical: RexUiTokens.memoryTilePaddingV,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: onTap == null
+                      ? header
+                      : InkWell(
+                          borderRadius: radius,
+                          onTap: onTap,
+                          child: header,
+                        ),
+                ),
+                trailing,
+              ],
+            ),
+            ?footer,
+          ],
         ),
       ),
     );

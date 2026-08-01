@@ -72,42 +72,45 @@ class _GoalStepRow extends StatelessWidget {
     final theme = Theme.of(context);
     final done = isGoalStepDone(milestone);
 
-    return InkWell(
-      onTap: () => onToggle(!done),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: Row(
-          children: [
-            Icon(
-              done
-                  ? Icons.check_circle_rounded
-                  : Icons.radio_button_unchecked_rounded,
-              size: 18,
-              color: done ? colors.accent : colors.textMuted,
-            ),
-            const SizedBox(width: RexUiTokens.space8),
-            Expanded(
-              child: Text(
-                milestone.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: done ? colors.textMuted : colors.textSecondary,
-                  decoration: done ? TextDecoration.lineThrough : null,
-                  decorationColor: colors.textMuted,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onToggle(!done),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            children: [
+              Icon(
+                done
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                size: 20,
+                color: done ? colors.accent : colors.textMuted,
+              ),
+              const SizedBox(width: RexUiTokens.space8),
+              Expanded(
+                child: Text(
+                  milestone.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: done ? colors.textMuted : colors.textSecondary,
+                    decoration: done ? TextDecoration.lineThrough : null,
+                    decorationColor: colors.textMuted,
+                  ),
                 ),
               ),
-            ),
-            if (onDelete != null)
-              IconButton(
-                onPressed: onDelete,
-                visualDensity: VisualDensity.compact,
-                iconSize: 16,
-                tooltip: context.l10n.commonDelete,
-                icon: Icon(Icons.close_rounded, color: colors.textMuted),
-              ),
-          ],
+              if (onDelete != null)
+                IconButton(
+                  onPressed: onDelete,
+                  visualDensity: VisualDensity.compact,
+                  iconSize: 16,
+                  tooltip: context.l10n.commonDelete,
+                  icon: Icon(Icons.close_rounded, color: colors.textMuted),
+                ),
+            ],
+          ),
         ),
       ),
     );
