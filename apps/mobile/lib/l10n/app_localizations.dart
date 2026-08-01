@@ -6154,6 +6154,34 @@ abstract class AppLocalizations {
   /// **'Wake up at 5 AM and start the day cleanly'**
   String get accountabilityAddGoalDetailHint;
 
+  /// No description provided for @accountabilityGoalAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount needed'**
+  String get accountabilityGoalAmountLabel;
+
+  /// No description provided for @accountabilityGoalAmountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'0 if this goal does not need money'**
+  String get accountabilityGoalAmountHint;
+
+  /// No description provided for @accountabilityMoneyPressureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Money needed'**
+  String get accountabilityMoneyPressureTitle;
+
+  /// No description provided for @accountabilityMoneyPressureLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} by {date} ({titles})'**
+  String accountabilityMoneyPressureLine(
+    String amount,
+    String date,
+    String titles,
+  );
+
   /// No description provided for @accountabilityAddOpenThreadPrimaryHint.
   ///
   /// In en, this message translates to:

@@ -53,6 +53,7 @@ async def test_card_soft_create_goal_emits_write_proposal() -> None:
             payload={
                 "title": "Buy 32GB RAM",
                 "description": "Upgrade the Clarity laptop",
+                "target_date": "2026-12-01",
             },
         ),
         user_text="I want to buy 32GB of RAM for my laptop",
@@ -76,7 +77,11 @@ async def test_card_create_goal_confirm_applies() -> None:
     settings = _settings(mode="card")
     action = BrainAction(
         name="create_goal",
-        payload={"title": "Buy 32GB RAM", "description": "Laptop upgrade"},
+        payload={
+            "title": "Buy 32GB RAM",
+            "description": "Laptop upgrade",
+            "target_date": "2026-12-01",
+        },
     )
     gate = apply_auto_suggestions_gate([action], settings, user_message="buy ram")
     proposed = await dispatch_allowed_actions(
@@ -110,7 +115,7 @@ async def test_text_soft_create_goal_proposes_without_cards() -> None:
         settings=_settings(mode="text"),
         action=BrainAction(
             name="create_goal",
-            payload={"title": "Launch Clarity"},
+            payload={"title": "Launch Clarity", "target_date": "2026-12-01"},
         ),
         user_text="I want to launch Clarity",
         assistant_reply="Launching Clarity is a solid finish line.",
@@ -132,7 +137,7 @@ async def test_off_explicit_create_goal_applies_immediately() -> None:
         settings=_settings(mode="off"),
         action=BrainAction(
             name="create_goal",
-            payload={"title": "Buy dumbbells"},
+            payload={"title": "Buy dumbbells", "target_date": "2026-12-01"},
             explicit=True,
             auto=False,
         ),

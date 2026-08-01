@@ -40,6 +40,7 @@ class PlanRecord {
     required this.active,
     required this.startDate,
     required this.targetDate,
+    required this.targetAmount,
     required this.completedAt,
     required this.lastReviewedAt,
     this.createdAt,
@@ -57,6 +58,7 @@ class PlanRecord {
       active: _bool(json['active']) ?? true,
       startDate: _dateTime(json['start_date']),
       targetDate: _dateTime(json['target_date']),
+      targetAmount: _double(json['target_amount']) ?? 0,
       completedAt: _dateTime(json['completed_at']),
       lastReviewedAt: _dateTime(json['last_reviewed_at']),
       createdAt: _dateTime(json['created_at']),
@@ -73,6 +75,9 @@ class PlanRecord {
   final bool active;
   final DateTime? startDate;
   final DateTime? targetDate;
+
+  /// Dollars this goal needs. 0 means it is not a money goal.
+  final double targetAmount;
   final DateTime? completedAt;
   final DateTime? lastReviewedAt;
 

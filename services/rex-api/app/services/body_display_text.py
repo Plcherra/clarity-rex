@@ -33,6 +33,8 @@ class GoalCommand:
     record_type: str
     due_text: Optional[str] = None
     target_text: Optional[str] = None
+    # 0 means not a money goal. Positive dollars feed the Goals pressure view.
+    target_amount: float = 0.0
 
 
 class GoalCommandStore(Protocol):

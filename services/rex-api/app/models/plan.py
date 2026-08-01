@@ -36,6 +36,7 @@ class PlanCreateRequest(BaseModel):
     active: bool = True
     start_date: Optional[str] = None
     target_date: Optional[str] = None
+    target_amount: float = Field(default=0, ge=0)
     completed_at: Optional[str] = None
     last_reviewed_at: Optional[str] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -52,6 +53,7 @@ class PlanUpdateRequest(BaseModel):
     active: Optional[bool] = None
     start_date: Optional[str] = None
     target_date: Optional[str] = None
+    target_amount: Optional[float] = Field(default=None, ge=0)
     completed_at: Optional[str] = None
     last_reviewed_at: Optional[str] = None
     metadata: Optional[dict[str, Any]] = None
@@ -72,6 +74,7 @@ class PlanResponse(BaseModel):
     active: bool
     start_date: Optional[str] = None
     target_date: Optional[str] = None
+    target_amount: float = 0
     completed_at: Optional[str] = None
     last_reviewed_at: Optional[str] = None
     metadata: dict[str, Any] = Field(default_factory=dict)

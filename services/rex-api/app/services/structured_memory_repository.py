@@ -26,7 +26,7 @@ PERSONAL_RULE_SELECT = (
 PLAN_SELECT = (
     "id,plan_type,title,description,desired_outcome,primary_entity_id,source_conversation_id,"
     "source_message_id,source_memory_id,priority,status,active,start_date,"
-    "target_date,completed_at,last_reviewed_at,metadata,created_at,updated_at"
+    "target_date,target_amount,completed_at,last_reviewed_at,metadata,created_at,updated_at"
 )
 PLAN_MILESTONE_SELECT = (
     "id,plan_id,title,description,milestone_type,target_date,completed_at,"

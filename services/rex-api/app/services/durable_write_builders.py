@@ -122,6 +122,7 @@ async def proposal_from_goal_command(
         "desired_outcome": body,
         "priority": 4,
         "target_date": command.target_text,
+        "target_amount": float(command.target_amount or 0),
         "metadata": metadata,
     }
     return DurableWriteProposal(
@@ -146,6 +147,7 @@ def proposal_from_goal_update(
     body: str | None,
     existing_title: str | None,
     target_date: str | None = None,
+    target_amount: float | None = None,
     status: str | None = None,
 ) -> DurableWriteProposal:
     safe_title = goal_title(title)
@@ -160,6 +162,8 @@ def proposal_from_goal_update(
     }
     if target_date:
         payload["target_date"] = target_date
+    if target_amount is not None:
+        payload["target_amount"] = float(target_amount)
     if status:
         payload["status"] = status
     return DurableWriteProposal(

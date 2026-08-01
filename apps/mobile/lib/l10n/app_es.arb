@@ -155,6 +155,17 @@
   "accountabilityDetailNotesHint": "Por qué esto importa",
   "accountabilityGoalArchived": "Objetivo borrado.",
   "accountabilityGoalSaved": "Gol salvado.",
+  "accountabilityGoalAmountLabel": "Cantidad necesaria",
+  "accountabilityGoalAmountHint": "0 si este objetivo no necesita dinero",
+  "accountabilityMoneyPressureTitle": "Dinero necesario",
+  "accountabilityMoneyPressureLine": "{amount} para el {date} ({titles})",
+  "@accountabilityMoneyPressureLine": {
+    "placeholders": {
+      "amount": {"type": "String"},
+      "date": {"type": "String"},
+      "titles": {"type": "String"}
+    }
+  },
   "accountabilityGoalUpdated": "Objetivo actualizado.",
   "accountabilityMarkMissedBody": "¿Marcar \"{title}\" como perdido? Saldrá de su lista de objetivos activos.",
   "@accountabilityMarkMissedBody": {

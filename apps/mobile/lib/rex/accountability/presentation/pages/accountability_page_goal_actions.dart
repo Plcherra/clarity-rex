@@ -53,7 +53,7 @@ extension _GoalMutations on _AccountabilityPageState {
     if (picked == null || !mounted) return;
     final saved = await ref
         .read(accountabilityProvider.notifier)
-        .updatePlan(plan.id, targetDateIso: picked.toUtc().toIso8601String());
+        .updatePlan(plan.id, targetDateIso: dateOnlyIso(picked));
     if (!mounted) return;
     _showMutationResult(saved ? l10n.accountabilityGoalUpdated : null);
   }
@@ -121,7 +121,15 @@ extension _GoalMutations on _AccountabilityPageState {
           .addMilestone(planId: plan.id, title: title),
       onToggleStep: _toggleStep,
       onDeleteStep: _deleteStep,
-      onSave: ({title, description, priority, status, targetDate}) async {
+      onSave:
+          ({
+            title,
+            description,
+            priority,
+            status,
+            targetDate,
+            targetAmount,
+          }) async {
         final saved = await ref
             .read(accountabilityProvider.notifier)
             .updatePlan(
@@ -130,7 +138,8 @@ extension _GoalMutations on _AccountabilityPageState {
               description: description,
               priority: priority,
               status: status,
-              targetDateIso: targetDate?.toUtc().toIso8601String(),
+              targetDateIso: targetDate == null ? null : dateOnlyIso(targetDate),
+              targetAmount: targetAmount,
             );
         if (mounted) {
           _showMutationResult(

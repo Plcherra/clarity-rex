@@ -246,11 +246,13 @@ class _GoalFormResult {
     required this.primary,
     required this.detail,
     this.dueDate,
+    this.targetAmount = 0,
   });
 
   final String primary;
   final String detail;
   final DateTime? dueDate;
+  final double targetAmount;
 }
 
 class _GoalFormDialog extends StatefulWidget {
@@ -263,6 +265,7 @@ class _GoalFormDialog extends StatefulWidget {
     this.initialPrimary = '',
     this.initialDetail = '',
     this.requireDueDate = false,
+    this.askForAmount = false,
   });
 
   final String title;
@@ -276,6 +279,9 @@ class _GoalFormDialog extends StatefulWidget {
   /// Goals need one; open threads are habits and never end.
   final bool requireDueDate;
 
+  /// Goals can be money goals; open threads never are.
+  final bool askForAmount;
+
   @override
   State<_GoalFormDialog> createState() => _GoalFormDialogState();
 }
@@ -283,6 +289,7 @@ class _GoalFormDialog extends StatefulWidget {
 class _GoalFormDialogState extends State<_GoalFormDialog> {
   late final TextEditingController _primaryController;
   late final TextEditingController _detailController;
+  late final TextEditingController _amountController;
   DateTime? _dueDate;
   bool _dueDateMissing = false;
 
@@ -291,12 +298,14 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
     super.initState();
     _primaryController = TextEditingController(text: widget.initialPrimary);
     _detailController = TextEditingController(text: widget.initialDetail);
+    _amountController = TextEditingController();
   }
 
   @override
   void dispose() {
     _primaryController.dispose();
     _detailController.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 
@@ -328,8 +337,17 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
         primary: primary,
         detail: _detailController.text.trim(),
         dueDate: _dueDate,
+        targetAmount: widget.askForAmount
+            ? _parseAmount(_amountController.text)
+            : 0,
       ),
     );
+  }
+
+  double _parseAmount(String raw) {
+    final cleaned = raw.trim().replaceAll(r'$', '').replaceAll(',', '');
+    if (cleaned.isEmpty) return 0;
+    return double.tryParse(cleaned) ?? 0;
   }
 
   @override
@@ -361,6 +379,19 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
               hintText: widget.detailHint,
             ),
           ),
+          if (widget.askForAmount) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _amountController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: InputDecoration(
+                labelText: l10n.accountabilityGoalAmountLabel,
+                hintText: l10n.accountabilityGoalAmountHint,
+              ),
+            ),
+          ],
           if (widget.requireDueDate) ...[
             const SizedBox(height: 4),
             ListTile(

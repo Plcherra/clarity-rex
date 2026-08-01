@@ -78,7 +78,9 @@ def test_every_mode_asks_for_a_goal_deadline() -> None:
     for mode in ("off", "text", "card"):
         prompt = build_tiny_system_prompt(AssistantProposalSettings(mode=mode))
         assert "target_date" in prompt, mode
-        assert "ask for one when they have not" in prompt, mode
+        assert "ask when they have not" in prompt, mode
+        assert "target_amount" in prompt, mode
+        assert "do not ask whether they want steps" in prompt, mode
 
 
 def test_grok_turn_brain_builds_thin_messages() -> None:

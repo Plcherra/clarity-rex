@@ -202,8 +202,11 @@ def sanitize_plan_target_date(value: Any) -> str | None:
     cleaned = clean_optional(value)
     if not cleaned:
         return None
-    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", cleaned):
-        return cleaned
+    # Clients often send a full ISO datetime (toIso8601String). Postgres wants
+    # a date, so keep the calendar day and drop the clock.
+    iso_day = re.fullmatch(r"(\d{4}-\d{2}-\d{2})(?:[T\s].*)?", cleaned)
+    if iso_day:
+        return iso_day.group(1)
     if re.fullmatch(
         r"(?i)(?:next|this)\s+(?:month|week|quarter|year)",
         cleaned,

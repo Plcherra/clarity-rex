@@ -54,6 +54,7 @@ class AccountabilityApi {
     required String title,
     String? description,
     String? targetDateIso,
+    double targetAmount = 0,
   }) async {
     final response = await _apiClient.postJson('/plans', {
       'plan_type': 'personal',
@@ -66,6 +67,7 @@ class AccountabilityApi {
       'status': 'active',
       'active': true,
       'target_date': ?targetDateIso,
+      'target_amount': targetAmount,
       'metadata': {'source': 'goals_tab'},
     });
     final data = _decodeResponse(response);
@@ -84,6 +86,7 @@ class AccountabilityApi {
     int? priority,
     String? status,
     String? targetDateIso,
+    double? targetAmount,
   }) async {
     final payload = <String, dynamic>{};
     if (title != null) {
@@ -101,6 +104,9 @@ class AccountabilityApi {
     }
     if (targetDateIso != null) {
       payload['target_date'] = targetDateIso;
+    }
+    if (targetAmount != null) {
+      payload['target_amount'] = targetAmount;
     }
     final response = await _apiClient.patchJson('/plans/$planId', payload);
     final data = _decodeResponse(response);

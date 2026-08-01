@@ -107,6 +107,7 @@ PlanRecord _plan({
   active: true,
   startDate: startDate,
   targetDate: targetDate,
+  targetAmount: 0,
   completedAt: null,
   lastReviewedAt: null,
   createdAt: createdAt,

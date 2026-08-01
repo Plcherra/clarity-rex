@@ -33,6 +33,7 @@ class UpdateGoalFields:
     title: Optional[str]
     body: Optional[str]
     target_date: Optional[str]
+    target_amount: Optional[float]
     status: Optional[str]
 
 
@@ -60,12 +61,15 @@ def goal_command_from_payload(payload: dict[str, Any]) -> Optional[GoalCommand]:
     )
     record_type = _plan_type_from_payload(payload, fallback_text=title)
     target = _optional_str(payload.get("target_date") or payload.get("target_text"))
+    raw_amount = _first_present_key(payload, "target_amount", "amount", "cost")
+    amount = _optional_amount(raw_amount)
     return GoalCommand(
         kind="create",
         title=title,
         body=body or title,
         record_type=record_type,
         target_text=target,
+        target_amount=0.0 if amount is None else amount,
     )
 
 
@@ -100,6 +104,9 @@ def update_goal_fields_from_payload(payload: dict[str, Any]) -> Optional[UpdateG
         or payload.get("summary")
     )
     target_date = _optional_str(payload.get("target_date") or payload.get("target_text"))
+    target_amount = _optional_amount(
+        _first_present_key(payload, "target_amount", "amount", "cost")
+    )
     status_raw = _optional_str(payload.get("status"))
     status = status_raw if status_raw in _VALID_STATUSES else None
 
@@ -121,7 +128,9 @@ def update_goal_fields_from_payload(payload: dict[str, Any]) -> Optional[UpdateG
 
     if not plan_id and not lookup:
         return None
-    if not any((rename_to, body, target_date, status, plan_id, lookup)):
+    if not any(
+        (rename_to, body, target_date, target_amount is not None, status, plan_id, lookup)
+    ):
         return None
     return UpdateGoalFields(
         plan_id=plan_id,
@@ -129,6 +138,7 @@ def update_goal_fields_from_payload(payload: dict[str, Any]) -> Optional[UpdateG
         title=rename_to,
         body=body,
         target_date=target_date,
+        target_amount=target_amount,
         status=status,
     )
 
@@ -173,3 +183,22 @@ def _first_nonempty(*values: Any) -> Optional[str]:
 def _optional_str(value: Any) -> Optional[str]:
     text = str(value or "").strip()
     return text or None
+
+
+def _optional_amount(value: Any) -> Optional[float]:
+    if value is None or value == "":
+        return None
+    try:
+        amount = float(value)
+    except (TypeError, ValueError):
+        return None
+    if amount < 0:
+        return 0.0
+    return amount
+
+
+def _first_present_key(payload: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        if key in payload:
+            return payload.get(key)
+    return None

@@ -43,8 +43,11 @@ _PEOPLE_OFFERS = (
 _KIND_RULE = (
     "A recurring habit or check-in is an open thread; something with an end is "
     "a goal; a step under a goal is a milestone (send plan_id or goal_title). "
-    "A goal needs a target_date to press against: send one when they name a "
-    "date, ask for one when they have not."
+    "A goal needs a target_date: send one when they name a date, ask when they "
+    "have not. Send target_amount when money is involved, else 0. Once a goal "
+    "is agreed, propose a few concrete next steps as milestones from what you "
+    "know — do not ask whether they want steps. Wait for yes before "
+    "create_milestone."
 )
 
 _ACTIONS_MUTATE = (

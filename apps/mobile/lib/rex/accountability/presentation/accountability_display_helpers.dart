@@ -1,3 +1,4 @@
+import '../../../core/formatting/formatting.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/accountability/data/accountability_models.dart';
 
@@ -81,6 +82,9 @@ String? goalStepsProgressLabel(
   final done = milestones.where(isGoalStepDone).length;
   return l10n.accountabilityStepsDone(done, milestones.length);
 }
+
+/// Always shown: money goals as dollars, everything else as $0.
+String goalAmountLabel(PlanRecord plan) => formatMoney(plan.targetAmount);
 
 String? openThreadSubtitle(AppLocalizations l10n, OpenThread thread) {
   final summary = thread.summary?.trim();

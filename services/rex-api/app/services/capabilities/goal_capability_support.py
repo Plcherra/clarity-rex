@@ -18,6 +18,10 @@ BAD_CREATE_REPLY = (
     "I need a short goal title before I can save it. "
     'For example: "Buy 32GB RAM".'
 )
+MISSING_DEADLINE_REPLY = (
+    "I need a due date for that goal before I can save it — "
+    "when do you want it done by?"
+)
 BAD_UPDATE_REPLY = (
     "I need which goal to update and what to change. "
     "Tell me the goal title (or id) and the new details."

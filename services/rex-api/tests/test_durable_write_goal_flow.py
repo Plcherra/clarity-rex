@@ -1,7 +1,7 @@
 """Goal durable writes — propose a plan, confirm it, see it in Goals.
 
-Includes the voice regression that a goal with no stated deadline freezes a
-null target date instead of inventing one.
+A goal with no stated deadline must ask for one rather than land without a
+progress bar.
 """
 
 from __future__ import annotations
@@ -34,6 +34,7 @@ GOAL_BRAIN = {
             "description": "Save $5000 by August",
             "plan_type": "finance",
             "target_date": "2026-08-31",
+            "target_amount": 5000,
         },
     ),
 }
@@ -57,6 +58,7 @@ async def test_create_goal_requires_confirmation_before_save():
     snapshot = pending_apply_snapshot(memory_service, proposed["conversation_id"])
     assert snapshot["type"] == "plan"
     assert snapshot["payload"]["target_date"] == "2026-08-31"
+    assert float(snapshot["payload"]["target_amount"]) == 5000
     assert memory_service.plans == []
 
 
@@ -74,11 +76,12 @@ async def test_create_goal_confirm_creates_plan():
     plan = memory_service.plans[0]
     assert plan["title"] == "Save $5000 by August"
     assert plan["plan_type"] == "finance"
+    assert float(plan.get("target_amount") or 0) == 5000
     assert "Saved plan in Goals" in confirmed["response"]
 
 
 @pytest.mark.asyncio
-async def test_goal_without_a_deadline_freezes_a_null_target_date():
+async def test_goal_without_a_deadline_asks_instead_of_saving():
     memory_service = FakeMemoryService()
     chat_service = _chat_service(memory_service)
 
@@ -86,17 +89,7 @@ async def test_goal_without_a_deadline_freezes_a_null_target_date():
         "I want to buy dumbbells, maybe 40 to sixty pounds."
     )
 
-    snapshot = pending_apply_snapshot(memory_service, proposed["conversation_id"])
-    assert snapshot["payload"]["target_date"] is None
-
-    proposal = only_proposal(proposed)
-    confirmed = await confirm_proposal(
-        chat_service,
-        proposed,
-        edits={"title": proposal["title"], "body": proposal["body"]},
-    )
-
-    assert confirmed["memory_changes"]["created"] == 1, confirmed["response"]
-    assert len(memory_service.plans) == 1
-    assert memory_service.plans[0]["title"] == "Buy dumbbells"
-    assert memory_service.plans[0].get("target_date") is None
+    assert proposed["memory_changes"]["created"] == 0
+    assert proposed["memory_changes"].get("confirmation_required", 0) == 0
+    assert memory_service.plans == []
+    assert "due date" in proposed["response"].lower()

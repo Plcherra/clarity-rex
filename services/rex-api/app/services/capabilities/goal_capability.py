@@ -16,6 +16,7 @@ from app.services.capabilities.goal_capability_support import (
     BAD_CREATE_REPLY,
     BAD_DELETE_REPLY,
     BAD_UPDATE_REPLY,
+    MISSING_DEADLINE_REPLY,
     apply_goal_proposal,
     resolve_plan_by_id_or_reference,
     with_assistant_reply,
@@ -89,6 +90,15 @@ async def _handle_create_goal(
             conversation_id=conversation_id,
             user_message=user_message,
             response=with_assistant_reply(assistant_reply, BAD_CREATE_REPLY),
+        )
+    if not (command.target_text or "").strip():
+        # Goals need a date for the pressure bar; saving without one is how a
+        # Rex-created goal used to land with nothing to press against.
+        return await clarification_turn_result(
+            durable_write_service.memory_service,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response=with_assistant_reply(assistant_reply, MISSING_DEADLINE_REPLY),
         )
 
     if mode_plan.apply_immediately:
@@ -173,6 +183,7 @@ async def _handle_update_goal(
             body=new_body,
             existing_title=existing_title,
             target_date=fields.target_date,
+            target_amount=fields.target_amount,
             status=fields.status,
         )
         return await apply_goal_proposal(
@@ -194,6 +205,7 @@ async def _handle_update_goal(
         body=new_body,
         existing_title=existing_title,
         target_date=fields.target_date,
+        target_amount=fields.target_amount,
         status=fields.status,
         conversation_id=conversation_id,
         user_message=user_message,

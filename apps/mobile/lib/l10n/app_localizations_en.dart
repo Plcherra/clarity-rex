@@ -3521,6 +3521,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Wake up at 5 AM and start the day cleanly';
 
   @override
+  String get accountabilityGoalAmountLabel => 'Amount needed';
+
+  @override
+  String get accountabilityGoalAmountHint =>
+      '0 if this goal does not need money';
+
+  @override
+  String get accountabilityMoneyPressureTitle => 'Money needed';
+
+  @override
+  String accountabilityMoneyPressureLine(
+    String amount,
+    String date,
+    String titles,
+  ) {
+    return '$amount by $date ($titles)';
+  }
+
+  @override
   String get accountabilityAddOpenThreadPrimaryHint => 'Wake up at 5 AM';
 
   @override

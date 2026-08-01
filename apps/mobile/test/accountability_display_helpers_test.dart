@@ -16,6 +16,7 @@ void main() {
         active: true,
         startDate: null,
         targetDate: null,
+        targetAmount: 0,
         completedAt: null,
         lastReviewedAt: null,
       );
@@ -35,6 +36,7 @@ void main() {
         active: true,
         startDate: null,
         targetDate: null,
+        targetAmount: 0,
         completedAt: null,
         lastReviewedAt: null,
       );
@@ -134,6 +136,7 @@ PlanRecord _plan(String id) => PlanRecord(
   active: true,
   startDate: null,
   targetDate: null,
+  targetAmount: 0,
   completedAt: null,
   lastReviewedAt: null,
 );

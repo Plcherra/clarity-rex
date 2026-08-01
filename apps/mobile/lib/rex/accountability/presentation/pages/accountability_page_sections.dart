@@ -24,24 +24,26 @@ class _GoalsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final pressure = buildGoalMoneyPressure(plans);
     return _Section(
       title: l10n.accountabilitySectionsActiveGoals,
       emptyText: l10n.accountabilitySectionsNoActiveGoals,
       emptyActionLabel: l10n.accountabilitySharedAddFirstGoal,
       onEmptyAction: onAddGoal,
-      children: plans
-          .map(
-            (plan) => _GoalTile(
-              plan: plan,
-              steps: goalStepsFor(planHierarchy, plan.id),
-              onTap: () => onOpenPlan(plan),
-              onArchive: () => onArchivePlan(plan),
-              onToggleStep: onToggleStep,
-              onMarkAchieved: () => onMarkAchieved(plan),
-              onSetDueDate: () => onSetDueDate(plan),
-            ),
-          )
-          .toList(growable: false),
+      children: [
+        if (pressure.isNotEmpty) _MoneyPressureCard(points: pressure),
+        ...plans.map(
+          (plan) => _GoalTile(
+            plan: plan,
+            steps: goalStepsFor(planHierarchy, plan.id),
+            onTap: () => onOpenPlan(plan),
+            onArchive: () => onArchivePlan(plan),
+            onToggleStep: onToggleStep,
+            onMarkAchieved: () => onMarkAchieved(plan),
+            onSetDueDate: () => onSetDueDate(plan),
+          ),
+        ),
+      ],
     );
   }
 }

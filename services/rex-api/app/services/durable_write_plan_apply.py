@@ -42,6 +42,7 @@ async def apply_plan_create(
                 source_conversation_id=conversation_id,
                 source_message_id=source_message_id,
                 target_date=payload.get("target_date"),
+                target_amount=float(payload.get("target_amount") or 0),
                 priority=int(payload.get("priority") or 4),
                 metadata=metadata,
             )
@@ -90,6 +91,7 @@ async def apply_plan_update(
         "description",
         "desired_outcome",
         "target_date",
+        "target_amount",
         "status",
         "plan_type",
         "priority",

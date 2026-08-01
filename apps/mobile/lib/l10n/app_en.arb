@@ -2111,6 +2111,17 @@
   "accountabilityAddOpenThreadPrimaryLabel": "Open thread title",
   "accountabilityAddGoalPrimaryHint": "Build a reliable morning routine",
   "accountabilityAddGoalDetailHint": "Wake up at 5 AM and start the day cleanly",
+  "accountabilityGoalAmountLabel": "Amount needed",
+  "accountabilityGoalAmountHint": "0 if this goal does not need money",
+  "accountabilityMoneyPressureTitle": "Money needed",
+  "accountabilityMoneyPressureLine": "{amount} by {date} ({titles})",
+  "@accountabilityMoneyPressureLine": {
+    "placeholders": {
+      "amount": {"type": "String"},
+      "date": {"type": "String"},
+      "titles": {"type": "String"}
+    }
+  },
   "accountabilityAddOpenThreadPrimaryHint": "Wake up at 5 AM",
   "accountabilityAddOpenThreadDetailHint": "Wake up at 5 AM and start my morning routine",
   "accountabilityGoalSaved": "Goal saved.",

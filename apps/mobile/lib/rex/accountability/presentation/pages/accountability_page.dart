@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/formatting/formatting.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/accountability/data/accountability_models.dart';
 import 'package:clarity/rex/accountability/domain/goal_deadline_progress.dart';
+import 'package:clarity/rex/accountability/domain/goal_money_pressure.dart';
 import 'package:clarity/rex/accountability/presentation/accountability_display_helpers.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
@@ -21,6 +23,7 @@ import 'package:clarity/widgets/clarity_path_loader.dart';
 
 part 'accountability_page_deadline_bar.dart';
 part 'accountability_page_goal_actions.dart';
+part 'accountability_page_money_pressure.dart';
 part 'accountability_page_sections.dart';
 part 'accountability_page_shared.dart';
 part 'accountability_page_steps.dart';
@@ -60,6 +63,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
         primaryHint: l10n.accountabilityAddGoalPrimaryHint,
         detailHint: l10n.accountabilityAddGoalDetailHint,
         requireDueDate: true,
+        askForAmount: true,
       ),
     );
     if (result == null || !mounted) return;
@@ -69,6 +73,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
           title: result.primary,
           description: result.detail,
           targetDate: result.dueDate,
+          targetAmount: result.targetAmount,
         );
     if (!mounted) return;
     _showMutationResult(saved ? l10n.accountabilityGoalSaved : null);

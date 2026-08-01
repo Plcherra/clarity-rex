@@ -32,6 +32,14 @@ String formatMoney(double? value, {Locale? locale}) {
   return formatted;
 }
 
+/// Calendar day only (`YYYY-MM-DD`) for Postgres `date` columns.
+String dateOnlyIso(DateTime date) {
+  final y = date.year.toString().padLeft(4, '0');
+  final m = date.month.toString().padLeft(2, '0');
+  final d = date.day.toString().padLeft(2, '0');
+  return '$y-$m-$d';
+}
+
 /// Turns a fraction into a rounded percentage, e.g. `0.42` becomes `42%`.
 String formatPercent(double fraction) => '${(fraction * 100).round()}%';
 

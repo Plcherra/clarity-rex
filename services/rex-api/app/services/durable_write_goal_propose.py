@@ -50,6 +50,7 @@ class DurableWriteGoalProposeMixin:
         body: str | None,
         existing_title: str | None,
         target_date: str | None = None,
+        target_amount: float | None = None,
         status: str | None = None,
         conversation_id: str,
         user_message: dict,
@@ -64,6 +65,7 @@ class DurableWriteGoalProposeMixin:
             body=body,
             existing_title=existing_title,
             target_date=target_date,
+            target_amount=target_amount,
             status=status,
         )
         return await self._propose(

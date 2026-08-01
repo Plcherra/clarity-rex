@@ -10,6 +10,7 @@ Future<void> _showPlanDetailSheet(
     int? priority,
     String? status,
     DateTime? targetDate,
+    double? targetAmount,
   })
   onSave,
   required Future<void> Function() onArchive,
@@ -22,6 +23,12 @@ Future<void> _showPlanDetailSheet(
   final l10n = context.l10n;
   final titleController = TextEditingController(text: plan.title);
   final notesController = TextEditingController(text: planSubtitle(plan) ?? '');
+  final amountController = TextEditingController(
+    text: plan.targetAmount == 0
+        ? ''
+        : plan.targetAmount
+              .toStringAsFixed(plan.targetAmount % 1 == 0 ? 0 : 2),
+  );
   var priority = plan.priority;
   var status = plan.status;
   DateTime? targetDate = plan.targetDate;
@@ -79,6 +86,17 @@ Future<void> _showPlanDetailSheet(
                   value: status,
                   options: const ['active', 'paused', 'completed'],
                   onChanged: (value) => setState(() => status = value),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: amountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: l10n.accountabilityGoalAmountLabel,
+                    hintText: l10n.accountabilityGoalAmountHint,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 ListTile(
@@ -176,6 +194,7 @@ Future<void> _showPlanDetailSheet(
                           priority: priority,
                           status: status,
                           targetDate: targetDate,
+                          targetAmount: _parseGoalAmount(amountController.text),
                         );
                         if (saved && sheetContext.mounted) {
                           Navigator.of(sheetContext).pop();
@@ -195,6 +214,13 @@ Future<void> _showPlanDetailSheet(
 
   titleController.dispose();
   notesController.dispose();
+  amountController.dispose();
+}
+
+double _parseGoalAmount(String raw) {
+  final cleaned = raw.trim().replaceAll(r'$', '').replaceAll(',', '');
+  if (cleaned.isEmpty) return 0;
+  return double.tryParse(cleaned) ?? 0;
 }
 
 const _completedPlanStatus = 'completed';

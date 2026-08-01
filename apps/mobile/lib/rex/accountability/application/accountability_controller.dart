@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clarity/core/formatting/formatting.dart';
 import 'package:clarity/core/l10n/app_localizations_lookup.dart';
 import 'package:clarity/core/l10n/friendly_service_error.dart';
 import 'package:clarity/features/profile/application/locale_controller.dart';
@@ -75,6 +76,7 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     required String title,
     String? description,
     DateTime? targetDate,
+    double targetAmount = 0,
   }) {
     return _runMutation(
       () => ref
@@ -82,7 +84,8 @@ class AccountabilityController extends Notifier<AccountabilityState> {
           .createPlan(
             title: title,
             description: description,
-            targetDateIso: targetDate?.toIso8601String(),
+            targetDateIso: targetDate == null ? null : dateOnlyIso(targetDate),
+            targetAmount: targetAmount,
           ),
     );
   }
@@ -94,6 +97,7 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     int? priority,
     String? status,
     String? targetDateIso,
+    double? targetAmount,
   }) {
     return _runMutation(
       () => ref
@@ -105,6 +109,7 @@ class AccountabilityController extends Notifier<AccountabilityState> {
             priority: priority,
             status: status,
             targetDateIso: targetDateIso,
+            targetAmount: targetAmount,
           ),
     );
   }
