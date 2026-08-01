@@ -6,24 +6,14 @@ from app.services.action_truth_memory import (
     UNEXECUTED_MEMORY_FALLBACK,
     response_claims_saved_memory_success,
 )
-from app.services.action_truth_policy import (
-    UNEXECUTED_GOAL_FALLBACK,
-)
 from app.services.action_truth_thread_mutation import (
-    UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
     response_claims_thread_or_goal_mutation_success,
 )
 
 _SURFACE_KNOWS = "knows"
 _SURFACE_GOALS = "goals"
 
-_TRUTH_DENIAL_EXACT = frozenset(
-    {
-        UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
-        UNEXECUTED_GOAL_FALLBACK,
-        UNEXECUTED_MEMORY_FALLBACK,
-    }
-)
+_TRUTH_DENIAL_EXACT = frozenset({UNEXECUTED_MEMORY_FALLBACK})
 
 
 def _confirm_pending_copy(surface: str) -> str:

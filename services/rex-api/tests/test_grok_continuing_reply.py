@@ -32,13 +32,9 @@ def test_propose_scrubs_false_update_claim() -> None:
     assert "goals" in reply.lower()
 
 
-def test_propose_remaps_truth_unexecuted_fallback() -> None:
-    from app.services.action_truth_thread_mutation import (
-        UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
-    )
-
+def test_propose_remaps_a_denial_left_over_from_another_guard() -> None:
     reply = continuing_reply_for_propose(
-        UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
+        "I can help, but I don't have a confirmed save from this turn.",
         surface_client_cards=False,
     )
     assert "don't have a confirmed" not in reply.lower()

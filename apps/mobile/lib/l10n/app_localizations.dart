@@ -1887,6 +1887,24 @@ abstract class AppLocalizations {
   /// **'Save deterministic alerts when your data changes. No background monitoring runs until you turn this on.'**
   String get profileProactiveInsightsSubtitle;
 
+  /// No description provided for @companionScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Companion'**
+  String get companionScreenTitle;
+
+  /// No description provided for @companionAbilitiesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'What Rex can do'**
+  String get companionAbilitiesSection;
+
+  /// No description provided for @profileCompanionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions, saves, and voice usage'**
+  String get profileCompanionSubtitle;
+
   /// No description provided for @assistantCompanionSettingsTitle.
   ///
   /// In en, this message translates to:
@@ -2036,6 +2054,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Where it went'**
   String get categoryDetailWhereItWent;
+
+  /// No description provided for @categoryDetailTapMerchantHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a place to see its transactions'**
+  String get categoryDetailTapMerchantHint;
 
   /// No description provided for @categoryDetailNewThisMonth.
   ///
@@ -6183,6 +6207,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'In progress'**
   String get accountabilityStatusInProgress;
+
+  /// No description provided for @accountabilityMarkAchieved.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark achieved'**
+  String get accountabilityMarkAchieved;
+
+  /// No description provided for @accountabilityGoalAchieved.
+  ///
+  /// In en, this message translates to:
+  /// **'Nice — goal achieved.'**
+  String get accountabilityGoalAchieved;
+
+  /// No description provided for @accountabilityGoalReopened.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal moved back to active.'**
+  String get accountabilityGoalReopened;
+
+  /// No description provided for @accountabilitySectionsAchievedGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Achieved'**
+  String get accountabilitySectionsAchievedGoals;
+
+  /// No description provided for @accountabilitySectionsNoAchievedGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing finished yet.'**
+  String get accountabilitySectionsNoAchievedGoals;
+
+  /// No description provided for @accountabilityAchievedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Achieved {date}'**
+  String accountabilityAchievedOn(String date);
+
+  /// No description provided for @accountabilityReopenGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Move back to active'**
+  String get accountabilityReopenGoal;
+
+  /// No description provided for @accountabilityStepsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get accountabilityStepsTitle;
+
+  /// No description provided for @accountabilityAddStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Add step'**
+  String get accountabilityAddStep;
+
+  /// No description provided for @accountabilityAddStepHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Save \$500 toward it'**
+  String get accountabilityAddStepHint;
+
+  /// No description provided for @accountabilityStepSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Step added.'**
+  String get accountabilityStepSaved;
+
+  /// No description provided for @accountabilityStepUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Step updated.'**
+  String get accountabilityStepUpdated;
+
+  /// No description provided for @accountabilityStepDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Step deleted.'**
+  String get accountabilityStepDeleted;
+
+  /// No description provided for @accountabilityStepsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String accountabilityStepsDone(int done, int total);
+
+  /// No description provided for @accountabilityDeleteStepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete step?'**
+  String get accountabilityDeleteStepTitle;
+
+  /// No description provided for @accountabilityDeleteStepBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{title}\" from this goal?'**
+  String accountabilityDeleteStepBody(String title);
+
+  /// No description provided for @accountabilityDueDateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a due date — a goal without one never gets closer.'**
+  String get accountabilityDueDateRequired;
+
+  /// No description provided for @accountabilitySetDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a due date'**
+  String get accountabilitySetDueDate;
+
+  /// No description provided for @accountabilityNoDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No deadline'**
+  String get accountabilityNoDueDate;
+
+  /// No description provided for @accountabilityDaysLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day left} other{{days} days left}}'**
+  String accountabilityDaysLeft(int days);
+
+  /// No description provided for @accountabilityDaysOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day over} other{{days} days over}}'**
+  String accountabilityDaysOver(int days);
+
+  /// No description provided for @accountabilityDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get accountabilityDueToday;
 
   /// No description provided for @conversationListEmptyFilteredTitle.
   ///

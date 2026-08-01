@@ -69,6 +69,7 @@ class AccountabilityOverviewResponse(BaseModel):
     active_rules: list[dict[str, Any]] = Field(default_factory=list)
     open_threads: list[dict[str, Any]] = Field(default_factory=list)
     active_plans: list[dict[str, Any]] = Field(default_factory=list)
+    achieved_plans: list[dict[str, Any]] = Field(default_factory=list)
     open_milestones: list[dict[str, Any]] = Field(default_factory=list)
     completed_milestones: list[dict[str, Any]] = Field(default_factory=list)
     plan_hierarchy: list[dict[str, Any]] = Field(default_factory=list)

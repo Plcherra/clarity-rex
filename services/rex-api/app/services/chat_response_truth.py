@@ -1,3 +1,11 @@
+"""Truth guards on the outgoing reply.
+
+Goals and open threads are deliberately absent: replacing what Grok said about
+a goal with canned copy silenced real answers — including the question it was
+asking about what to save. The prompt requires the action in the same turn, and
+a save the user can see in Goals is what makes the claim true.
+"""
+
 from __future__ import annotations
 
 from app.services.action_truth_policy import (
@@ -8,15 +16,11 @@ from app.services.action_truth_policy import (
     safe_pending_action_response,
     safe_unexecuted_delete_response,
     safe_unexecuted_finance_response,
-    safe_unexecuted_goal_response,
     safe_unsupported_action_response,
 )
 from app.services.action_truth_memory import (
     safe_unexecuted_memory_response,
     safe_unexecuted_saved_memory_claim_response,
-)
-from app.services.action_truth_thread_mutation import (
-    safe_unexecuted_thread_or_goal_mutation_response,
 )
 from app.services.chat_turn_observability import ChatTurnTrace
 from app.services.save_intent_guards import has_explicit_save_intent
@@ -141,18 +145,6 @@ class ChatResponseTruthService:
             updated,
             turn_trace,
         )
-        if intent in {"goal", "unknown"}:
-            updated = safe_unexecuted_goal_response(
-                response,
-                user_message=user_message,
-                intent=intent,
-            )
-            response = _apply_truth_guard(
-                "unexecuted_goal",
-                response,
-                updated,
-                turn_trace,
-            )
         if intent in {"memory_save", "memory_update"}:
             updated = safe_unexecuted_memory_response(response)
             return _apply_truth_guard(
@@ -182,13 +174,6 @@ class ChatResponseTruthService:
         updated = safe_unexecuted_saved_memory_claim_response(response)
         response = _apply_truth_guard(
             "unexecuted_saved_memory_claim",
-            response,
-            updated,
-            turn_trace,
-        )
-        updated = safe_unexecuted_thread_or_goal_mutation_response(response)
-        response = _apply_truth_guard(
-            "unexecuted_thread_or_goal_mutation",
             response,
             updated,
             turn_trace,

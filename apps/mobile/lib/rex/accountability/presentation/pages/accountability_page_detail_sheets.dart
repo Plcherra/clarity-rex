@@ -3,6 +3,7 @@ part of 'accountability_page.dart';
 Future<void> _showPlanDetailSheet(
   BuildContext context, {
   required PlanRecord plan,
+  required List<PlanMilestone> steps,
   required Future<bool> Function({
     String? title,
     String? description,
@@ -12,6 +13,11 @@ Future<void> _showPlanDetailSheet(
   })
   onSave,
   required Future<void> Function() onArchive,
+  required Future<void> Function() onMarkAchieved,
+  required Future<PlanMilestone?> Function(String title) onAddStep,
+  required Future<bool> Function(PlanMilestone milestone, bool done)
+  onToggleStep,
+  required Future<bool> Function(PlanMilestone milestone) onDeleteStep,
 }) async {
   final l10n = context.l10n;
   final titleController = TextEditingController(text: plan.title);
@@ -19,6 +25,9 @@ Future<void> _showPlanDetailSheet(
   var priority = plan.priority;
   var status = plan.status;
   DateTime? targetDate = plan.targetDate;
+  // The sheet stays open across step edits, so it keeps its own copy and
+  // applies each confirmed change instead of waiting for a reload.
+  final planSteps = [...steps];
 
   await showClarityAdaptiveOverlay<void>(
     context: context,
@@ -28,8 +37,12 @@ Future<void> _showPlanDetailSheet(
       return StatefulBuilder(
         builder: (context, setState) {
           final colors = context.clarityColors;
-          return Padding(
+          // Scrollable so the keyboard can never sit on top of Save, and
+          // dragging the fields down puts the keyboard away without needing a
+          // dropdown tap to steal focus first.
+          return SingleChildScrollView(
             padding: claritySheetPadding(context),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -91,7 +104,53 @@ Future<void> _showPlanDetailSheet(
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
+                _PlanStepsEditor(
+                  steps: planSteps,
+                  onAdd: () async {
+                    final title = await showDialog<String>(
+                      context: sheetContext,
+                      builder: (_) => const _StepTitleDialog(),
+                    );
+                    if (title == null) return;
+                    final saved = await onAddStep(title);
+                    if (saved != null) {
+                      setState(() => planSteps.add(saved));
+                    }
+                  },
+                  onToggle: (milestone, done) async {
+                    if (await onToggleStep(milestone, done)) {
+                      setState(() {
+                        planSteps[planSteps.indexOf(milestone)] = _stepWithDone(
+                          milestone,
+                          done,
+                        );
+                      });
+                    }
+                  },
+                  onDelete: (milestone) async {
+                    if (await onDeleteStep(milestone)) {
+                      setState(() => planSteps.remove(milestone));
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+                if (status != _completedPlanStatus)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        Navigator.of(sheetContext).pop();
+                        await onMarkAchieved();
+                      },
+                      icon: const Icon(Icons.emoji_events_outlined, size: 18),
+                      style: TextButton.styleFrom(
+                        foregroundColor: colors.accent,
+                      ),
+                      label: Text(l10n.accountabilityMarkAchieved),
+                    ),
+                  ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     TextButton(
@@ -136,6 +195,82 @@ Future<void> _showPlanDetailSheet(
 
   titleController.dispose();
   notesController.dispose();
+}
+
+const _completedPlanStatus = 'completed';
+
+PlanMilestone _stepWithDone(PlanMilestone milestone, bool done) {
+  return PlanMilestone(
+    id: milestone.id,
+    planId: milestone.planId,
+    title: milestone.title,
+    description: milestone.description,
+    milestoneType: milestone.milestoneType,
+    targetDate: milestone.targetDate,
+    priority: milestone.priority,
+    status: done ? _completedPlanStatus : 'open',
+    active: milestone.active,
+    completedAt: done ? DateTime.now() : null,
+  );
+}
+
+/// Steps inside the goal sheet: tick one off, add one, drop one.
+class _PlanStepsEditor extends StatelessWidget {
+  const _PlanStepsEditor({
+    required this.steps,
+    required this.onAdd,
+    required this.onToggle,
+    required this.onDelete,
+  });
+
+  final List<PlanMilestone> steps;
+  final VoidCallback onAdd;
+  final void Function(PlanMilestone milestone, bool done) onToggle;
+  final ValueChanged<PlanMilestone> onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.clarityColors;
+    final progress = goalStepsProgressLabel(l10n, steps);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              l10n.accountabilityStepsTitle,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (progress != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                progress,
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: colors.textMuted),
+              ),
+            ],
+            const Spacer(),
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add_rounded, size: 16),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              label: Text(l10n.accountabilityAddStep),
+            ),
+          ],
+        ),
+        _GoalSteps(milestones: steps, onToggle: onToggle, onDelete: onDelete),
+      ],
+    );
+  }
 }
 
 class _PriorityPicker extends StatelessWidget {

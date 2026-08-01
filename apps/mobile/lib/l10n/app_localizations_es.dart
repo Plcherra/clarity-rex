@@ -1033,6 +1033,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'Guarda alertas deterministas cuando cambien tus datos. No hay monitoreo en segundo plano hasta que lo actives.';
 
   @override
+  String get companionScreenTitle => 'Compañero';
+
+  @override
+  String get companionAbilitiesSection => 'Qué puede hacer Rex';
+
+  @override
+  String get profileCompanionSubtitle => 'Sugerencias, guardado y uso de voz';
+
+  @override
   String get assistantCompanionSettingsTitle => 'Guardado del compañero';
 
   @override
@@ -1120,6 +1129,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get categoryDetailWhereItWent => 'A dónde fue';
+
+  @override
+  String get categoryDetailTapMerchantHint =>
+      'Toca un lugar para ver sus transacciones';
 
   @override
   String get categoryDetailNewThisMonth =>
@@ -3600,6 +3613,96 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get accountabilityStatusInProgress => 'En curso';
+
+  @override
+  String get accountabilityMarkAchieved => 'Marcar como logrado';
+
+  @override
+  String get accountabilityGoalAchieved => 'Bien — objetivo logrado.';
+
+  @override
+  String get accountabilityGoalReopened => 'Objetivo devuelto a activos.';
+
+  @override
+  String get accountabilitySectionsAchievedGoals => 'Logrados';
+
+  @override
+  String get accountabilitySectionsNoAchievedGoals =>
+      'Todavía no terminaste ninguno.';
+
+  @override
+  String accountabilityAchievedOn(String date) {
+    return 'Logrado el $date';
+  }
+
+  @override
+  String get accountabilityReopenGoal => 'Devolver a activos';
+
+  @override
+  String get accountabilityStepsTitle => 'Pasos';
+
+  @override
+  String get accountabilityAddStep => 'Agregar paso';
+
+  @override
+  String get accountabilityAddStepHint => 'ej. Ahorrar \$500 para esto';
+
+  @override
+  String get accountabilityStepSaved => 'Paso agregado.';
+
+  @override
+  String get accountabilityStepUpdated => 'Paso actualizado.';
+
+  @override
+  String get accountabilityStepDeleted => 'Paso eliminado.';
+
+  @override
+  String accountabilityStepsDone(int done, int total) {
+    return '$done de $total listos';
+  }
+
+  @override
+  String get accountabilityDeleteStepTitle => '¿Eliminar paso?';
+
+  @override
+  String accountabilityDeleteStepBody(String title) {
+    return '¿Eliminar \"$title\" de este objetivo?';
+  }
+
+  @override
+  String get accountabilityDueDateRequired =>
+      'Elige una fecha límite — un objetivo sin ella nunca se acerca.';
+
+  @override
+  String get accountabilitySetDueDate => 'Poner fecha límite';
+
+  @override
+  String get accountabilityNoDueDate => 'Sin fecha límite';
+
+  @override
+  String accountabilityDaysLeft(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Quedan $days días',
+      one: 'Queda 1 día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountabilityDaysOver(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days días de retraso',
+      one: '1 día de retraso',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountabilityDueToday => 'Vence hoy';
 
   @override
   String conversationListEmptyFilteredTitle(String filter) {

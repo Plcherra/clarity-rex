@@ -19,6 +19,7 @@ from app.services.memory_discipline_writes import (
     MemoryWriteError,
     execute_disciplined_create,
 )
+from app.services.plan_completion import with_completion_time
 from app.services.plan_entity_linker import PlanEntityLinker
 from app.services.plan_errors import PlanServiceError
 from app.services.plan_merge_service import (
@@ -144,6 +145,7 @@ class PlanService:
             text_fields=("title", "description", "desired_outcome"),
             link_field="primary_entity_id",
         )
+        payload = with_completion_time(payload)
 
         try:
             updated = await self.repository.update_plan(plan_id, **payload)
@@ -209,6 +211,7 @@ class PlanService:
             payload,
             text_fields=("title", "description"),
         )
+        payload = with_completion_time(payload)
 
         try:
             updated = await self.repository.update_plan_milestone(

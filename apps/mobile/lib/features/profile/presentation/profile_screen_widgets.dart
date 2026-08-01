@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/l10n/app_l10n.dart';
-import '../../../core/l10n/clarity_locale_catalog.dart';
 import '../../../core/layout/clarity_native_layout.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
-import '../application/locale_controller.dart';
 import '../application/theme_mode_controller.dart';
 
 final class ProfileHeader extends StatelessWidget {
@@ -290,90 +288,6 @@ final class ProfileThemeInlineControl extends StatelessWidget {
                     onSelectionChanged: (next) async {
                       if (next.isEmpty) return;
                       await controller.setThemeMode(next.first);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// Inline language dropdown for desktop settings.
-final class ProfileLanguageInlineControl extends StatelessWidget {
-  const ProfileLanguageInlineControl({
-    super.key,
-    required this.controller,
-  });
-
-  final LocaleController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
-        return ProfileActionGroup(
-          children: [
-            Padding(
-              padding: ClarityNativeLayout.active(context)
-                  ? ClarityNativeLayout.cardPadding(context)
-                  : const EdgeInsets.fromLTRB(14, 14, 14, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.translate_rounded,
-                        size: 20,
-                        color: context.clarityColors.accent,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        l10n.profileLanguage,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<Locale>(
-                    initialValue: controller.enabledLocales.firstWhere(
-                      (locale) =>
-                          ClarityLocaleCatalog.localeTagFor(locale) ==
-                          controller.localeTag,
-                      orElse: () => controller.enabledLocales.first,
-                    ),
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    items: [
-                      for (final locale in controller.enabledLocales)
-                        DropdownMenuItem(
-                          value: locale,
-                          child: Text(controller.labelFor(locale)),
-                        ),
-                    ],
-                    onChanged: (locale) async {
-                      if (locale == null) return;
-                      await controller.setLocale(locale);
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            l10n.profileLanguageUpdated(
-                              controller.labelFor(locale),
-                            ),
-                          ),
-                        ),
-                      );
                     },
                   ),
                 ],

@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../budgets/domain/budget_models.dart';
 import '../domain/category_month_detail.dart';
+import 'category_detail_panel.dart';
 
 /// Headline number for a category month, plus how it compares.
 class CategoryDetailSummaryCard extends StatelessWidget {
@@ -24,7 +25,7 @@ class CategoryDetailSummaryCard extends StatelessWidget {
     final cs = theme.colorScheme;
     final l10n = context.l10n;
 
-    return _Panel(
+    return CategoryDetailPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -103,80 +104,6 @@ class CategoryDetailSummaryCard extends StatelessWidget {
   }
 }
 
-/// Who took the money inside the category — the split a single label hides.
-class CategoryDetailMerchants extends StatelessWidget {
-  const CategoryDetailMerchants({required this.detail, super.key});
-
-  final CategoryMonthDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    if (detail.merchants.length < 2) {
-      return const SizedBox.shrink();
-    }
-
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final l10n = context.l10n;
-    final biggest = detail.merchants.first.spent;
-
-    return _Panel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.categoryDetailWhereItWent,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          for (final merchant in detail.merchants) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    merchant.merchant,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ),
-                Text(
-                  merchant.transactionCount == 1
-                      ? l10n.commonTransactionCountOne
-                      : l10n.commonTransactionCount(merchant.transactionCount),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.45),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  formatMoney(merchant.spent),
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                minHeight: 6,
-                value: biggest <= 0 ? 0 : merchant.spent / biggest,
-                backgroundColor: context.clarityColors.surfaceElevated,
-                color: ClarityColors.financeSpending,
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _InsightLine extends StatelessWidget {
   const _InsightLine({required this.text, this.color});
 
@@ -218,23 +145,3 @@ class _InsightLine extends StatelessWidget {
   }
 }
 
-class _Panel extends StatelessWidget {
-  const _Panel({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.78)),
-      ),
-      child: child,
-    );
-  }
-}

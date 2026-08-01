@@ -586,6 +586,9 @@
   "insightsApiInvalidMarkReadResponse": "Invalid mark-read response.",
   "profileProactiveInsightsTitle": "Proactive financial insights",
   "profileProactiveInsightsSubtitle": "Save deterministic alerts when your data changes. No background monitoring runs until you turn this on.",
+  "companionScreenTitle": "Companion",
+  "companionAbilitiesSection": "What Rex can do",
+  "profileCompanionSubtitle": "Suggestions, saves, and voice usage",
   "assistantCompanionSettingsTitle": "Companion saves",
   "assistantCompanionSettingsSubtitle": "Choose how Rex suggests goals, open threads, and memory during chat. Off = chat only. Text = say yes in chat. Card = confirm card.",
   "assistantCompanionSettingsGearLabel": "Companion save settings",
@@ -618,6 +621,7 @@
   "categoryDetailSpentThisMonth": "SPENT THIS MONTH",
   "categoryDetailNoTransactions": "No transactions in this category this month.",
   "categoryDetailWhereItWent": "Where it went",
+  "categoryDetailTapMerchantHint": "Tap a place to see its transactions",
   "categoryDetailNewThisMonth": "New this month — nothing here last month",
   "categoryDetailNoLastMonthSpending": "Nothing in this category last month",
   "categoryDetailUpFromLastMonth": "Up {change} vs last month",
@@ -2144,6 +2148,66 @@
   "accountabilityUpdateFailed": "Goals update failed.",
   "accountabilityStatusOpen": "Open",
   "accountabilityStatusInProgress": "In progress",
+  "accountabilityMarkAchieved": "Mark achieved",
+  "accountabilityGoalAchieved": "Nice — goal achieved.",
+  "accountabilityGoalReopened": "Goal moved back to active.",
+  "accountabilitySectionsAchievedGoals": "Achieved",
+  "accountabilitySectionsNoAchievedGoals": "Nothing finished yet.",
+  "accountabilityAchievedOn": "Achieved {date}",
+  "@accountabilityAchievedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "accountabilityReopenGoal": "Move back to active",
+  "accountabilityStepsTitle": "Steps",
+  "accountabilityAddStep": "Add step",
+  "accountabilityAddStepHint": "e.g. Save $500 toward it",
+  "accountabilityStepSaved": "Step added.",
+  "accountabilityStepUpdated": "Step updated.",
+  "accountabilityStepDeleted": "Step deleted.",
+  "accountabilityStepsDone": "{done} of {total} done",
+  "@accountabilityStepsDone": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "accountabilityDeleteStepTitle": "Delete step?",
+  "accountabilityDeleteStepBody": "Delete \"{title}\" from this goal?",
+  "@accountabilityDeleteStepBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "accountabilityDueDateRequired": "Pick a due date — a goal without one never gets closer.",
+  "accountabilitySetDueDate": "Set a due date",
+  "accountabilityNoDueDate": "No deadline",
+  "accountabilityDaysLeft": "{days, plural, =1{1 day left} other{{days} days left}}",
+  "@accountabilityDaysLeft": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "accountabilityDaysOver": "{days, plural, =1{1 day over} other{{days} days over}}",
+  "@accountabilityDaysOver": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "accountabilityDueToday": "Due today",
   "conversationListEmptyFilteredTitle": "No chats in {filter}",
   "@conversationListEmptyFilteredTitle": {
     "placeholders": {

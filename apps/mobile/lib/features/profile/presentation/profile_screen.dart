@@ -5,15 +5,15 @@ import '../../../core/layout/clarity_breakpoints.dart';
 import '../../../core/layout/clarity_native_layout.dart';
 import '../../../core/layout/web_centered_dialog.dart';
 import '../../../core/l10n/app_l10n.dart';
-import '../../../core/l10n/clarity_locale_catalog.dart';
+import '../../../rex/presentation/pages/companion_settings_screen.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/presentation/mfa_enrollment_screen.dart';
 import '../application/locale_controller.dart';
 import '../application/profile_controller.dart';
 import '../application/theme_mode_controller.dart';
+import 'language_picker.dart';
 import 'profile_screen_sections.dart';
 import 'profile_screen_widgets.dart';
-import 'usage_summary_screen.dart';
 
 final class ProfileScreen extends StatelessWidget {
   const ProfileScreen({
@@ -39,10 +39,12 @@ final class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _openUsage(BuildContext context) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(builder: (context) => const UsageSummaryScreen()),
-    );
+  Future<void> _openCompanion(BuildContext context) {
+    return openCompanionSettings(context, profileController: profileController);
+  }
+
+  Future<void> _openLanguage(BuildContext context) {
+    return showClarityLanguagePicker(context, localeController);
   }
 
   Future<void> _openAppearance(BuildContext context) async {
@@ -84,70 +86,6 @@ final class ProfileScreen extends StatelessWidget {
                         await themeModeController.setThemeMode(mode);
                         if (sheetContext.mounted) {
                           Navigator.of(sheetContext).pop();
-                        }
-                      },
-                    ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _openLanguage(BuildContext context) async {
-    await showClarityAdaptiveOverlay<void>(
-      context: context,
-      dialogMaxWidth: 420,
-      dialogMaxHeight: 420,
-      builder: (sheetContext) {
-        return ListenableBuilder(
-          listenable: localeController,
-          builder: (context, _) {
-            return Padding(
-              padding: ClarityNativeLayout.active(context)
-                  ? ClarityNativeLayout.pagePadding(
-                      context,
-                      top: 16,
-                      bottom: 20,
-                    )
-                  : const EdgeInsets.fromLTRB(20, 16, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.l10n.profileLanguage,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  for (final supported in localeController.enabledLocales)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(localeController.labelFor(supported)),
-                      trailing:
-                          localeController.localeTag ==
-                              ClarityLocaleCatalog.localeTagFor(supported)
-                          ? const Icon(Icons.check_rounded)
-                          : null,
-                      onTap: () async {
-                        await localeController.setLocale(supported);
-                        if (sheetContext.mounted) {
-                          Navigator.of(sheetContext).pop();
-                        }
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                context.l10n.profileLanguageUpdated(
-                                  localeController.labelFor(supported),
-                                ),
-                              ),
-                            ),
-                          );
                         }
                       },
                     ),
@@ -327,26 +265,25 @@ final class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 18),
                 if (desktop)
                   ProfileDesktopSections(
-                    profileController: profileController,
                     themeModeController: themeModeController,
                     localeController: localeController,
                     displayName: name,
                     onEditName: () => _editName(context),
                     onOpenMfa: () => _openMfaSettings(context),
-                    onOpenUsage: () => _openUsage(context),
+                    onOpenCompanion: () => _openCompanion(context),
+                    onOpenLanguage: () => _openLanguage(context),
                     onSignOut:
                         signOut == null ? null : () => _confirmSignOut(context),
                     onDeleteAccount: () => _confirmDeleteAccount(context),
                   )
                 else
                   ProfileCompactSections(
-                    profileController: profileController,
                     themeModeController: themeModeController,
                     localeController: localeController,
                     displayName: name,
                     onEditName: () => _editName(context),
                     onOpenMfa: () => _openMfaSettings(context),
-                    onOpenUsage: () => _openUsage(context),
+                    onOpenCompanion: () => _openCompanion(context),
                     onOpenAppearance: () => _openAppearance(context),
                     onOpenLanguage: () => _openLanguage(context),
                     onSignOut:

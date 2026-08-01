@@ -215,11 +215,7 @@ class _ErrorBanner extends StatelessWidget {
             : const EdgeInsets.all(RexUiTokens.space12),
         child: Row(
           children: [
-            Icon(
-              Icons.error_outline_rounded,
-              color: colors.danger,
-              size: 18,
-            ),
+            Icon(Icons.error_outline_rounded, color: colors.danger, size: 18),
             const SizedBox(width: RexUiTokens.space8),
             Expanded(
               child: Text(
@@ -246,10 +242,15 @@ String _dueDateLabel(AppLocalizations l10n, DateTime dateTime) {
 }
 
 class _GoalFormResult {
-  const _GoalFormResult({required this.primary, required this.detail});
+  const _GoalFormResult({
+    required this.primary,
+    required this.detail,
+    this.dueDate,
+  });
 
   final String primary;
   final String detail;
+  final DateTime? dueDate;
 }
 
 class _GoalFormDialog extends StatefulWidget {
@@ -261,6 +262,7 @@ class _GoalFormDialog extends StatefulWidget {
     required this.detailHint,
     this.initialPrimary = '',
     this.initialDetail = '',
+    this.requireDueDate = false,
   });
 
   final String title;
@@ -271,6 +273,9 @@ class _GoalFormDialog extends StatefulWidget {
   final String initialPrimary;
   final String initialDetail;
 
+  /// Goals need one; open threads are habits and never end.
+  final bool requireDueDate;
+
   @override
   State<_GoalFormDialog> createState() => _GoalFormDialogState();
 }
@@ -278,6 +283,8 @@ class _GoalFormDialog extends StatefulWidget {
 class _GoalFormDialogState extends State<_GoalFormDialog> {
   late final TextEditingController _primaryController;
   late final TextEditingController _detailController;
+  DateTime? _dueDate;
+  bool _dueDateMissing = false;
 
   @override
   void initState() {
@@ -293,22 +300,47 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
     super.dispose();
   }
 
+  Future<void> _pickDueDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dueDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    setState(() {
+      _dueDate = picked;
+      _dueDateMissing = false;
+    });
+  }
+
   void _submit() {
     final primary = _primaryController.text.trim();
     if (primary.isEmpty) {
       return;
     }
+    if (widget.requireDueDate && _dueDate == null) {
+      setState(() => _dueDateMissing = true);
+      return;
+    }
     Navigator.of(context).pop(
-      _GoalFormResult(primary: primary, detail: _detailController.text.trim()),
+      _GoalFormResult(
+        primary: primary,
+        detail: _detailController.text.trim(),
+        dueDate: _dueDate,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
+      scrollable: true,
       title: Text(widget.title),
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
             controller: _primaryController,
@@ -329,14 +361,36 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
               hintText: widget.detailHint,
             ),
           ),
+          if (widget.requireDueDate) ...[
+            const SizedBox(height: 4),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              onTap: _pickDueDate,
+              title: Text(l10n.commonDueDate),
+              subtitle: Text(
+                _dueDate == null ? l10n.commonNotSet : _shortDate(_dueDate!),
+                style: _dueDateMissing
+                    ? TextStyle(color: context.clarityColors.danger)
+                    : null,
+              ),
+              trailing: const Icon(Icons.calendar_today_outlined, size: 18),
+            ),
+            if (_dueDateMissing)
+              Text(
+                l10n.accountabilityDueDateRequired,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: context.clarityColors.danger,
+                ),
+              ),
+          ],
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.l10n.commonCancel),
+          child: Text(l10n.commonCancel),
         ),
-        FilledButton(onPressed: _submit, child: Text(context.l10n.commonSave)),
+        FilledButton(onPressed: _submit, child: Text(l10n.commonSave)),
       ],
     );
   }

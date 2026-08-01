@@ -7,6 +7,7 @@ class MerchantSpendRollup {
     required this.merchant,
     required this.spent,
     required this.transactionCount,
+    this.transactions = const [],
   });
 
   final String merchant;
@@ -14,6 +15,9 @@ class MerchantSpendRollup {
   /// Positive total.
   final double spent;
   final int transactionCount;
+
+  /// The rows behind the total, newest first.
+  final List<ResolvedTransaction> transactions;
 }
 
 /// Groups repeat visits to the same place, biggest spender first.
@@ -29,7 +33,7 @@ List<MerchantSpendRollup> merchantSpendRollups(
   int limit = 0,
 }) {
   final rawTotals = <String, double>{};
-  final rawCounts = <String, int>{};
+  final rawRows = <String, List<ResolvedTransaction>>{};
   final givenNames = <String, String>{};
 
   for (final row in rows) {
@@ -40,7 +44,7 @@ List<MerchantSpendRollup> merchantSpendRollups(
         ? named.toLowerCase()
         : merchantKeyFor(row.transaction.description);
     rawTotals[key] = (rawTotals[key] ?? 0) + row.transaction.amount.abs();
-    rawCounts[key] = (rawCounts[key] ?? 0) + 1;
+    (rawRows[key] ??= []).add(row);
     if (named.isNotEmpty) givenNames[key] ??= named;
   }
 
@@ -48,13 +52,16 @@ List<MerchantSpendRollup> merchantSpendRollups(
   // every variant folds into the shortest name seen for that merchant.
   final canonical = _canonicalKeys(rawTotals.keys);
   final totals = <String, double>{};
-  final counts = <String, int>{};
+  final grouped = <String, List<ResolvedTransaction>>{};
   final labels = <String, String>{};
   for (final entry in rawTotals.entries) {
     final key = canonical[entry.key]!;
     totals[key] = (totals[key] ?? 0) + entry.value;
-    counts[key] = (counts[key] ?? 0) + rawCounts[entry.key]!;
+    (grouped[key] ??= []).addAll(rawRows[entry.key]!);
     labels[key] ??= givenNames[key] ?? merchantDisplayLabel(key);
+  }
+  for (final rows in grouped.values) {
+    rows.sort((a, b) => b.transaction.date.compareTo(a.transaction.date));
   }
 
   final sorted = totals.keys.toList()
@@ -72,7 +79,8 @@ List<MerchantSpendRollup> merchantSpendRollups(
       MerchantSpendRollup(
         merchant: labels[key]!,
         spent: totals[key]!,
-        transactionCount: counts[key]!,
+        transactionCount: grouped[key]!.length,
+        transactions: List.unmodifiable(grouped[key]!),
       ),
   ];
 }

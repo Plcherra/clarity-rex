@@ -16,21 +16,22 @@ from app.services.prompt_open_threads_context import format_open_threads_context
 from app.services.tiny_system_prompt import build_tiny_system_prompt
 
 
+_SLEEP_THREAD_ROW = {
+    "id": "thread-sleep",
+    "title": "Sleep Schedule and Wake Up Everyday At 3am",
+    "status": "active",
+    "summary": "wake early",
+    "user_id": "user-1",
+}
+
+
 class _FakePendingStore:
     def __init__(self) -> None:
         self.user_id = "user-1"
         self.access_token = "token"
         self.pending: dict[str, object] = {}
         self.messages: list[dict] = []
-        self.rows: list[dict] = [
-            {
-                "id": "thread-sleep",
-                "title": "Sleep Schedule and Wake Up Everyday At 3am",
-                "status": "active",
-                "summary": "wake early",
-                "user_id": "user-1",
-            }
-        ]
+        self.rows: list[dict] = [dict(_SLEEP_THREAD_ROW)]
 
     async def get_conversation_pending_action(self, conversation_id: str):
         return self.pending.get(conversation_id)
@@ -479,6 +480,65 @@ async def test_finalize_off_explicit_true_still_applies_immediately() -> None:
 
 
 @pytest.mark.asyncio
+async def test_a_save_the_user_asked_for_says_why_the_toggle_refused_it() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    rex = (
+        "Done — your sleep thread now says 5am.\n\n"
+        "```rex_action\n"
+        '{"action":"update_open_thread","payload":{'
+        '"thread_id":"thread-sleep","title":"Wake at 5am"}}\n'
+        "```"
+    )
+    finalized = await finalize_grok_turn(
+        rex,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=durable,
+        proposal_settings=AssistantProposalSettings(mode="off", threads=False),
+        brain_message="update my 3am thread to 5am",
+        user_message={"id": "u1", "content": "update my 3am thread to 5am"},
+        conversation_id="c1",
+        conversation_history=[],
+        turn_trace=None,
+        ai_messages=[],
+    )
+    assert finalized.get("proposed_turn") is None
+    assert store.rows == [_SLEEP_THREAD_ROW]
+    lowered = finalized["response"].lower()
+    assert "nothing was saved" in lowered
+    assert "open thread saves are switched off" in lowered
+
+
+@pytest.mark.asyncio
+async def test_rexs_own_offer_falls_silently_in_off_mode() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    rex = (
+        "Waking earlier takes a steadier bedtime first.\n\n"
+        "```rex_action\n"
+        '{"action":"create_open_thread","payload":{"title":"Wake at 5am"},'
+        '"auto":true}\n'
+        "```"
+    )
+    finalized = await finalize_grok_turn(
+        rex,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=durable,
+        proposal_settings=AssistantProposalSettings(mode="off", threads=True),
+        brain_message="I keep waking up late lately",
+        user_message={"id": "u1", "content": "I keep waking up late lately"},
+        conversation_id="c1",
+        conversation_history=[],
+        turn_trace=None,
+        ai_messages=[],
+    )
+    assert finalized.get("proposed_turn") is None
+    assert finalized["response"] == "Waking earlier takes a steadier bedtime first."
+
+
+@pytest.mark.asyncio
 async def test_finalize_off_claim_without_action_keeps_conversation() -> None:
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
@@ -500,9 +560,9 @@ async def test_finalize_off_claim_without_action_keeps_conversation() -> None:
         ai_messages=[],
     )
     assert finalized.get("proposed_turn") is None
-    lowered = finalized["response"].lower()
-    assert "auto suggestions" not in lowered
-    assert "keep talking" in lowered or "happy to keep talking" in lowered
+    # Rex keeps its own words; the thread is untouched because no action came.
+    assert finalized["response"] == rex
+    assert store.rows == [_SLEEP_THREAD_ROW]
 
 
 @pytest.mark.asyncio
@@ -527,10 +587,8 @@ async def test_finalize_card_claim_without_action_keeps_conversation() -> None:
         ai_messages=[],
     )
     assert finalized.get("proposed_turn") is None
-    lowered = finalized["response"].lower()
-    assert "auto suggestions" not in lowered
-    assert "confirm card" not in lowered
-    assert "keep talking" in lowered or "happy to keep talking" in lowered
+    assert finalized["response"] == rex
+    assert store.rows == [_SLEEP_THREAD_ROW]
 
 
 @pytest.mark.asyncio

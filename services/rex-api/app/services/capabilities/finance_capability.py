@@ -21,6 +21,7 @@ from app.services.capabilities.finance_mutate_outcome import (
     UNRESOLVED_TARGET,
     FinanceMutateOutcome,
 )
+from app.services.category_name_normalization import normalized_category_key
 from app.services.clarity_action_proposal_filter import (
     filter_clarity_action_proposals,
 )
@@ -98,13 +99,52 @@ def collect_finance_proposals(
         proposals.append(
             clarity_action_parser.normalize_proposal(raw, index=len(proposals) + 1)
         )
+    distinct = without_redundant_category_creates(proposals)
     kept = filter_clarity_action_proposals(
-        proposals,
+        distinct,
         finance_edits_enabled=settings.finance_edits_enabled,
     )
-    if len(kept) < len(proposals):
+    if len(kept) < len(distinct):
         reasons.append(FINANCE_EDITS_DISABLED)
     return FinanceMutateOutcome(
         proposals=kept,
         blocked_reasons=tuple(reasons),
     )
+
+
+def without_redundant_category_creates(proposals: list[dict]) -> list[dict]:
+    """Drop a create card whose category another card already creates.
+
+    Asked to make a category and move rows into it, Grok names both capabilities
+    and the move already carries `new_category`. Two cards for one intent read as
+    two changes, and the second confirm looks like it failed once the first has
+    made the category.
+    """
+    covered = {
+        _created_category_key(proposal.get("payload"))
+        for proposal in proposals
+        if proposal.get("action") == "bulk_update_transaction_category"
+    }
+    covered.discard(None)
+    if not covered:
+        return proposals
+    return [
+        proposal
+        for proposal in proposals
+        if proposal.get("action") != "create_category"
+        or _category_key(proposal.get("payload")) not in covered
+    ]
+
+
+def _created_category_key(payload: object) -> Optional[str]:
+    if not isinstance(payload, dict):
+        return None
+    return _category_key(payload.get("new_category"))
+
+
+def _category_key(payload: object) -> Optional[str]:
+    if not isinstance(payload, dict):
+        return None
+    name = payload.get("name")
+    key = normalized_category_key(name) if name else ""
+    return key or None

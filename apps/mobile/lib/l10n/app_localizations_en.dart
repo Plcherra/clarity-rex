@@ -1025,6 +1025,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Save deterministic alerts when your data changes. No background monitoring runs until you turn this on.';
 
   @override
+  String get companionScreenTitle => 'Companion';
+
+  @override
+  String get companionAbilitiesSection => 'What Rex can do';
+
+  @override
+  String get profileCompanionSubtitle => 'Suggestions, saves, and voice usage';
+
+  @override
   String get assistantCompanionSettingsTitle => 'Companion saves';
 
   @override
@@ -1109,6 +1118,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get categoryDetailWhereItWent => 'Where it went';
+
+  @override
+  String get categoryDetailTapMerchantHint =>
+      'Tap a place to see its transactions';
 
   @override
   String get categoryDetailNewThisMonth =>
@@ -3542,6 +3555,95 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountabilityStatusInProgress => 'In progress';
+
+  @override
+  String get accountabilityMarkAchieved => 'Mark achieved';
+
+  @override
+  String get accountabilityGoalAchieved => 'Nice — goal achieved.';
+
+  @override
+  String get accountabilityGoalReopened => 'Goal moved back to active.';
+
+  @override
+  String get accountabilitySectionsAchievedGoals => 'Achieved';
+
+  @override
+  String get accountabilitySectionsNoAchievedGoals => 'Nothing finished yet.';
+
+  @override
+  String accountabilityAchievedOn(String date) {
+    return 'Achieved $date';
+  }
+
+  @override
+  String get accountabilityReopenGoal => 'Move back to active';
+
+  @override
+  String get accountabilityStepsTitle => 'Steps';
+
+  @override
+  String get accountabilityAddStep => 'Add step';
+
+  @override
+  String get accountabilityAddStepHint => 'e.g. Save \$500 toward it';
+
+  @override
+  String get accountabilityStepSaved => 'Step added.';
+
+  @override
+  String get accountabilityStepUpdated => 'Step updated.';
+
+  @override
+  String get accountabilityStepDeleted => 'Step deleted.';
+
+  @override
+  String accountabilityStepsDone(int done, int total) {
+    return '$done of $total done';
+  }
+
+  @override
+  String get accountabilityDeleteStepTitle => 'Delete step?';
+
+  @override
+  String accountabilityDeleteStepBody(String title) {
+    return 'Delete \"$title\" from this goal?';
+  }
+
+  @override
+  String get accountabilityDueDateRequired =>
+      'Pick a due date — a goal without one never gets closer.';
+
+  @override
+  String get accountabilitySetDueDate => 'Set a due date';
+
+  @override
+  String get accountabilityNoDueDate => 'No deadline';
+
+  @override
+  String accountabilityDaysLeft(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days left',
+      one: '1 day left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountabilityDaysOver(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days over',
+      one: '1 day over',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountabilityDueToday => 'Due today';
 
   @override
   String conversationListEmptyFilteredTitle(String filter) {

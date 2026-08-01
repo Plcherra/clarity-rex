@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +7,7 @@ import '../../../../core/l10n/app_l10n.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/accountability/data/accountability_models.dart';
+import 'package:clarity/rex/accountability/domain/goal_deadline_progress.dart';
 import 'package:clarity/rex/accountability/presentation/accountability_display_helpers.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
@@ -13,10 +16,14 @@ import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
 import 'package:clarity/core/layout/clarity_breakpoints.dart';
 import 'package:clarity/core/layout/clarity_native_layout.dart';
 import 'package:clarity/theme/clarity_sheet_insets.dart';
+import 'package:clarity/widgets/clarity_celebration_burst.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
+part 'accountability_page_deadline_bar.dart';
+part 'accountability_page_goal_actions.dart';
 part 'accountability_page_sections.dart';
 part 'accountability_page_shared.dart';
+part 'accountability_page_steps.dart';
 part 'accountability_page_tiles.dart';
 part 'accountability_page_detail_sheets.dart';
 
@@ -52,12 +59,17 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
         detailLabel: l10n.accountabilityDetailNotesHint,
         primaryHint: l10n.accountabilityAddGoalPrimaryHint,
         detailHint: l10n.accountabilityAddGoalDetailHint,
+        requireDueDate: true,
       ),
     );
     if (result == null || !mounted) return;
     final saved = await ref
         .read(accountabilityProvider.notifier)
-        .createPlan(title: result.primary, description: result.detail);
+        .createPlan(
+          title: result.primary,
+          description: result.detail,
+          targetDate: result.dueDate,
+        );
     if (!mounted) return;
     _showMutationResult(saved ? l10n.accountabilityGoalSaved : null);
   }
@@ -136,47 +148,6 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     _showMutationResult(saved ? l10n.accountabilityOpenThreadUpdated : null);
   }
 
-  Future<void> _archivePlan(PlanRecord plan) async {
-    final l10n = context.l10n;
-    final confirmed = await _confirmArchive(
-      title: l10n.accountabilityArchiveGoalTitle,
-      body: l10n.accountabilityArchiveGoalBody(plan.title),
-      confirmLabel: l10n.commonDelete,
-    );
-    if (confirmed != true || !mounted) return;
-    final saved = await ref
-        .read(accountabilityProvider.notifier)
-        .archivePlan(plan.id);
-    if (!mounted) return;
-    _showMutationResult(saved ? l10n.accountabilityGoalArchived : null);
-  }
-
-  Future<void> _openPlanDetail(PlanRecord plan) async {
-    await _showPlanDetailSheet(
-      context,
-      plan: plan,
-      onSave: ({title, description, priority, status, targetDate}) async {
-        final saved = await ref
-            .read(accountabilityProvider.notifier)
-            .updatePlan(
-              plan.id,
-              title: title,
-              description: description,
-              priority: priority,
-              status: status,
-              targetDateIso: targetDate?.toUtc().toIso8601String(),
-            );
-        if (mounted) {
-          _showMutationResult(
-            saved ? context.l10n.accountabilityGoalUpdated : null,
-          );
-        }
-        return saved;
-      },
-      onArchive: () => _archivePlan(plan),
-    );
-  }
-
   Future<bool?> _confirmArchive({
     required String title,
     required String body,
@@ -209,6 +180,30 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Widget _goalsSection(AccountabilityOverview overview) {
+    return _GoalsSection(
+      plans: overview.activePlans,
+      planHierarchy: overview.planHierarchy,
+      onOpenPlan: _openPlanDetail,
+      onArchivePlan: _archivePlan,
+      onAddGoal: _createPlan,
+      onToggleStep: _toggleStepFromTile,
+      onMarkAchieved: _markPlanAchieved,
+      onSetDueDate: _setPlanDueDate,
+    );
+  }
+
+  Widget _openThreadsSection(AccountabilityOverview overview) {
+    return _OpenThreadsSection(
+      threads: overview.openThreads
+          .where((thread) => thread.status == 'active')
+          .toList(growable: false),
+      onClose: _closeOpenThread,
+      onPause: _pauseOpenThread,
+      onEdit: _editOpenThread,
+    );
   }
 
   @override
@@ -268,44 +263,21 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: _GoalsSection(
-                                plans: overview.activePlans,
-                                planHierarchy: overview.planHierarchy,
-                                onOpenPlan: _openPlanDetail,
-                                onArchivePlan: _archivePlan,
-                                onAddGoal: _createPlan,
-                              ),
-                            ),
+                            Expanded(child: _goalsSection(overview)),
                             const SizedBox(width: RexUiTokens.space16),
-                            Expanded(
-                              child: _OpenThreadsSection(
-                                threads: overview.openThreads
-                                    .where((thread) => thread.status == 'active')
-                                    .toList(growable: false),
-                                onClose: _closeOpenThread,
-                                onPause: _pauseOpenThread,
-                                onEdit: _editOpenThread,
-                              ),
-                            ),
+                            Expanded(child: _openThreadsSection(overview)),
                           ],
                         )
                       else ...[
-                        _GoalsSection(
-                          plans: overview.activePlans,
-                          planHierarchy: overview.planHierarchy,
-                          onOpenPlan: _openPlanDetail,
-                          onArchivePlan: _archivePlan,
-                          onAddGoal: _createPlan,
-                        ),
+                        _goalsSection(overview),
                         const SizedBox(height: RexUiTokens.space16),
-                        _OpenThreadsSection(
-                          threads: overview.openThreads
-                              .where((thread) => thread.status == 'active')
-                              .toList(growable: false),
-                          onClose: _closeOpenThread,
-                          onPause: _pauseOpenThread,
-                          onEdit: _editOpenThread,
+                        _openThreadsSection(overview),
+                      ],
+                      if (overview.achievedPlans.isNotEmpty) ...[
+                        const SizedBox(height: RexUiTokens.space16),
+                        _AchievedGoalsSection(
+                          plans: overview.achievedPlans,
+                          onReopen: _reopenPlan,
                         ),
                       ],
                     ],

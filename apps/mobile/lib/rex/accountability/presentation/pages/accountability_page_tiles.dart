@@ -3,35 +3,78 @@ part of 'accountability_page.dart';
 class _GoalTile extends StatelessWidget {
   const _GoalTile({
     required this.plan,
-    required this.openMilestones,
+    required this.steps,
     required this.onTap,
     required this.onArchive,
+    required this.onToggleStep,
+    required this.onMarkAchieved,
+    required this.onSetDueDate,
   });
 
   final PlanRecord plan;
-  final List<PlanMilestone> openMilestones;
+  final List<PlanMilestone> steps;
   final VoidCallback onTap;
   final VoidCallback onArchive;
+  final void Function(PlanMilestone milestone, bool done) onToggleStep;
+  final VoidCallback onMarkAchieved;
+  final VoidCallback onSetDueDate;
 
   @override
   Widget build(BuildContext context) {
-    final milestoneLine = planMilestonePreviewSubtitle(openMilestones);
-    final baseSubtitle = planSubtitle(plan);
-    final subtitle = milestoneLine == null
-        ? baseSubtitle
-        : (baseSubtitle == null
-            ? milestoneLine
-            : '$baseSubtitle · $milestoneLine');
     return _AccountabilityTile(
       onTap: onTap,
       leading: _PriorityDot(priority: plan.priority),
       icon: Icons.flag_rounded,
       title: plan.title,
-      subtitle: subtitle,
+      subtitle: planSubtitle(plan),
       deadline: plan.targetDate,
       priority: plan.priority,
       status: plan.status,
-      trailing: _GoalActions(onArchive: onArchive),
+      metaSuffix: goalStepsProgressLabel(context.l10n, steps),
+      trailing: _GoalActions(
+        onArchive: onArchive,
+        onMarkAchieved: onMarkAchieved,
+      ),
+      footer: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _GoalSteps(milestones: steps, onToggle: onToggleStep, maxVisible: 4),
+          _GoalDeadlineBar(plan: plan, onSetDueDate: onSetDueDate),
+        ],
+      ),
+    );
+  }
+}
+
+/// A goal the user finished — kept in reach, with a way back if it was early.
+class _AchievedGoalTile extends StatelessWidget {
+  const _AchievedGoalTile({required this.plan, required this.onReopen});
+
+  final PlanRecord plan;
+  final VoidCallback onReopen;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.clarityColors;
+    final l10n = context.l10n;
+    final achievedOn = plan.completedAt;
+    return _AccountabilityTile(
+      leading: Icon(Icons.emoji_events_rounded, size: 18, color: colors.accent),
+      title: plan.title,
+      subtitle: achievedOn == null
+          ? planSubtitle(plan)
+          : l10n.accountabilityAchievedOn(_shortDate(achievedOn)),
+      deadline: null,
+      priority: plan.priority,
+      status: plan.status,
+      showMeta: false,
+      trailing: IconButton(
+        onPressed: onReopen,
+        visualDensity: VisualDensity.compact,
+        iconSize: 18,
+        tooltip: l10n.accountabilityReopenGoal,
+        icon: Icon(Icons.undo_rounded, color: colors.textMuted),
+      ),
     );
   }
 }
@@ -52,7 +95,11 @@ class _OpenThreadTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _AccountabilityTile(
-      leading: Icon(Icons.chat_bubble_outline_rounded, size: 18, color: context.clarityColors.textSecondary),
+      leading: Icon(
+        Icons.chat_bubble_outline_rounded,
+        size: 18,
+        color: context.clarityColors.textSecondary,
+      ),
       icon: null,
       title: thread.title,
       subtitle: openThreadSubtitle(context.l10n, thread),
@@ -79,6 +126,9 @@ class _AccountabilityTile extends StatelessWidget {
     required this.status,
     required this.trailing,
     this.onTap,
+    this.metaSuffix,
+    this.footer,
+    this.showMeta = true,
   });
 
   final Widget leading;
@@ -90,6 +140,13 @@ class _AccountabilityTile extends StatelessWidget {
   final String status;
   final Widget trailing;
   final VoidCallback? onTap;
+
+  /// Extra fact on the meta line, such as how many steps are done.
+  final String? metaSuffix;
+
+  /// Sits under the tile body, full width — the goal's steps go here.
+  final Widget? footer;
+  final bool showMeta;
 
   @override
   Widget build(BuildContext context) {
@@ -107,54 +164,63 @@ class _AccountabilityTile extends StatelessWidget {
             horizontal: RexUiTokens.memoryTilePaddingH,
             vertical: RexUiTokens.memoryTilePaddingV,
           ),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: leading,
-              ),
-              if (icon != null) ...[
-                const SizedBox(width: RexUiTokens.space8),
-                Icon(icon, color: colors.accent, size: 16),
-              ],
-              const SizedBox(width: RexUiTokens.space8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: colors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: RexUiTokens.space2),
-                      Text(
-                        subtitle!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.textMuted,
-                          height: 1.25,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: RexUiTokens.space2),
-                    _TileMetaRow(
-                      deadline: deadline,
-                      priority: priority,
-                    ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: leading,
+                  ),
+                  if (icon != null) ...[
+                    const SizedBox(width: RexUiTokens.space8),
+                    Icon(icon, color: colors.accent, size: 16),
                   ],
-                ),
+                  const SizedBox(width: RexUiTokens.space8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: colors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: RexUiTokens.space2),
+                          Text(
+                            subtitle!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.textMuted,
+                              height: 1.25,
+                            ),
+                          ),
+                        ],
+                        if (showMeta) ...[
+                          const SizedBox(height: RexUiTokens.space2),
+                          _TileMetaRow(
+                            deadline: deadline,
+                            priority: priority,
+                            suffix: metaSuffix,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: RexUiTokens.space4),
+                  _StatusChip(status: status),
+                  trailing,
+                ],
               ),
-              const SizedBox(width: RexUiTokens.space4),
-              _StatusChip(status: status),
-              trailing,
+              ?footer,
             ],
           ),
         ),
@@ -164,10 +230,15 @@ class _AccountabilityTile extends StatelessWidget {
 }
 
 class _TileMetaRow extends StatelessWidget {
-  const _TileMetaRow({required this.deadline, required this.priority});
+  const _TileMetaRow({
+    required this.deadline,
+    required this.priority,
+    this.suffix,
+  });
 
   final DateTime? deadline;
   final int priority;
+  final String? suffix;
 
   @override
   Widget build(BuildContext context) {
@@ -176,6 +247,7 @@ class _TileMetaRow extends StatelessWidget {
     final parts = <String>[
       priorityShortLabel(l10n, priority),
       if (deadline != null) _dueDateLabel(l10n, deadline!),
+      ?suffix,
     ];
     return Text(
       parts.join(' · '),
@@ -236,9 +308,10 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _GoalActions extends StatelessWidget {
-  const _GoalActions({required this.onArchive});
+  const _GoalActions({required this.onArchive, required this.onMarkAchieved});
 
   final VoidCallback onArchive;
+  final VoidCallback onMarkAchieved;
 
   @override
   Widget build(BuildContext context) {
@@ -249,11 +322,18 @@ class _GoalActions extends StatelessWidget {
       color: colors.surfaceSoft,
       icon: Icon(Icons.more_horiz_rounded, color: colors.textMuted, size: 18),
       itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'achieved',
+          child: Text(l10n.accountabilityMarkAchieved),
+        ),
         PopupMenuItem(value: 'delete', child: Text(l10n.commonDelete)),
       ],
       onSelected: (value) {
-        if (value == 'delete') {
-          onArchive();
+        switch (value) {
+          case 'achieved':
+            onMarkAchieved();
+          case 'delete':
+            onArchive();
         }
       },
     );

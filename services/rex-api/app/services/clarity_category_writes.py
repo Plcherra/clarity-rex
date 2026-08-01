@@ -6,7 +6,8 @@ one at a time. A single confirmed Clarity action does both here:
 - the category is reused when the user already has one under the same
   normalized name, so the assistant never leaves duplicates behind;
 - the move may target a merchant instead of ids, so rows the assistant never
-  saw in its context pack are recategorised too.
+  saw in its context pack are recategorised too (see `merchant_match_query`,
+  which bridges what the user calls a shop and what the bank prints).
 
 Nothing runs without confirmation — `ClarityControlService.execute` still gates
 these actions.
@@ -14,7 +15,6 @@ these actions.
 
 from __future__ import annotations
 
-import re
 from typing import Any, Awaitable, Callable, Optional
 
 from app.services.category_name_normalization import (
@@ -22,11 +22,11 @@ from app.services.category_name_normalization import (
     normalize_category_name,
 )
 from app.services.clarity_control_errors import ClarityControlServiceError
+from app.services.merchant_match_query import merchant_match_query
 
 RequestFn = Callable[..., Awaitable[list[dict[str, Any]]]]
 
 DEFAULT_CATEGORY_TYPE = "expense"
-_MERCHANT_UNSAFE_PATTERN = re.compile(r"[(),*\"\\%]+")
 
 
 async def resolve_or_create_category(
@@ -114,21 +114,13 @@ def _match_query(payload: dict[str, Any]) -> dict[str, str]:
     )
     if cleaned_ids:
         return {"id": f"in.({','.join(cleaned_ids)})"}
-    pattern = _merchant_pattern(payload.get("merchant"))
-    if pattern:
-        return {
-            "or": f'(description.ilike."{pattern}",merchant.ilike."{pattern}")'
-        }
+    query = merchant_match_query(payload.get("merchant"))
+    if query is not None:
+        return query
     raise ClarityControlServiceError(
         "ids or merchant is required for bulk category updates.",
         400,
     )
-
-
-def _merchant_pattern(merchant: Any) -> Optional[str]:
-    cleaned = _MERCHANT_UNSAFE_PATTERN.sub(" ", str(merchant or ""))
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-    return f"*{cleaned}*" if cleaned else None
 
 
 async def _find_category(

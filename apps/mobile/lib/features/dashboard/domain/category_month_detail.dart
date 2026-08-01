@@ -13,7 +13,6 @@ class CategoryMonthDetail {
     required this.transactionCount,
     required this.shareOfMonthSpend,
     required this.merchants,
-    required this.transactions,
   });
 
   final String category;
@@ -26,12 +25,9 @@ class CategoryMonthDetail {
   /// 0..1 of everything spent that month. Zero when the month had no spending.
   final double shareOfMonthSpend;
 
-  /// Biggest merchant first — what tells coffee apart from fast food inside a
-  /// bucket the user named once and never split.
+  /// Biggest merchant first, each carrying its own rows — what tells coffee
+  /// apart from fast food inside a bucket the user named once and never split.
   final List<MerchantSpendRollup> merchants;
-
-  /// Newest first.
-  final List<ResolvedTransaction> transactions;
 
   double get changeFromLastMonth => spent - lastMonthSpent;
 
@@ -78,7 +74,6 @@ CategoryMonthDetail buildCategoryMonthDetail({
     }
   }
 
-  thisMonth.sort((a, b) => b.transaction.date.compareTo(a.transaction.date));
   final spent = thisMonth.fold<double>(
     0,
     (sum, row) => sum + row.transaction.amount.abs(),
@@ -95,6 +90,5 @@ CategoryMonthDetail buildCategoryMonthDetail({
       namesByTransactionKey: merchantNamesByTransactionKey,
       keyOf: merchantNameKeyOf,
     ),
-    transactions: thisMonth,
   );
 }

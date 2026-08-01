@@ -12,6 +12,7 @@ import 'package:clarity/features/shell/presentation/home_shell.dart';
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/presentation/assistant_screen.dart';
 import 'package:clarity/rex/presentation/assistant_tab.dart';
+import 'package:clarity/rex/presentation/pages/companion_settings_screen.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
@@ -227,22 +228,64 @@ void main() {
 
     expect(find.byType(ProfileScreen), findsOneWidget);
     expect(find.text('Multi-factor authentication'), findsOneWidget);
-    expect(find.text('Voice usage'), findsOneWidget);
-    expect(
-      find.textContaining('Minutes today, this week, and this month'),
-      findsOneWidget,
-    );
     expect(find.text('Appearance'), findsNWidgets(2));
     expect(find.text('Dark'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -260));
-    await tester.pumpAndSettle();
-
+    // Language sets the whole interface, so it stays in Profile. Voice usage
+    // moved to Companion.
+    expect(find.text('Voice usage'), findsNothing);
     expect(find.text('Language'), findsNWidgets(2));
     expect(find.text('English'), findsOneWidget);
+    expect(find.text('Suggestions, saves, and voice usage'), findsOneWidget);
+
     await tester.scrollUntilVisible(find.text('Sign out'), 120);
     await tester.pumpAndSettle();
     expect(find.text('Sign out'), findsOneWidget);
+  });
+
+  testWidgets('the Profile Companion row opens Companion settings', (
+    tester,
+  ) async {
+    final app = AppComposition(initialAuthenticated: true);
+    addTearDown(app.dispose);
+    app.profileController.profile = ProfileRecord(
+      id: 'user-1',
+      email: 'test@example.com',
+      fullName: 'Test User',
+      avatarUrl: null,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+    );
+
+    await tester.pumpWidget(
+      ClarityApp(
+        ui: app.ui,
+        authController: app.authController,
+        profileController: app.profileController,
+        themeModeController: app.themeModeController,
+        localeController: app.localeController,
+      ),
+    );
+
+    // Leave the dashboard first; its loading animation never settles.
+    await tester.tap(find.text('Accounts'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+
+    final companionRow = find.text('Suggestions, saves, and voice usage');
+    await tester.scrollUntilVisible(companionRow, 120);
+    await tester.pumpAndSettle();
+    await tester.tap(companionRow);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(CompanionSettingsScreen), findsOneWidget);
+    expect(find.text('Auto suggestions'), findsOneWidget);
+    expect(find.text('Allow Rex to edit finances'), findsOneWidget);
+    expect(find.text('Proactive financial insights'), findsOneWidget);
+    expect(find.text('Voice usage'), findsOneWidget);
+    expect(find.text('Language'), findsNothing);
   });
 
   testWidgets('assistant tab exposes Chat Knows Goals and Overview sections', (

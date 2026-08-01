@@ -26,19 +26,49 @@ String? planSubtitle(PlanRecord plan) {
   return null;
 }
 
-/// Thin Goals listing: open milestone titles under a parent goal.
-String? planMilestonePreviewSubtitle(List<PlanMilestone> openMilestones) {
-  final titles = openMilestones
-      .map((milestone) => milestone.title.trim())
-      .where((title) => title.isNotEmpty)
-      .toList(growable: false);
-  if (titles.isEmpty) {
-    return null;
+/// Open and finished steps for one goal, from the overview's plan hierarchy.
+List<PlanMilestone> goalStepsFor(
+  List<PlanHierarchyItem> hierarchy,
+  String planId,
+) {
+  for (final item in hierarchy) {
+    if (item.plan.id == planId) {
+      return [...item.openMilestones, ...item.completedMilestones];
+    }
   }
-  if (titles.length <= 3) {
-    return titles.join(' · ');
-  }
-  return '${titles.take(3).join(' · ')} +${titles.length - 3}';
+  return const [];
+}
+
+bool isGoalStepDone(PlanMilestone milestone) {
+  final status = milestone.status.trim().toLowerCase();
+  return status == 'completed' ||
+      status == 'done' ||
+      milestone.completedAt != null;
+}
+
+/// Steps still to do come first — what is left matters more than what is done.
+List<PlanMilestone> sortedGoalSteps(List<PlanMilestone> milestones) {
+  final sorted = [...milestones];
+  sorted.sort((a, b) {
+    final aDone = isGoalStepDone(a);
+    if (aDone != isGoalStepDone(b)) return aDone ? 1 : -1;
+    final aDate = a.targetDate;
+    final bDate = b.targetDate;
+    if (aDate != null && bDate != null) return aDate.compareTo(bDate);
+    if (aDate != null) return -1;
+    if (bDate != null) return 1;
+    return 0;
+  });
+  return sorted;
+}
+
+String? goalStepsProgressLabel(
+  AppLocalizations l10n,
+  List<PlanMilestone> milestones,
+) {
+  if (milestones.isEmpty) return null;
+  final done = milestones.where(isGoalStepDone).length;
+  return l10n.accountabilityStepsDone(done, milestones.length);
 }
 
 String? openThreadSubtitle(AppLocalizations l10n, OpenThread thread) {

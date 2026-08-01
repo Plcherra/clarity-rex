@@ -45,10 +45,6 @@ UNEXECUTED_DELETE_FALLBACK = (
     "from this turn. Tell me the exact saved item to delete and I'll ask for "
     "confirmation before changing it."
 )
-UNEXECUTED_GOAL_FALLBACK = (
-    "I can help save that as a goal, but I don't have a confirmed backend save "
-    "from this turn. Tell me the exact goal again and I'll save it directly."
-)
 UNEXECUTED_FINANCE_FALLBACK = (
     "I can help change transactions or budgets, but I don't have a confirmed "
     "change from this turn. Tell me exactly what to change and I'll ask for "
@@ -299,25 +295,6 @@ def safe_unexecuted_finance_response(
     return UNEXECUTED_FINANCE_FALLBACK
 
 
-def safe_unexecuted_goal_response(
-    response: str,
-    *,
-    user_message: str = "",
-    intent: str | None = None,
-) -> str:
-    from app.services.memory_delete_reference import response_claims_goal_success
-    from app.services.body_display_text import is_goals_inventory_query
-
-    cleaned = response.strip()
-    if is_goals_inventory_query(user_message):
-        return cleaned
-    if intent is not None and intent not in {"goal", "unknown"}:
-        return cleaned
-    if not response_claims_goal_success(cleaned):
-        return cleaned
-    if not response_claims_unconfirmed_success(cleaned):
-        return cleaned
-    return UNEXECUTED_GOAL_FALLBACK
 def safe_unsupported_action_response(response: str, unsupported_actions: list[str]) -> str:
     cleaned = response.strip()
     if not unsupported_actions:

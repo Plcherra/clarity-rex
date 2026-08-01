@@ -6,6 +6,7 @@ from app.models.accountability import (
 )
 from app.routes.accountability_signal_filters import filter_signals
 from app.services.accountability_snapshot import (
+    achieved_plans_for,
     active_plans_for,
     completed_milestones_for,
     open_milestones_for,
@@ -43,6 +44,7 @@ def build_accountability_overview(
     open_milestones = open_milestones_for(context["plan_milestones"])
     completed_milestones = completed_milestones_for(context["plan_milestones"])
     active_plans = active_plans_for(context["plans"])
+    achieved_plans = achieved_plans_for(context.get("achieved_plans") or [])
     plan_hierarchy = plan_hierarchy_for(
         plans=active_plans,
         milestones=open_milestones,
@@ -69,6 +71,7 @@ def build_accountability_overview(
         active_rules=context["personal_rules"],
         open_threads=open_threads,
         active_plans=active_plans,
+        achieved_plans=achieved_plans,
         open_milestones=open_milestones,
         completed_milestones=completed_milestones,
         plan_hierarchy=plan_hierarchy,
@@ -79,6 +82,7 @@ def build_accountability_overview(
             "active_rule_count": len(context["personal_rules"]),
             "open_thread_count": len(open_threads),
             "active_plan_count": len(active_plans),
+            "achieved_plan_count": len(achieved_plans),
             "open_milestone_count": len(open_milestones),
             "completed_milestone_count": len(completed_milestones),
             "duplicate_warning_count": len(duplicate_warnings),

@@ -4,17 +4,15 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from app.services.action_truth_policy import (
-    UNEXECUTED_GOAL_FALLBACK,
-    response_claims_unconfirmed_success,
+from app.services.action_truth_policy import response_claims_unconfirmed_success
+from app.services.assistant_proposal_settings import (
+    PROPOSAL_KIND_GOALS,
+    PROPOSAL_KIND_MEMORY,
+    PROPOSAL_KIND_THREADS,
+    AssistantProposalSettings,
 )
-from app.services.action_truth_thread_mutation import (
-    CONTINUING_THREAD_HELP_FALLBACK,
-    UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
-)
-from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.auto_suggestions_gate import apply_auto_suggestions_gate
-from app.services.brain_action_schema import parse_brain_actions
+from app.services.brain_action_schema import BrainAction, parse_brain_actions
 from app.services.capability_dispatcher import (
     dispatch_allowed_actions,
     dispatch_finance_proposals,
@@ -89,6 +87,15 @@ async def finalize_grok_turn(
         conversation_history=conversation_history,
         turn_trace=turn_trace,
     )
+    # Last word, so no other guard can bury why the save did not happen.
+    blocked_kinds = _kinds_the_user_asked_for_that_are_switched_off(
+        gate.dropped_soft_actions,
+    )
+    if blocked_kinds:
+        assistant_response = _with_blocked_write_reason(
+            assistant_response,
+            blocked_kinds,
+        )
 
     # Body may propose/apply using the truthful reply (not raw Grok claims).
     proposed = await dispatch_allowed_actions(
@@ -123,13 +130,6 @@ async def finalize_grok_turn(
                 )
         return {"proposed_turn": proposed}
 
-    # Soft mutate dropped / no body write: never leave "I'll save it directly"
-    # or unexecuted-mutation denial copy in the user-visible reply.
-    if assistant_response.strip() in {
-        UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
-        UNEXECUTED_GOAL_FALLBACK,
-    }:
-        assistant_response = CONTINUING_THREAD_HELP_FALLBACK
     memory_changes = clarity_action_parser.with_memory_changes(
         None,
         finance_proposals,
@@ -139,6 +139,52 @@ async def finalize_grok_turn(
         "response": assistant_response,
         "memory_changes": memory_changes,
     }
+
+
+_BLOCKED_WRITE_TEXT = {
+    PROPOSAL_KIND_GOALS: "goal saves are switched off in Companion settings",
+    PROPOSAL_KIND_THREADS: "open thread saves are switched off in Companion settings",
+    PROPOSAL_KIND_MEMORY: "memory saves are switched off in Companion settings",
+}
+
+
+def _kinds_the_user_asked_for_that_are_switched_off(
+    dropped: list[BrainAction],
+) -> list[str]:
+    """Kinds the user asked for that a toggle refused.
+
+    Rex's own offers are meant to fall silently in Off mode; a save the user
+    actually asked for is different, and going quiet there reads as done.
+    """
+    kinds: list[str] = []
+    for action in dropped:
+        kind = action.kind
+        if action.auto or kind is None or kind in kinds:
+            continue
+        kinds.append(kind)
+    return kinds
+
+
+def _with_blocked_write_reason(reply_text: str, kinds: list[str]) -> str:
+    reasons = [_BLOCKED_WRITE_TEXT[kind] for kind in kinds if kind in _BLOCKED_WRITE_TEXT]
+    if not reasons:
+        return reply_text
+    reason = (
+        f"Nothing was saved — {_join_reasons(reasons)}. "
+        "Turn that back on and ask me again."
+    )
+    cleaned = reply_text.strip()
+    if not cleaned:
+        return reason
+    if response_claims_unconfirmed_success(cleaned):
+        return reason
+    return f"{cleaned}\n\n{reason}"
+
+
+def _join_reasons(reasons: list[str]) -> str:
+    if len(reasons) == 1:
+        return reasons[0]
+    return f"{', '.join(reasons[:-1])} and {reasons[-1]}"
 
 
 def _with_blocked_finance_reason(

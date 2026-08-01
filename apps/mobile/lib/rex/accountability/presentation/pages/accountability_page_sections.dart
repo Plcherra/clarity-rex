@@ -7,6 +7,9 @@ class _GoalsSection extends StatelessWidget {
     required this.onOpenPlan,
     required this.onArchivePlan,
     required this.onAddGoal,
+    required this.onToggleStep,
+    required this.onMarkAchieved,
+    required this.onSetDueDate,
   });
 
   final List<PlanRecord> plans;
@@ -14,13 +17,13 @@ class _GoalsSection extends StatelessWidget {
   final ValueChanged<PlanRecord> onOpenPlan;
   final ValueChanged<PlanRecord> onArchivePlan;
   final VoidCallback onAddGoal;
+  final void Function(PlanMilestone milestone, bool done) onToggleStep;
+  final ValueChanged<PlanRecord> onMarkAchieved;
+  final ValueChanged<PlanRecord> onSetDueDate;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final milestonesByPlanId = <String, List<PlanMilestone>>{
-      for (final item in planHierarchy) item.plan.id: item.openMilestones,
-    };
     return _Section(
       title: l10n.accountabilitySectionsActiveGoals,
       emptyText: l10n.accountabilitySectionsNoActiveGoals,
@@ -30,10 +33,36 @@ class _GoalsSection extends StatelessWidget {
           .map(
             (plan) => _GoalTile(
               plan: plan,
-              openMilestones: milestonesByPlanId[plan.id] ?? const [],
+              steps: goalStepsFor(planHierarchy, plan.id),
               onTap: () => onOpenPlan(plan),
               onArchive: () => onArchivePlan(plan),
+              onToggleStep: onToggleStep,
+              onMarkAchieved: () => onMarkAchieved(plan),
+              onSetDueDate: () => onSetDueDate(plan),
             ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _AchievedGoalsSection extends StatelessWidget {
+  const _AchievedGoalsSection({required this.plans, required this.onReopen});
+
+  final List<PlanRecord> plans;
+  final ValueChanged<PlanRecord> onReopen;
+
+  @override
+  Widget build(BuildContext context) {
+    if (plans.isEmpty) return const SizedBox.shrink();
+    final l10n = context.l10n;
+    return _Section(
+      title: l10n.accountabilitySectionsAchievedGoals,
+      emptyText: l10n.accountabilitySectionsNoAchievedGoals,
+      children: plans
+          .map(
+            (plan) =>
+                _AchievedGoalTile(plan: plan, onReopen: () => onReopen(plan)),
           )
           .toList(growable: false),
     );

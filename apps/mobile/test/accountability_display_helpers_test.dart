@@ -45,4 +45,86 @@ void main() {
       );
     });
   });
+
+  group('goal steps', () {
+    test('a step counts as done from status or a completion stamp', () {
+      expect(isGoalStepDone(_step(id: 'a', status: 'open')), isFalse);
+      expect(isGoalStepDone(_step(id: 'b', status: 'completed')), isTrue);
+      expect(
+        isGoalStepDone(
+          _step(id: 'c', status: 'open', completedAt: DateTime(2026, 7, 1)),
+        ),
+        isTrue,
+      );
+    });
+
+    test('what is left comes before what is finished', () {
+      final sorted = sortedGoalSteps([
+        _step(id: 'done', status: 'completed'),
+        _step(id: 'later', status: 'open', targetDate: DateTime(2026, 9, 1)),
+        _step(id: 'soon', status: 'open', targetDate: DateTime(2026, 8, 1)),
+      ]);
+
+      expect(
+        sorted.map((step) => step.id),
+        ['soon', 'later', 'done'],
+      );
+    });
+
+    test('steps come from the matching goal in the hierarchy', () {
+      final hierarchy = [
+        PlanHierarchyItem(
+          plan: _plan('plan-1'),
+          openMilestones: [_step(id: 'open-1', status: 'open')],
+          completedMilestones: [_step(id: 'done-1', status: 'completed')],
+          counts: const {},
+        ),
+        PlanHierarchyItem(
+          plan: _plan('plan-2'),
+          openMilestones: [_step(id: 'other', status: 'open')],
+          completedMilestones: const [],
+          counts: const {},
+        ),
+      ];
+
+      expect(
+        goalStepsFor(hierarchy, 'plan-1').map((step) => step.id),
+        ['open-1', 'done-1'],
+      );
+      expect(goalStepsFor(hierarchy, 'missing'), isEmpty);
+    });
+  });
 }
+
+PlanRecord _plan(String id) => PlanRecord(
+  id: id,
+  planType: 'personal',
+  title: id,
+  description: null,
+  desiredOutcome: null,
+  priority: 3,
+  status: 'active',
+  active: true,
+  startDate: null,
+  targetDate: null,
+  completedAt: null,
+  lastReviewedAt: null,
+);
+
+PlanMilestone _step({
+  required String id,
+  required String status,
+  DateTime? targetDate,
+  DateTime? completedAt,
+}) => PlanMilestone(
+  id: id,
+  planId: 'plan-1',
+  title: id,
+  description: null,
+  milestoneType: 'checkpoint',
+  targetDate: targetDate,
+  priority: 3,
+  status: status,
+  active: true,
+  completedAt: completedAt,
+);

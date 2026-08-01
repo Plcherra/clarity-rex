@@ -225,9 +225,10 @@ async def test_finalize_goals_off_soft_create_no_direct_save_promise() -> None:
     assert finalized.get("proposed_turn") is None
     assert store.plans == []
     lowered = finalized["response"].lower()
-    assert "i'll save it directly" not in lowered
+    # The goal toggle refused the save, so the claim cannot stand alone.
     assert "saved that commitment" not in lowered
-    assert "keep talking" in lowered or "happy to keep talking" in lowered
+    assert "nothing was saved" in lowered
+    assert "goal saves are switched off" in lowered
 
 
 def test_propose_knows_surface_never_says_goals() -> None:
@@ -252,14 +253,12 @@ def test_knows_apply_replaces_denial_preamble() -> None:
 
 
 def test_goal_apply_replaces_denial_preamble() -> None:
-    from app.services.action_truth_policy import UNEXECUTED_GOAL_FALLBACK
-
     reply = continuing_reply_for_goal_apply(
-        UNEXECUTED_GOAL_FALLBACK,
+        "I can help save that as a goal, but I don't have a confirmed backend "
+        "save from this turn.",
         title="Buy dumbbells",
         write_kind="plan",
     )
     assert "don't have a confirmed" not in reply.lower()
-    assert "i'll save it directly" not in reply.lower()
     assert "goals" in reply.lower()
     assert "dumbbells" in reply.lower()

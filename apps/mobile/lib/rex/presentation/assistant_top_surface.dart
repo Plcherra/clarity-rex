@@ -7,7 +7,7 @@ import '../../features/profile/application/profile_controller.dart';
 import '../../theme/clarity_colors.dart';
 import 'assistant_tab.dart';
 import 'rex_ui_tokens.dart';
-import 'widgets/assistant_proposal_settings_sheet.dart';
+import 'pages/companion_settings_screen.dart';
 
 /// Compact phone chrome vs slightly roomier wide `/app/` header.
 double assistantTabBarHeightOf(BuildContext context) {
@@ -139,8 +139,8 @@ class AssistantTabNavigation extends StatelessWidget {
           child: Tooltip(
             message: l10n.assistantCompanionSettingsGearLabel,
             child: InkWell(
-              onTap: () => showAssistantProposalSettingsSheet(
-                context: context,
+              onTap: () => openCompanionSettings(
+                context,
                 profileController: profileController,
               ),
               mouseCursor: SystemMouseCursors.click,

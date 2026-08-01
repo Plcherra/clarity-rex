@@ -31,7 +31,10 @@ void main() {
 
       expect(detail.spent, closeTo(bar.amount, 0.001));
       expect(detail.transactionCount, 2);
-      expect(detail.transactions.first.transaction.description, 'WINN DIXIE');
+      expect(
+        detail.merchants.map((merchant) => merchant.merchant),
+        containsAll(['Publix', 'Winn Dixie']),
+      );
     });
 
     test('repeat visits to one shop read as one merchant', () {
@@ -79,6 +82,48 @@ void main() {
       expect(coffee.spent, closeTo(22.25, 0.001));
       // Biggest spender leads, so the mixed bucket explains itself.
       expect(detail.merchants.first.merchant, contains('Wingstop'));
+    });
+
+    test('each merchant carries the rows behind its total, newest first', () {
+      const coffeeBucket = 'Coffee / Quick Food';
+      final detail = _detail([
+        _tx(
+          description: 'BOM DOUGH COFFEE #4471',
+          amount: -6.25,
+          day: 2,
+          category: coffeeBucket,
+        ),
+        _tx(
+          description: 'BOM DOUGH COFFEE MIAMI FL',
+          amount: -5.75,
+          day: 9,
+          category: coffeeBucket,
+        ),
+        _tx(
+          description: 'WINGSTOP 338',
+          amount: -24.80,
+          day: 6,
+          category: coffeeBucket,
+        ),
+      ], coffeeBucket);
+
+      final coffee = detail.merchants.singleWhere(
+        (merchant) => merchant.merchant.startsWith('Bom Dough'),
+      );
+      expect(coffee.transactions, hasLength(2));
+      expect(
+        coffee.transactions.first.transaction.description,
+        'BOM DOUGH COFFEE MIAMI FL',
+      );
+      expect(
+        detail.merchants
+            .singleWhere((merchant) => merchant.merchant.contains('Wingstop'))
+            .transactions
+            .single
+            .transaction
+            .description,
+        'WINGSTOP 338',
+      );
     });
 
     test('last month is the comparison, other months are ignored', () {

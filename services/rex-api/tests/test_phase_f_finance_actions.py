@@ -120,6 +120,52 @@ async def test_moving_rows_into_a_new_category_is_one_confirmable_change() -> No
 
 
 @pytest.mark.asyncio
+async def test_one_card_when_grok_names_the_create_and_the_move() -> None:
+    """Asked for both, Grok emits both — but the move already makes the category.
+
+    Two cards read as two changes, and confirming the second looked like a
+    failure once the first had already created it.
+    """
+    finalized = await finalize_finance_turn(
+        "Here's how I'd split it.\n"
+        + rex_action("create_category", {"name": "Work Reimbursements"})
+        + "\n"
+        + rex_action(
+            "bulk_categorize",
+            {"merchant": "sultanas", "category": "work reimbursements"},
+        ),
+        settings=CARD,
+        context=financial_context(),
+        user_text="Create that category and move this transaction into it",
+    )
+    proposals = clarity_proposals(finalized)
+    assert [proposal["action"] for proposal in proposals] == [
+        "bulk_update_transaction_category"
+    ]
+    # Matched on the normalized key, so Grok's casing does not split the pair.
+    assert proposals[0]["payload"]["new_category"]["name"] == "work reimbursements"
+
+
+@pytest.mark.asyncio
+async def test_a_create_for_a_different_category_still_gets_its_own_card() -> None:
+    finalized = await finalize_finance_turn(
+        rex_action("create_category", {"name": "Coffee Runs"})
+        + "\n"
+        + rex_action(
+            "bulk_categorize",
+            {"merchant": "sultanas", "category": "Work Reimbursements"},
+        ),
+        settings=CARD,
+        context=financial_context(),
+        user_text="Make a coffee runs category and move sultanas to work reimbursements",
+    )
+    assert [proposal["action"] for proposal in clarity_proposals(finalized)] == [
+        "create_category",
+        "bulk_update_transaction_category",
+    ]
+
+
+@pytest.mark.asyncio
 async def test_create_category_defaults_to_expense() -> None:
     finalized = await finalize_finance_turn(
         rex_action("create_category", {"name": "Coffee Runs"}),

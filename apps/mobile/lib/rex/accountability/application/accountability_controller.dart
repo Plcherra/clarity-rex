@@ -47,10 +47,7 @@ class AccountabilityController extends Notifier<AccountabilityState> {
         error,
       );
     } on Object {
-      return friendlyServiceError(
-        lookupEnglishLocalizationsForTests(),
-        error,
-      );
+      return friendlyServiceError(lookupEnglishLocalizationsForTests(), error);
     }
   }
 
@@ -74,11 +71,19 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     }
   }
 
-  Future<bool> createPlan({required String title, String? description}) {
+  Future<bool> createPlan({
+    required String title,
+    String? description,
+    DateTime? targetDate,
+  }) {
     return _runMutation(
       () => ref
           .read(accountabilityApiProvider)
-          .createPlan(title: title, description: description),
+          .createPlan(
+            title: title,
+            description: description,
+            targetDateIso: targetDate?.toIso8601String(),
+          ),
     );
   }
 
@@ -91,15 +96,26 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     String? targetDateIso,
   }) {
     return _runMutation(
-      () => ref.read(accountabilityApiProvider).updatePlan(
-        planId,
-        title: title,
-        description: description,
-        priority: priority,
-        status: status,
-        targetDateIso: targetDateIso,
-      ),
+      () => ref
+          .read(accountabilityApiProvider)
+          .updatePlan(
+            planId,
+            title: title,
+            description: description,
+            priority: priority,
+            status: status,
+            targetDateIso: targetDateIso,
+          ),
     );
+  }
+
+  /// Finishing a goal is a status change, not a delete — it moves to Achieved.
+  Future<bool> markPlanAchieved(String planId) {
+    return updatePlan(planId, status: 'completed');
+  }
+
+  Future<bool> reopenPlan(String planId) {
+    return updatePlan(planId, status: 'active');
   }
 
   Future<bool> archivePlan(String planId) {
@@ -108,10 +124,32 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     );
   }
 
-  Future<bool> createOpenThread({
+  Future<PlanMilestone?> addMilestone({
+    required String planId,
     required String title,
-    String? summary,
   }) {
+    return _runMutationFor(
+      () => ref
+          .read(accountabilityApiProvider)
+          .createMilestone(planId: planId, title: title),
+    );
+  }
+
+  Future<bool> setMilestoneDone(String milestoneId, {required bool done}) {
+    return _runMutation(
+      () => ref
+          .read(accountabilityApiProvider)
+          .updateMilestone(milestoneId, status: done ? 'completed' : 'open'),
+    );
+  }
+
+  Future<bool> deleteMilestone(String milestoneId) {
+    return _runMutation(
+      () => ref.read(accountabilityApiProvider).deleteMilestone(milestoneId),
+    );
+  }
+
+  Future<bool> createOpenThread({required String title, String? summary}) {
     final overview = state.overview;
     if (overview != null && overview.isAtOpenThreadLimit) {
       final l10n = lookupForLocale(ref.read(localeControllerProvider).locale);
@@ -124,10 +162,9 @@ class AccountabilityController extends Notifier<AccountabilityState> {
       return Future.value(false);
     }
     return _runMutation(
-      () => ref.read(accountabilityApiProvider).createOpenThread(
-        title: title,
-        summary: summary,
-      ),
+      () => ref
+          .read(accountabilityApiProvider)
+          .createOpenThread(title: title, summary: summary),
     );
   }
 
@@ -138,12 +175,14 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     String? status,
   }) {
     return _runMutation(
-      () => ref.read(accountabilityApiProvider).updateOpenThread(
-        threadId,
-        title: title,
-        summary: summary,
-        status: status,
-      ),
+      () => ref
+          .read(accountabilityApiProvider)
+          .updateOpenThread(
+            threadId,
+            title: title,
+            summary: summary,
+            status: status,
+          ),
     );
   }
 
@@ -160,22 +199,32 @@ class AccountabilityController extends Notifier<AccountabilityState> {
   }
 
   Future<bool> _runMutation(Future<Object?> Function() action) async {
+    return (await _write(action)).$1;
+  }
+
+  /// For callers that need the saved record itself — a new step cannot be
+  /// ticked off until its id comes back.
+  Future<T?> _runMutationFor<T>(Future<T> Function() action) async {
+    return (await _write(action)).$2;
+  }
+
+  Future<(bool, T?)> _write<T>(Future<T> Function() action) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await action();
+      final saved = await action();
       final overview = await ref.read(accountabilityApiProvider).getOverview();
       state = state.copyWith(
         overview: overview,
         isLoading: false,
         clearError: true,
       );
-      return true;
+      return (true, saved);
     } on Object catch (error) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: _localizedError(error),
       );
-      return false;
+      return (false, null);
     }
   }
 }

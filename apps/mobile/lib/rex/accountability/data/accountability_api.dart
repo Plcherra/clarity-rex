@@ -53,6 +53,7 @@ class AccountabilityApi {
   Future<PlanRecord> createPlan({
     required String title,
     String? description,
+    String? targetDateIso,
   }) async {
     final response = await _apiClient.postJson('/plans', {
       'plan_type': 'personal',
@@ -64,6 +65,7 @@ class AccountabilityApi {
       'priority': 4,
       'status': 'active',
       'active': true,
+      'target_date': ?targetDateIso,
       'metadata': {'source': 'goals_tab'},
     });
     final data = _decodeResponse(response);
@@ -110,6 +112,60 @@ class AccountabilityApi {
     return PlanRecord.fromJson(data);
   }
 
+  Future<PlanMilestone> createMilestone({
+    required String planId,
+    required String title,
+  }) async {
+    final response = await _apiClient.postJson('/plans/$planId/milestones', {
+      'plan_id': planId,
+      'title': title,
+      'milestone_type': 'checkpoint',
+      'priority': 3,
+      'status': 'open',
+      'active': true,
+      'metadata': {'source': 'goals_tab'},
+    });
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const AccountabilityApiException(
+        'Backend returned an invalid milestone response.',
+      );
+    }
+    return PlanMilestone.fromJson(data);
+  }
+
+  Future<PlanMilestone> updateMilestone(
+    String milestoneId, {
+    String? title,
+    String? status,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (title != null) {
+      payload['title'] = title;
+    }
+    if (status != null) {
+      payload['status'] = status;
+    }
+    final response = await _apiClient.patchJson(
+      '/plans/milestones/$milestoneId',
+      payload,
+    );
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const AccountabilityApiException(
+        'Backend returned an invalid milestone response.',
+      );
+    }
+    return PlanMilestone.fromJson(data);
+  }
+
+  Future<void> deleteMilestone(String milestoneId) async {
+    final response = await _apiClient.delete('/plans/milestones/$milestoneId');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AccountabilityApiException(_errorMessage(response.body));
+    }
+  }
+
   Future<void> archivePlan(String planId) async {
     final response = await _apiClient.delete('/plans/$planId');
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -153,7 +209,10 @@ class AccountabilityApi {
     if (status != null) {
       payload['status'] = status;
     }
-    final response = await _apiClient.patchJson('/open-threads/$threadId', payload);
+    final response = await _apiClient.patchJson(
+      '/open-threads/$threadId',
+      payload,
+    );
     final data = _decodeResponse(response);
     if (data is! Map<String, dynamic>) {
       throw const AccountabilityApiException(

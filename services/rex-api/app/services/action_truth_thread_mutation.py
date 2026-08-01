@@ -1,21 +1,15 @@
-"""Truth guard for false open-thread / goal mutation claims without a write."""
+"""Detects a reply claiming a goal or thread change that has not happened yet.
+
+Used only where a write is genuinely still pending — a confirm card is on
+screen and "I've updated your goal" would be false. Turns with no write of any
+kind keep Grok's own words; canned Goals copy used to swallow real answers.
+"""
 
 from __future__ import annotations
 
 import re
 
 from app.services.action_truth_policy import response_claims_unconfirmed_success
-
-UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK = (
-    "I can help with that, but I don't have a confirmed save or update from this "
-    "turn. Tell me exactly what to change in Goals and I'll confirm before applying it."
-)
-
-# Keep chatting — never lecture about Auto Suggestions mode.
-CONTINUING_THREAD_HELP_FALLBACK = (
-    "Happy to keep talking about that. If you want it changed in Goals, tell me "
-    "the exact new title or time and I'll confirm before applying anything."
-)
 
 _CONFIRMATION_HINTS = (
     "confirm",
@@ -97,10 +91,3 @@ def response_claims_thread_or_goal_mutation_success(response: str) -> bool:
     return response_claims_unconfirmed_success(cleaned) and bool(
         re.search(r"\b(?:goal|thread|sleep schedule)\b", lowered)
     )
-
-
-def safe_unexecuted_thread_or_goal_mutation_response(response: str) -> str:
-    cleaned = response.strip()
-    if not response_claims_thread_or_goal_mutation_success(cleaned):
-        return cleaned
-    return UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK

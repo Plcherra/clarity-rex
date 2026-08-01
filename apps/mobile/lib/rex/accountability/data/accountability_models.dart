@@ -1,5 +1,7 @@
 import 'package:clarity/rex/memory/data/memory_models.dart';
 
+part 'accountability_plan_models.dart';
+
 enum AccountabilitySignalType {
   ruleViolation,
   planDrift,
@@ -41,6 +43,7 @@ class AccountabilityOverview {
     required this.planHierarchy,
     required this.duplicateWarnings,
     required this.metadata,
+    this.achievedPlans = const [],
   });
 
   factory AccountabilityOverview.fromJson(Map<String, dynamic> json) {
@@ -55,6 +58,7 @@ class AccountabilityOverview {
       activeRules: _list(json['active_rules'], PersonalRule.fromJson),
       openThreads: _list(json['open_threads'], OpenThread.fromJson),
       activePlans: _list(json['active_plans'], PlanRecord.fromJson),
+      achievedPlans: _list(json['achieved_plans'], PlanRecord.fromJson),
       openMilestones: _list(json['open_milestones'], PlanMilestone.fromJson),
       completedMilestones: _list(
         json['completed_milestones'],
@@ -76,6 +80,9 @@ class AccountabilityOverview {
   final List<PersonalRule> activeRules;
   final List<OpenThread> openThreads;
   final List<PlanRecord> activePlans;
+
+  /// Recently finished goals, newest first — proof the work was done.
+  final List<PlanRecord> achievedPlans;
   final List<PlanMilestone> openMilestones;
   final List<PlanMilestone> completedMilestones;
   final List<PlanHierarchyItem> planHierarchy;
@@ -88,19 +95,17 @@ class AccountabilityOverview {
   int get activeOpenThreadCount =>
       openThreads.where((thread) => thread.status == 'active').length;
 
-  bool get isAtOpenThreadLimit =>
-      activeOpenThreadCount >= maxActiveOpenThreads;
+  bool get isAtOpenThreadLimit => activeOpenThreadCount >= maxActiveOpenThreads;
 
   bool get isEmpty => !hasGoalsOrThreads;
 
   bool get hasGoalsOrThreads =>
       activePlans.isNotEmpty ||
+      achievedPlans.isNotEmpty ||
       openThreads.where((thread) => thread.status == 'active').isNotEmpty;
 
   bool get hasInsightSignals =>
-      signals.isNotEmpty ||
-      ruleRisks.isNotEmpty ||
-      recentPatterns.isNotEmpty;
+      signals.isNotEmpty || ruleRisks.isNotEmpty || recentPatterns.isNotEmpty;
 
   int get activePlanCount =>
       _int(metadata['active_plan_count']) ?? activePlans.length;
@@ -196,6 +201,29 @@ class AccountabilitySourceRef {
   }
 }
 
+class DuplicateWarning {
+  const DuplicateWarning({
+    required this.recordType,
+    required this.title,
+    required this.recordIds,
+    required this.reason,
+  });
+
+  factory DuplicateWarning.fromJson(Map<String, dynamic> json) {
+    return DuplicateWarning(
+      recordType: _string(json['record_type']) ?? 'record',
+      title: _string(json['title']) ?? 'Duplicate warning',
+      recordIds: _stringList(json['record_ids']),
+      reason: _string(json['reason']) ?? '',
+    );
+  }
+
+  final String recordType;
+  final String title;
+  final List<String> recordIds;
+  final String reason;
+}
+
 class PersonalRule {
   const PersonalRule({
     required this.id,
@@ -276,143 +304,6 @@ class OpenThread {
   final DateTime? lastFollowUpAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-}
-
-class PlanHierarchyItem {
-  const PlanHierarchyItem({
-    required this.plan,
-    required this.openMilestones,
-    required this.completedMilestones,
-    required this.counts,
-  });
-
-  factory PlanHierarchyItem.fromJson(Map<String, dynamic> json) {
-    return PlanHierarchyItem(
-      plan: PlanRecord.fromJson(_map(json['plan'])),
-      openMilestones: _list(json['open_milestones'], PlanMilestone.fromJson),
-      completedMilestones: _list(
-        json['completed_milestones'],
-        PlanMilestone.fromJson,
-      ),
-      counts: _map(json['counts']),
-    );
-  }
-
-  final PlanRecord plan;
-  final List<PlanMilestone> openMilestones;
-  final List<PlanMilestone> completedMilestones;
-  final Map<String, dynamic> counts;
-}
-
-class DuplicateWarning {
-  const DuplicateWarning({
-    required this.recordType,
-    required this.title,
-    required this.recordIds,
-    required this.reason,
-  });
-
-  factory DuplicateWarning.fromJson(Map<String, dynamic> json) {
-    return DuplicateWarning(
-      recordType: _string(json['record_type']) ?? 'record',
-      title: _string(json['title']) ?? 'Duplicate warning',
-      recordIds: _stringList(json['record_ids']),
-      reason: _string(json['reason']) ?? '',
-    );
-  }
-
-  final String recordType;
-  final String title;
-  final List<String> recordIds;
-  final String reason;
-}
-
-class PlanRecord {
-  const PlanRecord({
-    required this.id,
-    required this.planType,
-    required this.title,
-    required this.description,
-    required this.desiredOutcome,
-    required this.priority,
-    required this.status,
-    required this.active,
-    required this.startDate,
-    required this.targetDate,
-    required this.completedAt,
-    required this.lastReviewedAt,
-  });
-
-  factory PlanRecord.fromJson(Map<String, dynamic> json) {
-    return PlanRecord(
-      id: _string(json['id']) ?? '',
-      planType: _string(json['plan_type']) ?? 'other',
-      title: _string(json['title']) ?? 'Plan',
-      description: _string(json['description']),
-      desiredOutcome: _string(json['desired_outcome']),
-      priority: _int(json['priority']) ?? 3,
-      status: _string(json['status']) ?? 'active',
-      active: _bool(json['active']) ?? true,
-      startDate: _dateTime(json['start_date']),
-      targetDate: _dateTime(json['target_date']),
-      completedAt: _dateTime(json['completed_at']),
-      lastReviewedAt: _dateTime(json['last_reviewed_at']),
-    );
-  }
-
-  final String id;
-  final String planType;
-  final String title;
-  final String? description;
-  final String? desiredOutcome;
-  final int priority;
-  final String status;
-  final bool active;
-  final DateTime? startDate;
-  final DateTime? targetDate;
-  final DateTime? completedAt;
-  final DateTime? lastReviewedAt;
-}
-
-class PlanMilestone {
-  const PlanMilestone({
-    required this.id,
-    required this.planId,
-    required this.title,
-    required this.description,
-    required this.milestoneType,
-    required this.targetDate,
-    required this.priority,
-    required this.status,
-    required this.active,
-    required this.completedAt,
-  });
-
-  factory PlanMilestone.fromJson(Map<String, dynamic> json) {
-    return PlanMilestone(
-      id: _string(json['id']) ?? '',
-      planId: _string(json['plan_id']) ?? '',
-      title: _string(json['title']) ?? 'Milestone',
-      description: _string(json['description']),
-      milestoneType: _string(json['milestone_type']) ?? 'checkpoint',
-      targetDate: _dateTime(json['target_date']),
-      priority: _int(json['priority']) ?? 3,
-      status: _string(json['status']) ?? 'open',
-      active: _bool(json['active']) ?? true,
-      completedAt: _dateTime(json['completed_at']),
-    );
-  }
-
-  final String id;
-  final String planId;
-  final String title;
-  final String? description;
-  final String milestoneType;
-  final DateTime? targetDate;
-  final int priority;
-  final String status;
-  final bool active;
-  final DateTime? completedAt;
 }
 
 extension AccountabilitySignalTypeLabel on AccountabilitySignalType {

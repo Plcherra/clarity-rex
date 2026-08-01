@@ -104,7 +104,7 @@ async def test_moving_rows_into_a_new_category_creates_it_then_moves_them() -> N
     move = fake.call("PATCH", "transactions")
     assert move["body"] == {"category_id": "cat-new"}
     assert move["query"] == {
-        "or": '(description.ilike."*Wingstop*",merchant.ilike."*Wingstop*")',
+        "or": '(description.ilike."*wingstop*",merchant.ilike."*wingstop*")',
         "select": "*",
     }
 
@@ -120,10 +120,12 @@ async def test_merchant_moves_cover_rows_the_assistant_never_saw() -> None:
         confirmed=True,
     )
 
+    # Each word stands on its own, so the card digits Grok echoed cannot stop
+    # the rows the user meant from matching.
     move = fake.call("PATCH", "transactions")
-    assert move["query"]["or"] == (
-        '(description.ilike."*Bom Dough card 1234*",'
-        'merchant.ilike."*Bom Dough card 1234*")'
+    assert move["query"]["and"] == (
+        '(or(description.ilike."*bom*",merchant.ilike."*bom*"),'
+        'or(description.ilike."*dough*",merchant.ilike."*dough*"))'
     )
 
 

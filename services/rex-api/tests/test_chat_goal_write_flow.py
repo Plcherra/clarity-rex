@@ -57,7 +57,12 @@ async def test_goal_talk_without_an_action_creates_no_plan():
 
 
 @pytest.mark.asyncio
-async def test_goal_success_claim_without_an_action_is_replaced():
+async def test_words_about_a_goal_never_become_a_goal():
+    """Only the action writes.
+
+    Rex's wording is its own — the body does not rewrite it — so the guarantee
+    here is that talking about a save is not a save.
+    """
     turns = scripted_turns(
         {"32gb": "Done — I created that goal for you in Goals."}
     )
@@ -66,5 +71,6 @@ async def test_goal_success_claim_without_an_action_is_replaced():
         "Get 32gb-64gb ram and 1tb-2tb storage by next month"
     )
 
-    assert "Done — I created that goal" not in result["response"]
     assert turns.store.created_plans == []
+    assert turns.store.plans == []
+    assert result["memory_changes"] is None

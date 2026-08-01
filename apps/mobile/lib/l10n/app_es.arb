@@ -185,6 +185,66 @@
   "accountabilitySharedLoading": "Cargando objetivos",
   "accountabilityStatusInProgress": "En curso",
   "accountabilityStatusOpen": "Abierto",
+  "accountabilityMarkAchieved": "Marcar como logrado",
+  "accountabilityGoalAchieved": "Bien — objetivo logrado.",
+  "accountabilityGoalReopened": "Objetivo devuelto a activos.",
+  "accountabilitySectionsAchievedGoals": "Logrados",
+  "accountabilitySectionsNoAchievedGoals": "Todavía no terminaste ninguno.",
+  "accountabilityAchievedOn": "Logrado el {date}",
+  "@accountabilityAchievedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "accountabilityReopenGoal": "Devolver a activos",
+  "accountabilityStepsTitle": "Pasos",
+  "accountabilityAddStep": "Agregar paso",
+  "accountabilityAddStepHint": "ej. Ahorrar $500 para esto",
+  "accountabilityStepSaved": "Paso agregado.",
+  "accountabilityStepUpdated": "Paso actualizado.",
+  "accountabilityStepDeleted": "Paso eliminado.",
+  "accountabilityStepsDone": "{done} de {total} listos",
+  "@accountabilityStepsDone": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "accountabilityDeleteStepTitle": "¿Eliminar paso?",
+  "accountabilityDeleteStepBody": "¿Eliminar \"{title}\" de este objetivo?",
+  "@accountabilityDeleteStepBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "accountabilityDueDateRequired": "Elige una fecha límite — un objetivo sin ella nunca se acerca.",
+  "accountabilitySetDueDate": "Poner fecha límite",
+  "accountabilityNoDueDate": "Sin fecha límite",
+  "accountabilityDaysLeft": "{days, plural, =1{Queda 1 día} other{Quedan {days} días}}",
+  "@accountabilityDaysLeft": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "accountabilityDaysOver": "{days, plural, =1{1 día de retraso} other{{days} días de retraso}}",
+  "@accountabilityDaysOver": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "accountabilityDueToday": "Vence hoy",
   "accountabilityTilesOpenThreadActionsTooltip": "Acciones del hilo abierto",
   "accountabilityTilesOpenThreadDefaultSubtitle": "Seguimiento del compañero — no es memoria guardada",
   "accountabilityTilesGoalActionsTooltip": "Acciones de objetivos",
@@ -1281,6 +1341,9 @@
   "insightsApiInvalidMarkReadResponse": "Respuesta de marcar como leído no válida.",
   "profileProactiveInsightsTitle": "Insights financieros proactivos",
   "profileProactiveInsightsSubtitle": "Guarda alertas deterministas cuando cambien tus datos. No hay monitoreo en segundo plano hasta que lo actives.",
+  "companionScreenTitle": "Compañero",
+  "companionAbilitiesSection": "Qué puede hacer Rex",
+  "profileCompanionSubtitle": "Sugerencias, guardado y uso de voz",
   "assistantCompanionSettingsTitle": "Guardado del compañero",
   "assistantCompanionSettingsSubtitle": "Elige cómo Rex sugiere metas, hilos abiertos y memoria en el chat. Off = solo chat. Texto = di sí en el chat. Tarjeta = tarjeta de confirmación.",
   "assistantCompanionSettingsGearLabel": "Ajustes de guardado del compañero",
@@ -1313,6 +1376,7 @@
   "categoryDetailSpentThisMonth": "GASTADO ESTE MES",
   "categoryDetailNoTransactions": "No hay transacciones en esta categoría este mes.",
   "categoryDetailWhereItWent": "A dónde fue",
+  "categoryDetailTapMerchantHint": "Toca un lugar para ver sus transacciones",
   "categoryDetailNewThisMonth": "Nueva este mes: no hubo nada el mes pasado",
   "categoryDetailNoLastMonthSpending": "Nada en esta categoría el mes pasado",
   "categoryDetailUpFromLastMonth": "{change} más que el mes pasado",

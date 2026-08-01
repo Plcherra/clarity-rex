@@ -12,6 +12,8 @@ import '../../transactions/presentation/widgets/transaction_line_tile.dart';
 import '../domain/category_month_detail.dart';
 import '../domain/dashboard_snapshot.dart';
 import 'category_detail_insights.dart';
+import 'category_detail_merchants.dart';
+import 'category_detail_panel.dart';
 
 /// The transactions and insights behind one bar of a dashboard spending chart.
 class CategoryDetailScreen extends StatefulWidget {
@@ -183,56 +185,36 @@ class _CategoryDetailBody extends StatelessWidget {
       children: [
         CategoryDetailSummaryCard(detail: detail, budget: budget),
         const SizedBox(height: 18),
-        CategoryDetailMerchants(detail: detail),
-        if (detail.merchants.length >= 2) const SizedBox(height: 18),
-        Text(
-          l10n.dashboardTransactionsSectionTitle,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.2,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.78),
+        if (detail.merchants.isEmpty)
+          CategoryDetailPanel(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
+            child: Text(
+              l10n.categoryDetailNoTransactions,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          )
+        else
+          CategoryDetailMerchants(
+            detail: detail,
+            buildTransactionRow: (row) => DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.35),
+                  ),
+                ),
+              ),
+              child: TransactionLineTile(
+                transaction: row.transaction,
+                displayCategory: row.displayCategory,
+                transactionController: transactionController,
+                horizontalPadding: 0,
+              ),
             ),
           ),
-          child: detail.transactions.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 26,
-                  ),
-                  child: Text(
-                    l10n.categoryDetailNoTransactions,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                )
-              : Column(
-                  children: [
-                    for (var i = 0; i < detail.transactions.length; i++) ...[
-                      if (i > 0)
-                        Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: cs.outlineVariant.withValues(alpha: 0.35),
-                        ),
-                      TransactionLineTile(
-                        transaction: detail.transactions[i].transaction,
-                        displayCategory: detail.transactions[i].displayCategory,
-                        transactionController: transactionController,
-                      ),
-                    ],
-                  ],
-                ),
-        ),
       ],
     );
   }

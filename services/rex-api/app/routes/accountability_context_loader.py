@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from app.config import get_settings
+from app.services.accountability_snapshot import ACHIEVED_PLAN_STATUS
 from app.services.memory_service import SupabaseMemoryService
 from app.services.time_context_service import TimeContextService
 
@@ -29,6 +30,7 @@ async def load_accountability_context(
     (
         personal_rules,
         plans,
+        achieved_plans,
         plan_milestones,
         entities_result,
         entity_events,
@@ -43,6 +45,11 @@ async def load_accountability_context(
         memory_service.list_plans(
             active=True,
             status="active",
+            limit=ACCOUNTABILITY_CONTEXT_LIMIT,
+        ),
+        memory_service.list_plans(
+            active=True,
+            status=ACHIEVED_PLAN_STATUS,
             limit=ACCOUNTABILITY_CONTEXT_LIMIT,
         ),
         memory_service.list_plan_milestones(
@@ -70,6 +77,7 @@ async def load_accountability_context(
     return {
         "personal_rules": personal_rules,
         "plans": plans,
+        "achieved_plans": achieved_plans,
         "plan_milestones": plan_milestones,
         "entities": entities_result.rows,
         "entity_events": entity_events,

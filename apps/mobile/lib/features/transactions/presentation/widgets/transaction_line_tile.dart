@@ -16,12 +16,16 @@ class TransactionLineTile extends StatelessWidget {
     required this.transaction,
     required this.displayCategory,
     required this.transactionController,
+    this.horizontalPadding = 18,
     super.key,
   });
 
   final Transaction transaction;
   final String displayCategory;
   final TransactionUiController transactionController;
+
+  /// Drops to zero inside a card that already indents its contents.
+  final double horizontalPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +38,10 @@ class TransactionLineTile extends StatelessWidget {
         : ClarityColors.financePositive;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: 14,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
