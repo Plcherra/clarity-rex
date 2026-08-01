@@ -94,6 +94,12 @@ ConfirmedTransferMatch? findConfirmedInternalTransferMatch({
     final dayDelta = _daysBetween(t.date, counterpart.date);
     if (dayDelta > maxDayDelta) continue;
 
+    // Deliberately not compared: the names on the two sides. A person-to-person
+    // rail shows whichever alias each bank has on file — a phone number at one,
+    // an email at the other — so the same user moving their own money can arrive
+    // under two different names. Both legs landing in accounts the user
+    // connected is the stronger evidence, and it is the evidence we have.
+
     if (_isCreditCardPaymentPair(
       a: t,
       b: counterpart,
@@ -129,6 +135,42 @@ bool looksLikeInternalTransferDescription(
   required double amount,
 }) {
   return _looksLikeTransferDescription(description);
+}
+
+/// True when the row names another account the user has connected.
+///
+/// Banks write an internal move using the destination account's own name —
+/// `Withdrawal to 360 Performance Savings`, `Deposit from Adv Plus Banking`.
+/// Matching against the user's own account list needs no keyword list and no
+/// language, and unlike a bank's transfer label it cannot be true of a payment
+/// to another person: only the user's own accounts are in the list.
+///
+/// This recognises the leg whose other side has not been imported, or lives in
+/// an account connected later.
+bool describesAnotherOwnAccount({
+  required String description,
+  required Map<String, Account> accountsById,
+  required String excludingAccountId,
+}) {
+  final haystack = _normalizedNameTokens(description);
+  if (haystack.isEmpty) return false;
+  for (final account in accountsById.values) {
+    if (account.id == excludingAccountId) continue;
+    final name = _normalizedNameTokens(account.name);
+    // A single word is too weak to be proof: an account called `Checking`
+    // would swallow a payment to any business with that word in its name.
+    if (name.isEmpty || !name.contains(' ')) continue;
+    if (haystack.contains(name)) return true;
+  }
+  return false;
+}
+
+String _normalizedNameTokens(String value) {
+  return value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+      .trim()
+      .replaceAll(RegExp(r'\s+'), ' ');
 }
 
 int _daysBetween(DateTime a, DateTime b) {

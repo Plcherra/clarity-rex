@@ -65,7 +65,7 @@ void main() {
     expect(resolved.countsAsIncome, isFalse);
   });
 
-  test('transfer out category does not count as spend', () {
+  test('money sent to a person is spend even when the bank calls it a transfer', () {
     final transaction = Transaction(
       date: DateTime(2026, 3, 6),
       description: 'ZELLE PAYMENT TO FAMILY',
@@ -83,8 +83,8 @@ void main() {
       allTransactions: [transaction],
     );
 
-    expect(resolved.financialRole, FinancialRole.transfer);
-    expect(resolved.countsAsSpend, isFalse);
+    expect(resolved.financialRole, FinancialRole.expense);
+    expect(resolved.countsAsSpend, isTrue);
     expect(resolved.countsAsIncome, isFalse);
   });
 

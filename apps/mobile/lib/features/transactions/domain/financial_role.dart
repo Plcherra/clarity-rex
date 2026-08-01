@@ -36,14 +36,28 @@ FinancialRole effectiveFinancialRole({
     return FinancialRole.refund;
   }
 
-  if (effectiveCategoryLabel.trim().toLowerCase() == 'transfer out' ||
-      effectiveCategoryLabel.trim().toLowerCase() == 'transfer in') {
-    return FinancialRole.transfer;
-  }
+  // Banks file every outgoing Zelle as a transfer, whether the money went to
+  // the user's own savings or to their landlord. So the label is a hint, never
+  // proof on its own: money is only the user's own money when a second side of
+  // the move can be seen. Rent has no second side, and hiding it from spending
+  // is how a losing month reads as a profitable one.
+  //
+  // Each check below is one way that second side can show up. When none of them
+  // holds, the fallback at the end of this function treats the row by
+  // direction — the same conservative rule the card-payment branch uses.
 
   if (looksLikeInternalTransferDescription(
     t.description,
     amount: t.amount,
+  )) {
+    return FinancialRole.transfer;
+  }
+
+  // The row names another account the user connected, in either direction.
+  if (describesAnotherOwnAccount(
+    description: t.description,
+    accountsById: accountsById,
+    excludingAccountId: t.accountId,
   )) {
     return FinancialRole.transfer;
   }

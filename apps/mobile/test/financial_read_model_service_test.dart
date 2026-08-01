@@ -47,7 +47,8 @@ void main() {
     );
 
     expect(performance.totalBudgeted, 18);
-    expect(performance.totalSpent, 17);
+    // Includes the $100 sent to family: unbudgeted, but still money spent.
+    expect(performance.totalSpent, 117);
     expect(performance.budgetedCategoryCount, 2);
     expect(performance.onTrackCategoryCount, 1);
     expect(performance.totalOverspent, 2);
@@ -642,9 +643,9 @@ void main() {
       );
       expect(
         byDescription['ZELLE PAYMENT TO FAMILY']!.financialRole,
-        FinancialRole.transfer,
+        FinancialRole.expense,
       );
-      expect(byDescription['ZELLE PAYMENT TO FAMILY']!.countsAsSpend, isFalse);
+      expect(byDescription['ZELLE PAYMENT TO FAMILY']!.countsAsSpend, isTrue);
       expect(
         byDescription['ONLINE BANKING PAYMENT TO CRD VISA']!.financialRole,
         FinancialRole.creditCardPayment,
