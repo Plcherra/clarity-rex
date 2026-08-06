@@ -699,7 +699,15 @@
   "dashboardSurfaceOverview": "Overview",
   "dashboardSurfaceTransactions": "Transactions",
   "transactionsMiniAnalyticsTitle": "This month at a glance",
-  "transactionsMiniAnalyticsSubtitle": "Same totals as Dashboard for the current month",
+  "transactionsMiniAnalyticsTitleForMonth": "{month} at a glance",
+  "@transactionsMiniAnalyticsTitleForMonth": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "transactionsMiniAnalyticsSubtitle": "Same totals as Overview for this month",
   "transactionsMiniAnalyticsSpent": "Spent",
   "transactionsMiniAnalyticsIncome": "Income",
   "transactionsMiniAnalyticsNet": "Net",
@@ -707,6 +715,7 @@
   "transactionsMiniAnalyticsTopCategories": "Top categories",
   "transactionsMiniAnalyticsPendingNote": "Totals update after pending items post.",
   "transactionPendingChip": "Pending",
+  "dashboardNeedsCategoryLabel": "Needs category",
   "dashboardTransactionsClearFilters": "Clear",
   "dashboardTransactionsLoadingLabel": "Loading transactions",
   "dashboardTransactionsLoadError": "Could not load transactions.",
@@ -732,9 +741,9 @@
   "dashboardTransactionsSelectAccountsTitle": "Accounts",
   "dashboardTransactionsNoTransactionsMatch": "No transactions match.",
   "dashboardTransactionsTimeFilterAllHistory": "All history",
-  "dashboardTransactionsTimeFilterDashboardMonth": "Dashboard month",
-  "dashboardTransactionsTimeFilterLatestTxMonth": "Latest tx month",
-  "dashboardTransactionsTimeFilterLatestTxYear": "Latest tx year",
+  "dashboardTransactionsTimeFilterDashboardMonth": "This month",
+  "dashboardTransactionsTimeFilterLatestTxMonth": "Latest month",
+  "dashboardTransactionsTimeFilterLatestTxYear": "Latest year",
   "dashboardTransactionsSortNewest": "Newest",
   "dashboardTransactionsSortOldest": "Oldest",
   "dashboardTransactionsSortLargest": "Largest",
@@ -750,7 +759,7 @@
       }
     }
   },
-  "dashboardTransactionsDashboardMonthRange": "Dashboard month: {dateRange}",
+  "dashboardTransactionsDashboardMonthRange": "This month: {dateRange}",
   "@dashboardTransactionsDashboardMonthRange": {
     "placeholders": {
       "dateRange": {
@@ -758,7 +767,7 @@
       }
     }
   },
-  "dashboardTransactionsLatestTxMonthRange": "Latest transaction month: {dateRange}",
+  "dashboardTransactionsLatestTxMonthRange": "Latest month: {dateRange}",
   "@dashboardTransactionsLatestTxMonthRange": {
     "placeholders": {
       "dateRange": {
@@ -766,7 +775,7 @@
       }
     }
   },
-  "dashboardTransactionsLatestTxYearRange": "Latest transaction year: {dateRange}",
+  "dashboardTransactionsLatestTxYearRange": "Latest year: {dateRange}",
   "@dashboardTransactionsLatestTxYearRange": {
     "placeholders": {
       "dateRange": {

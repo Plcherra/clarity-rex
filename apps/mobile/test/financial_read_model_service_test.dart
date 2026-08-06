@@ -161,7 +161,7 @@ void main() {
   });
 
   test(
-    'dashboard reference falls back to latest scoped spend after restart',
+    'dashboard reference stays on requested month when that month is empty',
     () {
       final model = FinancialReadModel(
         accounts: const [
@@ -190,7 +190,7 @@ void main() {
         requested: DateTime(2026, 5, 25),
       );
 
-      expect(reference, DateTime(2026, 4, 22));
+      expect(reference, DateTime(2026, 5, 25));
     },
   );
 
@@ -219,7 +219,7 @@ void main() {
     expect(reference, DateTime(2026, 5, 25));
   });
 
-  test('dashboard reference skips months without counted cash flow', () {
+  test('dashboard reference keeps requested month even without counted cash flow', () {
     final model = FinancialReadModel(
       accounts: const [
         Account(id: 'checking', name: 'Checking', type: AccountType.checking),
@@ -247,7 +247,7 @@ void main() {
       requested: DateTime(2026, 5, 25),
     );
 
-    expect(reference, DateTime(2026, 4, 22));
+    expect(reference, DateTime(2026, 5, 25));
   });
 
   test(

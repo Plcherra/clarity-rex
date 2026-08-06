@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
-    'spending category groups exclude income ignored and unresolved rows',
+    'spending category groups put unresolved spend in Needs category first',
     () {
       final groups = spendingCategoryGroupsForResolvedTransactions([
         _resolved(
@@ -42,11 +42,14 @@ void main() {
       ]);
 
       expect(groups.map((group) => group.category), [
+        kNeedsCategoryGroupKey,
         'Grocery / Supermarket',
         'Coffee / Quick Food',
       ]);
+      expect(groups.first.isNeedsCategory, isTrue);
       expect(groups.first.transactionCount, 1);
-      expect(groups.first.spending, 6);
+      expect(groups.first.spending, 12);
+      expect(groups[1].spending, 6);
     },
   );
 

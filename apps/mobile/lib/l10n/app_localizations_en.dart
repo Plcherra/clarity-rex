@@ -1229,8 +1229,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transactionsMiniAnalyticsTitle => 'This month at a glance';
 
   @override
+  String transactionsMiniAnalyticsTitleForMonth(String month) {
+    return '$month at a glance';
+  }
+
+  @override
   String get transactionsMiniAnalyticsSubtitle =>
-      'Same totals as Dashboard for the current month';
+      'Same totals as Overview for this month';
 
   @override
   String get transactionsMiniAnalyticsSpent => 'Spent';
@@ -1253,6 +1258,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transactionPendingChip => 'Pending';
+
+  @override
+  String get dashboardNeedsCategoryLabel => 'Needs category';
 
   @override
   String get dashboardTransactionsClearFilters => 'Clear';
@@ -1313,13 +1321,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardTransactionsTimeFilterAllHistory => 'All history';
 
   @override
-  String get dashboardTransactionsTimeFilterDashboardMonth => 'Dashboard month';
+  String get dashboardTransactionsTimeFilterDashboardMonth => 'This month';
 
   @override
-  String get dashboardTransactionsTimeFilterLatestTxMonth => 'Latest tx month';
+  String get dashboardTransactionsTimeFilterLatestTxMonth => 'Latest month';
 
   @override
-  String get dashboardTransactionsTimeFilterLatestTxYear => 'Latest tx year';
+  String get dashboardTransactionsTimeFilterLatestTxYear => 'Latest year';
 
   @override
   String get dashboardTransactionsSortNewest => 'Newest';
@@ -1350,17 +1358,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dashboardTransactionsDashboardMonthRange(String dateRange) {
-    return 'Dashboard month: $dateRange';
+    return 'This month: $dateRange';
   }
 
   @override
   String dashboardTransactionsLatestTxMonthRange(String dateRange) {
-    return 'Latest transaction month: $dateRange';
+    return 'Latest month: $dateRange';
   }
 
   @override
   String dashboardTransactionsLatestTxYearRange(String dateRange) {
-    return 'Latest transaction year: $dateRange';
+    return 'Latest year: $dateRange';
   }
 
   @override

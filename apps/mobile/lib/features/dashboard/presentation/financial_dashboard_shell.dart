@@ -7,10 +7,15 @@ class _DashboardScrollBody extends StatefulWidget {
     required this.transactionController,
     required this.scope,
     required this.snapshot,
+    required this.scopedTransactions,
+    required this.allTransactions,
+    required this.accounts,
     required this.budgetPerformance,
     required this.transactionCount,
     required this.loadIssues,
     required this.accountCount,
+    this.accountController,
+    this.onBankSyncCompleted,
     this.scrollToAnchor,
     this.onScrollToAnchorHandled,
   });
@@ -18,8 +23,13 @@ class _DashboardScrollBody extends StatefulWidget {
   final String title;
   final DashboardUiController controller;
   final TransactionUiController transactionController;
+  final AccountUiController? accountController;
+  final VoidCallback? onBankSyncCompleted;
   final DashboardScope scope;
   final DashboardSnapshot snapshot;
+  final List<Transaction> scopedTransactions;
+  final List<Transaction> allTransactions;
+  final List<Account> accounts;
   final BudgetPerformanceSnapshot budgetPerformance;
   final int transactionCount;
   final List<FinancialReadModelLoadIssue> loadIssues;
@@ -77,15 +87,18 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
   }
 
   void _openCategoryDetail(String category) {
+    final detailCategory = isUnresolvedCategoryLabel(category)
+        ? kNeedsCategoryGroupKey
+        : category;
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (context) => CategoryDetailScreen(
           controller: widget.controller,
           transactionController: widget.transactionController,
           scope: widget.scope,
-          category: category,
+          category: detailCategory,
           referenceMonth: widget.snapshot.referenceMonth,
-          budget: _budgetForCategory(category),
+          budget: _budgetForCategory(detailCategory),
         ),
       ),
     );
@@ -223,8 +236,13 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
                     )
                   : _DashboardTransactionsSection(
                       snapshot: widget.snapshot,
+                      scopedTransactions: widget.scopedTransactions,
+                      allTransactions: widget.allTransactions,
+                      accounts: widget.accounts,
                       controller: widget.controller,
                       transactionController: widget.transactionController,
+                      accountController: widget.accountController,
+                      onBankSyncCompleted: widget.onBankSyncCompleted,
                       scope: widget.scope,
                       pagePadding: pagePad.copyWith(top: 0),
                       onCategoryTap: _openCategoryDetail,

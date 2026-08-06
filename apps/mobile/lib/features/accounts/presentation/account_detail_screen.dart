@@ -409,6 +409,13 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
           transactionController: widget.transactionController,
           budgetController: widget.budgetController,
           importJobStatusController: widget.importJobStatusController,
+          accountController: widget.controller,
+          onBankSyncCompleted: () {
+            widget.controller.notifyChanged();
+            widget.dashboardController.notifyChanged();
+            widget.transactionController.notifyChanged();
+            widget.budgetController.notifyChanged();
+          },
           scope: AccountDashboardScope(widget.accountId),
           showBackButton: true,
           title: title,

@@ -27,7 +27,7 @@ void main() {
       wrapWithL10n(TransactionsMonthMiniAnalytics(snapshot: snapshot)),
     );
 
-    expect(find.text('This month at a glance'), findsOneWidget);
+    expect(find.text('July 2026 at a glance'), findsOneWidget);
     expect(find.text('\$420.00'), findsOneWidget);
     expect(find.text('\$3,000.00'), findsOneWidget);
     expect(find.text('\$2,580.00'), findsOneWidget);

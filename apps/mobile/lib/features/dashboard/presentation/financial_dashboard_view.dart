@@ -14,11 +14,13 @@ import '../domain/dashboard_insight_anchor.dart';
 import '../domain/dashboard_transaction_groups.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
+import '../../accounts/application/plaid_accounts_refresh.dart';
 import '../../accounts/presentation/widgets/connect_bank_setup_card.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../transactions/presentation/widgets/transactions_month_mini_analytics.dart';
 import '../../transactions/presentation/widgets/transaction_line_tile.dart';
+import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../theme/clarity_radius.dart';
@@ -109,6 +111,15 @@ String _displayCategory(AppLocalizations l10n, ResolvedTransaction transaction) 
   final category = transaction.displayCategory.trim();
   if (category.isEmpty) return l10n.commonUnknown;
   return category;
+}
+
+String _categoryGroupLabel(AppLocalizations l10n, String category) {
+  if (isNeedsCategoryGroupKey(category)) {
+    return l10n.dashboardNeedsCategoryLabel;
+  }
+  final trimmed = category.trim();
+  if (trimmed.isEmpty) return l10n.commonUnknown;
+  return trimmed;
 }
 
 DateTime? _latestTransactionDate(List<Transaction> transactions) {
@@ -207,6 +218,8 @@ class FinancialDashboardView extends StatefulWidget {
     required this.budgetController,
     required this.importJobStatusController,
     required this.scope,
+    this.accountController,
+    this.onBankSyncCompleted,
     this.showBackButton = false,
     this.title = '',
     this.onUploadTransactions,
@@ -223,6 +236,11 @@ class FinancialDashboardView extends StatefulWidget {
   final BudgetUiController budgetController;
   final ImportJobStatusController importJobStatusController;
   final DashboardScope scope;
+
+  /// When set, Transactions pull-to-refresh syncs connected Plaid items.
+  final AccountUiController? accountController;
+  final VoidCallback? onBankSyncCompleted;
+
   final bool showBackButton;
   final String title;
 
@@ -394,8 +412,13 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             title: widget.title,
             controller: widget.controller,
             transactionController: widget.transactionController,
+            accountController: widget.accountController,
+            onBankSyncCompleted: widget.onBankSyncCompleted,
             scope: widget.scope,
             snapshot: data.snapshot,
+            scopedTransactions: data.scopedTransactions,
+            allTransactions: data.allTransactions,
+            accounts: data.accounts,
             budgetPerformance: data.budgetPerformance,
             transactionCount: data.scopedTransactionCount,
             loadIssues: data.loadIssues,

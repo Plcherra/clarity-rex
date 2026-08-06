@@ -216,6 +216,9 @@ final class DashboardViewData {
     required this.scopedStatementImportCount,
     required this.totalStatementImportCount,
     required this.loadIssues,
+    this.scopedTransactions = const [],
+    this.allTransactions = const [],
+    this.accounts = const [],
   });
 
   final DashboardSnapshot snapshot;
@@ -226,6 +229,12 @@ final class DashboardViewData {
   final int scopedStatementImportCount;
   final int totalStatementImportCount;
   final List<FinancialReadModelLoadIssue> loadIssues;
+
+  /// Same read-model pass as [snapshot] — Transactions uses these so glance
+  /// totals and the list cannot disagree after a reload.
+  final List<Transaction> scopedTransactions;
+  final List<Transaction> allTransactions;
+  final List<Account> accounts;
 
   bool get isResolvingImportedTransactions {
     return scopedTransactionCount == 0 && scopedStatementImportCount > 0;
@@ -264,15 +273,19 @@ final class DashboardUiController extends _UiController {
       periodType: BudgetPeriodType.monthly,
       periodKey: _monthKey(reference),
     );
+    final scopedTransactions = model.transactionsForScope(scope);
     return DashboardViewData(
       snapshot: snapshot,
       budgetPerformance: budgetPerformance,
-      scopedTransactionCount: model.transactionsForScope(scope).length,
+      scopedTransactionCount: scopedTransactions.length,
       totalTransactionCount: model.transactions.length,
       accountCount: model.accounts.length,
       scopedStatementImportCount: model.statementImportsForScope(scope).length,
       totalStatementImportCount: model.statementImports.length,
       loadIssues: model.loadIssues,
+      scopedTransactions: scopedTransactions,
+      allTransactions: model.transactions,
+      accounts: model.accounts,
     );
   }
 
@@ -323,12 +336,12 @@ final class DashboardUiController extends _UiController {
     FinancialReadModel model,
     DashboardScope scope,
   ) {
-    final reference = model.dashboardReferenceForScope(
-      scope,
-      requested: bindings.spendReferenceController.spendReference,
-    );
+    final now = DateTime.now();
+    final reference = DateTime(now.year, now.month, now.day);
+    // Keep every "this month" surface on the real calendar month. Do not latch
+    // onto a prior month when the current month only has pending activity.
     bindings.spendReferenceController.spendReference = reference;
-    return reference;
+    return model.dashboardReferenceForScope(scope, requested: reference);
   }
 }
 

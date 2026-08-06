@@ -1,11 +1,67 @@
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/features/dashboard/domain/category_month_detail.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_snapshot.dart';
+import 'package:clarity/features/dashboard/domain/dashboard_transaction_groups.dart';
+import 'package:clarity/features/transactions/domain/spend_categories.dart';
 import 'package:clarity/features/transactions/domain/transaction_resolution.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('category month detail', () {
+    test('Needs category detail matches the Overview bar for Unknown spend', () {
+      final mystery = _tx(
+        description: 'MYSTERY MERCHANT ZX91',
+        amount: -42.5,
+        day: 4,
+        category: 'Unknown',
+      );
+      final grocery = _tx(
+        description: 'PUBLIX 1234',
+        amount: -20,
+        day: 5,
+        category: 'Grocery / Supermarket',
+      );
+      final transactions = [mystery, grocery];
+      // Persist Unknown via override so heuristics cannot remap it to Shopping.
+      final overrides = {transactionCategoryKey(mystery): 'Unknown'};
+
+      final snapshot = buildDashboardSnapshot(
+        scope: const GlobalDashboardScope(),
+        reference: DateTime(2026, 7, 15),
+        accounts: _accounts,
+        allTransactions: transactions,
+        scopedTransactions: transactions,
+        categoryOverrides: overrides,
+        categoryDisplayRenamesLower: const {},
+        scopedBalanceFromStatement: null,
+      );
+      final needsBar = snapshot.topCategories.firstWhere(
+        (category) => category.name == kNeedsCategoryGroupKey,
+      );
+      final resolved = resolveTransactions(
+        transactions,
+        categoryOverrides: overrides,
+        categoryDisplayRenamesLower: const {},
+        accountsById: {for (final account in _accounts) account.id: account},
+        allTransactions: transactions,
+      );
+      final detail = buildCategoryMonthDetail(
+        resolved: resolved,
+        reference: DateTime(2026, 7, 15),
+        category: kNeedsCategoryGroupKey,
+      );
+      final fromUnknownLabel = buildCategoryMonthDetail(
+        resolved: resolved,
+        reference: DateTime(2026, 7, 15),
+        category: 'Unknown',
+      );
+
+      expect(detail.spent, closeTo(needsBar.amount, 0.001));
+      expect(detail.transactionCount, 1);
+      expect(fromUnknownLabel.spent, closeTo(needsBar.amount, 0.001));
+      expect(fromUnknownLabel.transactionCount, 1);
+    });
+
     test('the detail total is the bar the user tapped', () {
       final transactions = [
         _tx(description: 'PUBLIX 1234', amount: -80.25, day: 2),

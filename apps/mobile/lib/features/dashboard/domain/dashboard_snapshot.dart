@@ -1,6 +1,7 @@
 import 'balance_resolve.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import 'dashboard_metrics.dart';
+import 'dashboard_transaction_groups.dart';
 import 'monthly_cash_flow_series.dart';
 import 'savings_snapshot.dart';
 import '../../../core/models/models.dart';
@@ -143,18 +144,23 @@ DashboardSnapshot buildDashboardSnapshot({
 
   final available = income - spent;
 
-  // Top categories (scoped, expense-role only).
+  // Top categories (scoped, expense-role only). Unresolved spend shares one
+  // Needs bucket so Overview taps open the same detail Categories uses.
   final topMap = <String, double>{};
   for (final r in resolved) {
     final t = r.transaction;
     if (t.pending) continue;
-    if (!r.countsAsSpend) continue;
     if (t.date.year != y || t.date.month != m) continue;
-    final display = r.displayCategory;
-    if (isIgnoredCategoryLabel(display) || isIncomeCategoryLabel(display)) {
+    final bucket = spendCategoryBucketKey(r);
+    if (isNeedsCategoryGroupKey(bucket)) {
+      topMap[bucket] = (topMap[bucket] ?? 0) + t.amount.abs();
       continue;
     }
-    topMap[display] = (topMap[display] ?? 0) + (-t.amount);
+    if (!r.countsAsSpend) continue;
+    if (isIgnoredCategoryLabel(bucket) || isIncomeCategoryLabel(bucket)) {
+      continue;
+    }
+    topMap[bucket] = (topMap[bucket] ?? 0) + (-t.amount);
   }
   final top =
       topMap.entries

@@ -14,16 +14,26 @@ enum _TransactionsSortMode { newest, oldest, largest, merchant }
 class _DashboardTransactionsSection extends StatefulWidget {
   const _DashboardTransactionsSection({
     required this.snapshot,
+    required this.scopedTransactions,
+    required this.allTransactions,
+    required this.accounts,
     required this.controller,
     required this.transactionController,
     required this.scope,
     required this.pagePadding,
     required this.onCategoryTap,
+    this.accountController,
+    this.onBankSyncCompleted,
   });
 
   final DashboardSnapshot snapshot;
+  final List<Transaction> scopedTransactions;
+  final List<Transaction> allTransactions;
+  final List<Account> accounts;
   final DashboardUiController controller;
   final TransactionUiController transactionController;
+  final AccountUiController? accountController;
+  final VoidCallback? onBankSyncCompleted;
   final DashboardScope scope;
   final EdgeInsets pagePadding;
   final ValueChanged<String> onCategoryTap;
@@ -40,12 +50,7 @@ class _DashboardTransactionsSectionState
   var _timeFilter = _TransactionsTimeFilter.all;
   var _sortMode = _TransactionsSortMode.newest;
   Set<String> _accountIds = {};
-  List<Transaction> _transactions = const [];
-  List<Transaction> _allTransactions = const [];
-  List<Account> _accounts = const [];
-  Object? _error;
-  var _loading = true;
-  var _loadGeneration = 0;
+  var _refreshing = false;
 
   bool get _isAccountScope => widget.scope is AccountDashboardScope;
 
@@ -58,27 +63,18 @@ class _DashboardTransactionsSectionState
   void initState() {
     super.initState();
     _searchController.addListener(_handleSearchChanged);
-    widget.controller.addListener(_load);
-    _load();
   }
 
   @override
   void didUpdateWidget(covariant _DashboardTransactionsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != widget.controller) {
-      oldWidget.controller.removeListener(_load);
-      widget.controller.addListener(_load);
-    }
-    if (oldWidget.scope != widget.scope ||
-        oldWidget.controller != widget.controller) {
+    if (oldWidget.scope != widget.scope) {
       _accountIds = {};
-      _load();
     }
   }
 
   @override
   void dispose() {
-    widget.controller.removeListener(_load);
     _searchController.removeListener(_handleSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -88,36 +84,52 @@ class _DashboardTransactionsSectionState
     if (mounted) setState(() {});
   }
 
-  Future<void> _load() async {
-    final generation = ++_loadGeneration;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _refreshFromBank() async {
+    final accounts = widget.accountController;
+    if (accounts == null) {
+      widget.onBankSyncCompleted?.call();
+      return;
+    }
+
+    final onlyAccountId = switch (widget.scope) {
+      AccountDashboardScope(:final accountId) => accountId,
+      GlobalDashboardScope() => null,
+    };
+
+    setState(() => _refreshing = true);
     try {
-      final data = await widget.controller.transactionReadDataForScope(
-        widget.scope,
+      final result = await refreshConnectedPlaidAccounts(
+        accounts: accounts,
+        onlyAccountId: onlyAccountId,
       );
-      if (!mounted || generation != _loadGeneration) return;
-      setState(() {
-        _transactions = data.transactions;
-        _allTransactions = data.allTransactions;
-        _accounts = data.accounts;
-        _loading = false;
-      });
-    } on Object catch (error) {
-      if (!mounted || generation != _loadGeneration) return;
-      setState(() {
-        _error = error;
-        _loading = false;
-      });
+      if (!mounted) return;
+      // Always reload the read model — CSV-only users still need a refresh.
+      widget.onBankSyncCompleted?.call();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(plaidAccountsRefreshMessage(context.l10n, result)),
+        ),
+      );
+    } on Object {
+      if (!mounted) return;
+      widget.onBankSyncCompleted?.call();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.accountsScreenCouldNotRefreshAccounts),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _refreshing = false);
     }
   }
 
   int get _activeFilterCount {
     var count = 0;
-    if (_timeFilter != _TransactionsTimeFilter.all) count++;
-    if (_sortMode != _TransactionsSortMode.newest) count++;
+    // Categories is always locked to the dashboard month — that is not a filter.
+    if (_mode != _TransactionsViewMode.categories &&
+        _timeFilter != _TransactionsTimeFilter.all) {
+      count++;
+    }
     if (!_isAccountScope && _accountIds.isNotEmpty) count++;
     if (_searchController.text.trim().isNotEmpty) count++;
     return count;
@@ -126,26 +138,31 @@ class _DashboardTransactionsSectionState
   void _clearFilters() {
     setState(() {
       _accountIds = {};
-      _timeFilter = _TransactionsTimeFilter.all;
-      _sortMode = _TransactionsSortMode.newest;
+      _timeFilter = _mode == _TransactionsViewMode.categories
+          ? _TransactionsTimeFilter.dashboardMonth
+          : _TransactionsTimeFilter.all;
       _searchController.clear();
     });
   }
 
   List<ResolvedTransaction> get _resolvedTransactions {
     return resolveTransactions(
-      _transactions,
+      widget.scopedTransactions,
       categoryOverrides: const {},
       categoryDisplayRenamesLower: widget.controller.categoryDisplayRenames,
-      accountsById: {for (final account in _accounts) account.id: account},
-      allTransactions: _allTransactions,
+      accountsById: {
+        for (final account in widget.accounts) account.id: account,
+      },
+      allTransactions: widget.allTransactions,
     );
   }
 
   List<ResolvedTransaction> _filteredTransactions(AppLocalizations l10n) {
     final query = _normalizeSearchText(_searchController.text);
     final range = _activeDateRange;
-    final accountsById = {for (final account in _accounts) account.id: account};
+    final accountsById = {
+      for (final account in widget.accounts) account.id: account,
+    };
     final filtered = _resolvedTransactions.where((resolved) {
       final t = resolved.transaction;
       if (!_isAccountScope &&
@@ -182,11 +199,11 @@ class _DashboardTransactionsSectionState
   }
 
   DateTimeRange? get _activeDateRange {
-    final latest = _latestTransactionDate(_transactions);
+    final latest = _latestTransactionDate(widget.scopedTransactions);
     return switch (_timeFilter) {
       _TransactionsTimeFilter.all => null,
       _TransactionsTimeFilter.dashboardMonth => _monthRange(
-        widget.controller.spendReference,
+        widget.snapshot.referenceMonth,
       ),
       _TransactionsTimeFilter.latestTransactionMonth =>
         latest == null ? null : _monthRange(latest),
@@ -214,7 +231,7 @@ class _DashboardTransactionsSectionState
 
   String _activeDateRangeDescription(AppLocalizations l10n) {
     if (_timeFilter == _TransactionsTimeFilter.all) {
-      final bounds = _transactionDateBounds(_transactions);
+      final bounds = _transactionDateBounds(widget.scopedTransactions);
       if (bounds == null) return l10n.dashboardTransactionsNoImportedHistory;
       return l10n.dashboardTransactionsHistoryRange(
         _dateRangeLabel(l10n, bounds),
@@ -271,9 +288,14 @@ class _DashboardTransactionsSectionState
   List<DashboardCategoryTransactionGroup> _categoryGroups(
     AppLocalizations l10n,
   ) {
-    return spendingCategoryGroupsForResolvedTransactions(
-      _filteredTransactions(l10n),
-    );
+    // Categories always match the dashboard reference month so taps open the
+    // same month CategoryDetailScreen shows — not all-history totals.
+    final reference = widget.snapshot.referenceMonth;
+    final inReferenceMonth = _filteredTransactions(l10n).where((resolved) {
+      final date = resolved.transaction.date;
+      return date.year == reference.year && date.month == reference.month;
+    });
+    return spendingCategoryGroupsForResolvedTransactions(inReferenceMonth);
   }
 
   @override
@@ -284,108 +306,113 @@ class _DashboardTransactionsSectionState
     final desktop = isClarityDesktopLayout(context);
     final filtered = _filteredTransactions(l10n);
 
-    return Scrollbar(
-      thumbVisibility: desktop,
-      child: CustomScrollView(
-        physics: desktop
-            ? const ClampingScrollPhysics()
-            : const BouncingScrollPhysics(),
-        slivers: [
-          SliverPadding(
-            padding: widget.pagePadding.copyWith(bottom: 0),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _sectionSubtitle(filtered.length, l10n),
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            letterSpacing: 0.6,
-                            color: cs.onSurface.withValues(alpha: 0.42),
-                            fontWeight: FontWeight.w500,
+    return RefreshIndicator(
+      onRefresh: _refreshFromBank,
+      child: Scrollbar(
+        thumbVisibility: desktop,
+        child: CustomScrollView(
+          physics: desktop
+              ? const AlwaysScrollableScrollPhysics(
+                  parent: ClampingScrollPhysics(),
+                )
+              : const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+          slivers: [
+            SliverPadding(
+              padding: widget.pagePadding.copyWith(bottom: 0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _sectionSubtitle(filtered.length, l10n),
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              letterSpacing: 0.6,
+                              color: cs.onSurface.withValues(alpha: 0.42),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                      if (_activeFilterCount > 0)
-                        TextButton.icon(
-                          onPressed: _clearFilters,
-                          icon: const Icon(Icons.close_rounded, size: 18),
-                          label: Text(l10n.dashboardTransactionsClearFilters),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _TransactionSearchField(controller: _searchController),
-                  const SizedBox(height: 12),
-                  _InlineFilterBar(
-                    accounts: _accounts,
-                    isAccountScope: _isAccountScope,
-                    accountIds: _accountIds,
-                    timeFilter: _timeFilter,
-                    sortMode: _sortMode,
-                    onAccountIdsChanged: (value) =>
-                        setState(() => _accountIds = value),
-                    onTimeChanged: (value) =>
-                        setState(() => _timeFilter = value),
-                    onSortChanged: (value) => setState(() => _sortMode = value),
-                  ),
-                  const SizedBox(height: 14),
-                  _TransactionsModePicker(
-                    selected: _mode,
-                    onSelected: (mode) => setState(() => _mode = mode),
-                  ),
-                  const SizedBox(height: 16),
-                  // Glance sits above a long flat list so it stays reachable.
-                  if (_showsDashboardMonthMiniAnalytics) ...[
-                    TransactionsMonthMiniAnalytics(snapshot: widget.snapshot),
-                    const SizedBox(height: 16),
-                  ],
-                  if (_loading)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 28),
-                      child: Center(
-                        child: ClarityDiamondLoader(
-                          size: 52,
-                          label: l10n.dashboardTransactionsLoadingLabel,
-                        ),
-                      ),
-                    )
-                  else if (_error != null)
-                    _InlineEmptyState(
-                      message: l10n.dashboardTransactionsLoadError,
-                      actionLabel: l10n.commonRetry,
-                      onAction: _load,
-                    )
-                  else if (_mode == _TransactionsViewMode.months)
-                    _MonthlyGroupsList(
-                      groups: _monthGroups(l10n),
-                      controller: widget.controller,
-                      transactionController: widget.transactionController,
-                    )
-                  else if (_mode == _TransactionsViewMode.categories)
-                    _CategoryGroupsList(
-                      groups: _categoryGroups(l10n),
-                      onCategoryTap: widget.onCategoryTap,
+                        if (_activeFilterCount > 0)
+                          TextButton.icon(
+                            onPressed: _clearFilters,
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                            label: Text(l10n.dashboardTransactionsClearFilters),
+                          ),
+                      ],
                     ),
-                ],
+                    const SizedBox(height: 12),
+                    _TransactionSearchField(controller: _searchController),
+                    const SizedBox(height: 12),
+                    _InlineFilterBar(
+                      accounts: widget.accounts,
+                      isAccountScope: _isAccountScope,
+                      accountIds: _accountIds,
+                      timeFilter: _timeFilter,
+                      sortMode: _sortMode,
+                      hideTimeFilter: _mode == _TransactionsViewMode.categories,
+                      onAccountIdsChanged: (value) =>
+                          setState(() => _accountIds = value),
+                      onTimeChanged: (value) =>
+                          setState(() => _timeFilter = value),
+                      onSortChanged: (value) =>
+                          setState(() => _sortMode = value),
+                    ),
+                    const SizedBox(height: 14),
+                    _TransactionsModePicker(
+                      selected: _mode,
+                      onSelected: (mode) => setState(() {
+                        _mode = mode;
+                        if (mode == _TransactionsViewMode.categories) {
+                          _timeFilter = _TransactionsTimeFilter.dashboardMonth;
+                        }
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    // Glance sits above a long flat list so it stays reachable.
+                    if (_showsDashboardMonthMiniAnalytics) ...[
+                      TransactionsMonthMiniAnalytics(snapshot: widget.snapshot),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_refreshing)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: LinearProgressIndicator(
+                          minHeight: 2,
+                          color: cs.primary,
+                          backgroundColor: cs.surfaceContainerHighest,
+                        ),
+                      ),
+                    if (_mode == _TransactionsViewMode.months)
+                      _MonthlyGroupsList(
+                        groups: _monthGroups(l10n),
+                        controller: widget.controller,
+                        transactionController: widget.transactionController,
+                      )
+                    else if (_mode == _TransactionsViewMode.categories)
+                      _CategoryGroupsList(
+                        groups: _categoryGroups(l10n),
+                        onCategoryTap: widget.onCategoryTap,
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
-          if (!_loading &&
-              _error == null &&
-              _mode == _TransactionsViewMode.list)
-            _FlatTransactionsSliver(
-              transactions: filtered,
-              transactionController: widget.transactionController,
-              horizontalPadding: widget.pagePadding.left,
+            if (_mode == _TransactionsViewMode.list)
+              _FlatTransactionsSliver(
+                transactions: filtered,
+                transactionController: widget.transactionController,
+                horizontalPadding: widget.pagePadding.left,
+              ),
+            SliverToBoxAdapter(
+              child: SizedBox(height: widget.pagePadding.bottom),
             ),
-          SliverToBoxAdapter(
-            child: SizedBox(height: widget.pagePadding.bottom),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -395,7 +422,7 @@ class _DashboardTransactionsSectionState
     if (_activeFilterCount == 0 && _mode == _TransactionsViewMode.months) {
       return l10n.dashboardTransactionsTapMonthHint(dateRangeDescription);
     }
-    final count = _transactions.length;
+    final count = widget.scopedTransactions.length;
     return l10n.dashboardTransactionsFilteredCount(
       filteredCount,
       count,

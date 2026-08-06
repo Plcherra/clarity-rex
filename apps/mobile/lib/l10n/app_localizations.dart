@@ -2235,10 +2235,16 @@ abstract class AppLocalizations {
   /// **'This month at a glance'**
   String get transactionsMiniAnalyticsTitle;
 
+  /// No description provided for @transactionsMiniAnalyticsTitleForMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{month} at a glance'**
+  String transactionsMiniAnalyticsTitleForMonth(String month);
+
   /// No description provided for @transactionsMiniAnalyticsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Same totals as Dashboard for the current month'**
+  /// **'Same totals as Overview for this month'**
   String get transactionsMiniAnalyticsSubtitle;
 
   /// No description provided for @transactionsMiniAnalyticsSpent.
@@ -2282,6 +2288,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pending'**
   String get transactionPendingChip;
+
+  /// No description provided for @dashboardNeedsCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs category'**
+  String get dashboardNeedsCategoryLabel;
 
   /// No description provided for @dashboardTransactionsClearFilters.
   ///
@@ -2394,19 +2406,19 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardTransactionsTimeFilterDashboardMonth.
   ///
   /// In en, this message translates to:
-  /// **'Dashboard month'**
+  /// **'This month'**
   String get dashboardTransactionsTimeFilterDashboardMonth;
 
   /// No description provided for @dashboardTransactionsTimeFilterLatestTxMonth.
   ///
   /// In en, this message translates to:
-  /// **'Latest tx month'**
+  /// **'Latest month'**
   String get dashboardTransactionsTimeFilterLatestTxMonth;
 
   /// No description provided for @dashboardTransactionsTimeFilterLatestTxYear.
   ///
   /// In en, this message translates to:
-  /// **'Latest tx year'**
+  /// **'Latest year'**
   String get dashboardTransactionsTimeFilterLatestTxYear;
 
   /// No description provided for @dashboardTransactionsSortNewest.
@@ -2460,19 +2472,19 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardTransactionsDashboardMonthRange.
   ///
   /// In en, this message translates to:
-  /// **'Dashboard month: {dateRange}'**
+  /// **'This month: {dateRange}'**
   String dashboardTransactionsDashboardMonthRange(String dateRange);
 
   /// No description provided for @dashboardTransactionsLatestTxMonthRange.
   ///
   /// In en, this message translates to:
-  /// **'Latest transaction month: {dateRange}'**
+  /// **'Latest month: {dateRange}'**
   String dashboardTransactionsLatestTxMonthRange(String dateRange);
 
   /// No description provided for @dashboardTransactionsLatestTxYearRange.
   ///
   /// In en, this message translates to:
-  /// **'Latest transaction year: {dateRange}'**
+  /// **'Latest year: {dateRange}'**
   String dashboardTransactionsLatestTxYearRange(String dateRange);
 
   /// No description provided for @dashboardTransactionsTapMonthHint.

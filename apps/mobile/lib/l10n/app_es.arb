@@ -1465,8 +1465,8 @@
   "dashboardOverviewTotalBalance": "saldo total",
   "dashboardResolvingBody": "Su extracto está conectado, pero las filas de transacciones aún se están cargando. Los valores aparecerán cuando se complete la lectura del modelo.",
   "dashboardResolvingTitle": "Resolver transacciones importadas",
-  "dashboardTransactionsClearFilters": "Claro",
-  "dashboardTransactionsDashboardMonthRange": "Mes del panel: {dateRange}",
+  "dashboardTransactionsClearFilters": "Limpiar",
+  "dashboardTransactionsDashboardMonthRange": "Este mes: {dateRange}",
   "@dashboardTransactionsDashboardMonthRange": {
     "placeholders": {
       "dateRange": {
@@ -1500,7 +1500,7 @@
       }
     }
   },
-  "dashboardTransactionsLatestTxMonthRange": "Último mes de transacción: {dateRange}",
+  "dashboardTransactionsLatestTxMonthRange": "Último mes: {dateRange}",
   "@dashboardTransactionsLatestTxMonthRange": {
     "placeholders": {
       "dateRange": {
@@ -1508,7 +1508,7 @@
       }
     }
   },
-  "dashboardTransactionsLatestTxYearRange": "Año de la última transacción: {dateRange}",
+  "dashboardTransactionsLatestTxYearRange": "Último año: {dateRange}",
   "@dashboardTransactionsLatestTxYearRange": {
     "placeholders": {
       "dateRange": {
@@ -1542,7 +1542,15 @@
   "dashboardTransactionsSearchHint": "Buscar comerciante, categoría, mes o monto",
   "dashboardTransactionsSectionTitle": "Transacciones",
   "transactionsMiniAnalyticsTitle": "Este mes de un vistazo",
-  "transactionsMiniAnalyticsSubtitle": "Mismos totales que el Panel para el mes actual",
+  "transactionsMiniAnalyticsTitleForMonth": "Vistazo de {month}",
+  "@transactionsMiniAnalyticsTitleForMonth": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "transactionsMiniAnalyticsSubtitle": "Mismos totales que Resumen para este mes",
   "transactionsMiniAnalyticsSpent": "Gastado",
   "transactionsMiniAnalyticsIncome": "Ingresos",
   "transactionsMiniAnalyticsNet": "Neto",
@@ -1550,6 +1558,7 @@
   "transactionsMiniAnalyticsTopCategories": "Principales categorías",
   "transactionsMiniAnalyticsPendingNote": "Los totales se actualizan cuando se confirmen los pendientes.",
   "transactionPendingChip": "Pendiente",
+  "dashboardNeedsCategoryLabel": "Necesita categoría",
   "dashboardTransactionsSortLargest": "más grande",
   "dashboardTransactionsSortMerchant": "Comerciante A-Z",
   "dashboardTransactionsSortNewest": "El más nuevo",
@@ -1562,10 +1571,10 @@
       }
     }
   },
-  "dashboardTransactionsTimeFilterAllHistory": "toda la historia",
-  "dashboardTransactionsTimeFilterDashboardMonth": "Mes del panel",
-  "dashboardTransactionsTimeFilterLatestTxMonth": "Último mes de tx",
-  "dashboardTransactionsTimeFilterLatestTxYear": "último año de tx",
+  "dashboardTransactionsTimeFilterAllHistory": "Toda la historia",
+  "dashboardTransactionsTimeFilterDashboardMonth": "Este mes",
+  "dashboardTransactionsTimeFilterLatestTxMonth": "Último mes",
+  "dashboardTransactionsTimeFilterLatestTxYear": "Último año",
   "homeShellBankConnectedAccountsSynced": " y sincronizó {count, plural, one{1 cuenta} other{{count} cuentas}}",
   "@homeShellBankConnectedAccountsSynced": {
     "placeholders": {

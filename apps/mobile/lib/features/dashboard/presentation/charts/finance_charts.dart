@@ -4,6 +4,8 @@ import 'package:clarity/core/formatting/formatting.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/features/budgets/domain/budget_models.dart';
+import 'package:clarity/features/dashboard/domain/dashboard_transaction_groups.dart';
+import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
 import 'finance_chart_primitives.dart';
@@ -11,6 +13,13 @@ import 'finance_chart_primitives.dart';
 export 'finance_cash_flow_charts.dart';
 export 'finance_chart_primitives.dart';
 export 'finance_chart_range_switch.dart';
+
+String _chartCategoryLabel(AppLocalizations l10n, String category) {
+  if (isNeedsCategoryGroupKey(category)) {
+    return l10n.dashboardNeedsCategoryLabel;
+  }
+  return category;
+}
 
 class CategorySpendChart extends StatelessWidget {
   const CategorySpendChart({
@@ -26,9 +35,10 @@ class CategorySpendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (categories.isEmpty) {
       return FinanceChartEmpty(
-        message: context.l10n.dashboardChartNoCategorySpending,
+        message: l10n.dashboardChartNoCategorySpending,
       );
     }
 
@@ -41,7 +51,7 @@ class CategorySpendChart extends StatelessWidget {
       children: [
         for (final item in top)
           _HorizontalAmountBar(
-            label: item.name,
+            label: _chartCategoryLabel(l10n, item.name),
             amount: item.amount,
             maxAmount: maxAmount,
             color: context.clarityColors.accent,
@@ -64,9 +74,10 @@ class BiggestLeaksChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (leaks.isEmpty) {
       return FinanceChartEmpty(
-        message: context.l10n.dashboardChartNoSpendingPressure,
+        message: l10n.dashboardChartNoSpendingPressure,
       );
     }
 
@@ -79,7 +90,7 @@ class BiggestLeaksChart extends StatelessWidget {
       children: [
         for (final item in top)
           _HorizontalAmountBar(
-            label: item.name,
+            label: _chartCategoryLabel(l10n, item.name),
             amount: item.amountThisMonth,
             maxAmount: maxAmount,
             color: ClarityColors.financeSpending,

@@ -134,9 +134,12 @@ class _CategoryGroupCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        group.category,
+                        _categoryGroupLabel(l10n, group.category),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
+                          color: group.isNeedsCategory
+                              ? ClarityColors.warning
+                              : null,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -190,15 +193,9 @@ class _CategoryGroupCard extends StatelessWidget {
 }
 
 class _InlineEmptyState extends StatelessWidget {
-  const _InlineEmptyState({
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-  });
+  const _InlineEmptyState({required this.message});
 
   final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -215,20 +212,12 @@ class _InlineEmptyState extends StatelessWidget {
         borderRadius: BorderRadius.circular(_dashboardCardRadiusOf(context)),
         border: Border.all(color: _dashboardOutline(context)),
       ),
-      child: Column(
-        children: [
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: cs.onSurface.withValues(alpha: 0.5),
-            ),
-          ),
-          if (actionLabel != null && onAction != null) ...[
-            const SizedBox(height: 12),
-            OutlinedButton(onPressed: onAction, child: Text(actionLabel!)),
-          ],
-        ],
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: cs.onSurface.withValues(alpha: 0.5),
+        ),
       ),
     );
   }

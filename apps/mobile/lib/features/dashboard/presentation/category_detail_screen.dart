@@ -11,6 +11,7 @@ import '../../transactions/domain/transaction_resolution.dart';
 import '../../transactions/presentation/widgets/transaction_line_tile.dart';
 import '../domain/category_month_detail.dart';
 import '../domain/dashboard_snapshot.dart';
+import '../domain/dashboard_transaction_groups.dart';
 import 'category_detail_insights.dart';
 import 'category_detail_merchants.dart';
 import 'category_detail_panel.dart';
@@ -133,7 +134,12 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(widget.category, overflow: TextOverflow.ellipsis),
+            Text(
+              isNeedsCategoryGroupKey(widget.category)
+                  ? l10n.dashboardNeedsCategoryLabel
+                  : widget.category,
+              overflow: TextOverflow.ellipsis,
+            ),
             Text(
               formatYearMonthLabel(yearMonthKey(widget.referenceMonth)),
               style: theme.textTheme.labelSmall?.copyWith(

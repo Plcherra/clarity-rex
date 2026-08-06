@@ -1239,8 +1239,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get transactionsMiniAnalyticsTitle => 'Este mes de un vistazo';
 
   @override
+  String transactionsMiniAnalyticsTitleForMonth(String month) {
+    return 'Vistazo de $month';
+  }
+
+  @override
   String get transactionsMiniAnalyticsSubtitle =>
-      'Mismos totales que el Panel para el mes actual';
+      'Mismos totales que Resumen para este mes';
 
   @override
   String get transactionsMiniAnalyticsSpent => 'Gastado';
@@ -1266,7 +1271,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get transactionPendingChip => 'Pendiente';
 
   @override
-  String get dashboardTransactionsClearFilters => 'Claro';
+  String get dashboardNeedsCategoryLabel => 'Necesita categoría';
+
+  @override
+  String get dashboardTransactionsClearFilters => 'Limpiar';
 
   @override
   String get dashboardTransactionsLoadingLabel => 'Cargando transacciones';
@@ -1322,16 +1330,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ninguna transacción coincide.';
 
   @override
-  String get dashboardTransactionsTimeFilterAllHistory => 'toda la historia';
+  String get dashboardTransactionsTimeFilterAllHistory => 'Toda la historia';
 
   @override
-  String get dashboardTransactionsTimeFilterDashboardMonth => 'Mes del panel';
+  String get dashboardTransactionsTimeFilterDashboardMonth => 'Este mes';
 
   @override
-  String get dashboardTransactionsTimeFilterLatestTxMonth => 'Último mes de tx';
+  String get dashboardTransactionsTimeFilterLatestTxMonth => 'Último mes';
 
   @override
-  String get dashboardTransactionsTimeFilterLatestTxYear => 'último año de tx';
+  String get dashboardTransactionsTimeFilterLatestTxYear => 'Último año';
 
   @override
   String get dashboardTransactionsSortNewest => 'El más nuevo';
@@ -1363,17 +1371,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dashboardTransactionsDashboardMonthRange(String dateRange) {
-    return 'Mes del panel: $dateRange';
+    return 'Este mes: $dateRange';
   }
 
   @override
   String dashboardTransactionsLatestTxMonthRange(String dateRange) {
-    return 'Último mes de transacción: $dateRange';
+    return 'Último mes: $dateRange';
   }
 
   @override
   String dashboardTransactionsLatestTxYearRange(String dateRange) {
-    return 'Año de la última transacción: $dateRange';
+    return 'Último año: $dateRange';
   }
 
   @override

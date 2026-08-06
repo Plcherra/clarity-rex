@@ -12,6 +12,8 @@ class DashboardScreen extends StatelessWidget {
     required this.transactionController,
     required this.budgetController,
     required this.importJobStatusController,
+    required this.accountController,
+    required this.onBankSyncCompleted,
     this.isRoot = false,
     this.onConnectBank,
     this.onImportCsvInstead,
@@ -23,6 +25,8 @@ class DashboardScreen extends StatelessWidget {
   final TransactionUiController transactionController;
   final BudgetUiController budgetController;
   final ImportJobStatusController importJobStatusController;
+  final AccountUiController accountController;
+  final VoidCallback onBankSyncCompleted;
   final bool isRoot;
   final VoidCallback? onConnectBank;
   final VoidCallback? onImportCsvInstead;
@@ -36,6 +40,8 @@ class DashboardScreen extends StatelessWidget {
       transactionController: transactionController,
       budgetController: budgetController,
       importJobStatusController: importJobStatusController,
+      accountController: accountController,
+      onBankSyncCompleted: onBankSyncCompleted,
       scope: const GlobalDashboardScope(),
       showBackButton: !isRoot,
       title: '',

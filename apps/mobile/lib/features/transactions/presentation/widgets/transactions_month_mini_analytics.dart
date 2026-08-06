@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import '../../../dashboard/domain/dashboard_snapshot.dart';
+import '../../../dashboard/domain/dashboard_transaction_groups.dart';
 import '../../../dashboard/domain/monthly_cash_flow_series.dart';
 import '../../../dashboard/presentation/charts/finance_charts.dart';
+import '../../domain/bank_statement_monthly.dart';
 import '../../../../theme/clarity_colors.dart';
 import '../../../../theme/clarity_radius.dart';
 import '../../../../widgets/clarity_card.dart';
@@ -48,7 +50,9 @@ class TransactionsMonthMiniAnalytics extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.transactionsMiniAnalyticsTitle,
+            l10n.transactionsMiniAnalyticsTitleForMonth(
+              formatYearMonthLabel(yearMonthKey(snapshot.referenceMonth)),
+            ),
             style: theme.textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w700,
               color: cs.onSurface.withValues(alpha: 0.82),
@@ -127,7 +131,9 @@ class TransactionsMonthMiniAnalytics extends StatelessWidget {
             const SizedBox(height: 8),
             for (final category in topCategories)
               _MiniCategoryRow(
-                name: category.name,
+                name: isNeedsCategoryGroupKey(category.name)
+                    ? l10n.dashboardNeedsCategoryLabel
+                    : category.name,
                 amount: category.amount,
                 maxAmount: topCategories.first.amount,
               ),

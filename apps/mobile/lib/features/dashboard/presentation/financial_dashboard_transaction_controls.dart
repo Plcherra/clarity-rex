@@ -139,6 +139,7 @@ class _InlineFilterBar extends StatelessWidget {
     required this.onAccountIdsChanged,
     required this.onTimeChanged,
     required this.onSortChanged,
+    this.hideTimeFilter = false,
   });
 
   final List<Account> accounts;
@@ -146,6 +147,7 @@ class _InlineFilterBar extends StatelessWidget {
   final Set<String> accountIds;
   final _TransactionsTimeFilter timeFilter;
   final _TransactionsSortMode sortMode;
+  final bool hideTimeFilter;
   final ValueChanged<Set<String>> onAccountIdsChanged;
   final ValueChanged<_TransactionsTimeFilter> onTimeChanged;
   final ValueChanged<_TransactionsSortMode> onSortChanged;
@@ -160,17 +162,18 @@ class _InlineFilterBar extends StatelessWidget {
           selectedIds: accountIds,
           onChanged: onAccountIdsChanged,
         ),
-      _PopupFilterChip<_TransactionsTimeFilter>(
-        label: _timeLabel(l10n, timeFilter),
-        active: timeFilter != _TransactionsTimeFilter.all,
-        icon: Icons.date_range_outlined,
-        values: _TransactionsTimeFilter.values,
-        labelFor: (value) => _timeLabel(l10n, value),
-        onSelected: onTimeChanged,
-      ),
+      if (!hideTimeFilter)
+        _PopupFilterChip<_TransactionsTimeFilter>(
+          label: _timeLabel(l10n, timeFilter),
+          active: timeFilter != _TransactionsTimeFilter.all,
+          icon: Icons.date_range_outlined,
+          values: _TransactionsTimeFilter.values,
+          labelFor: (value) => _timeLabel(l10n, value),
+          onSelected: onTimeChanged,
+        ),
       _PopupFilterChip<_TransactionsSortMode>(
         label: _sortLabel(l10n, sortMode),
-        active: sortMode != _TransactionsSortMode.newest,
+        active: false,
         icon: Icons.sort_rounded,
         values: _TransactionsSortMode.values,
         labelFor: (value) => _sortLabel(l10n, value),

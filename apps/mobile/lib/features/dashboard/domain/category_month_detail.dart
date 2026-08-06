@@ -1,5 +1,6 @@
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../transactions/domain/merchant_rollup.dart';
+import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
 import 'dashboard_transaction_groups.dart';
 
@@ -65,10 +66,14 @@ CategoryMonthDetail buildCategoryMonthDetail({
     for (final row in group.transactions) {
       final rowMonth = yearMonthKey(row.transaction.date);
       final amount = row.transaction.amount.abs();
+      final matchesCategory = group.category == category ||
+          (isNeedsCategoryGroupKey(group.category) &&
+              (isNeedsCategoryGroupKey(category) ||
+                  isUnresolvedCategoryLabel(category)));
       if (rowMonth == month) {
         monthSpend += amount;
-        if (group.category == category) thisMonth.add(row);
-      } else if (rowMonth == previous && group.category == category) {
+        if (matchesCategory) thisMonth.add(row);
+      } else if (rowMonth == previous && matchesCategory) {
         lastMonthSpent += amount;
       }
     }

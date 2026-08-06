@@ -1,6 +1,7 @@
 import '../../../core/models/models.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
+import 'dashboard_transaction_groups.dart';
 
 bool _inMonth(DateTime d, DateTime reference) {
   return d.year == reference.year && d.month == reference.month;
@@ -65,10 +66,14 @@ Map<String, double> _spendByCategoryInMonth(
     final t = r.transaction;
     if (t.pending) continue;
     if (!_inMonth(t.date, month)) continue;
+    final bucket = spendCategoryBucketKey(r);
+    if (isNeedsCategoryGroupKey(bucket)) {
+      map[bucket] = (map[bucket] ?? 0) + t.amount.abs();
+      continue;
+    }
     if (!r.countsAsSpend) continue;
-    final name = r.displayCategory;
-    if (isIgnoredCategoryLabel(name)) continue;
-    map[name] = (map[name] ?? 0) + (-t.amount);
+    if (isIgnoredCategoryLabel(bucket)) continue;
+    map[bucket] = (map[bucket] ?? 0) + (-t.amount);
   }
   return map;
 }

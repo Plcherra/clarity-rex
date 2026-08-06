@@ -185,6 +185,8 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
           transactionController: widget.ui.transactions,
           budgetController: widget.ui.budgets,
           importJobStatusController: widget.ui.importJobStatus,
+          accountController: widget.ui.accounts,
+          onBankSyncCompleted: widget.ui.notifyDataChanged,
           isRoot: true,
           onConnectBank: () => _connectBank('dashboard_empty'),
           onImportCsvInstead: _openAccountsForCsvFallback,

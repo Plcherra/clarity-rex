@@ -228,52 +228,16 @@ final class FinancialReadModel {
     };
   }
 
+  /// Month used for "this month" dashboard totals.
+  ///
+  /// Always the [requested] calendar month — never falls back to an older month
+  /// with cash flow. Pending-only current months stay on the real month and can
+  /// show $0 posted totals with a pending hint instead of silently jumping back.
   DateTime dashboardReferenceForScope(
     DashboardScope scope, {
     required DateTime requested,
   }) {
-    final scoped = transactionsForScope(scope);
-    if (scoped.isEmpty) {
-      return requested;
-    }
-
-    final resolved = resolvedTransactionsForScope(scope);
-    final hasRequestedMonthCashFlow = resolved.any((resolvedTransaction) {
-      final transaction = resolvedTransaction.transaction;
-      if (transaction.pending) return false;
-      return transaction.date.year == requested.year &&
-          transaction.date.month == requested.month &&
-          (resolvedTransaction.countsAsSpend ||
-              resolvedTransaction.countsAsIncome);
-    });
-    if (hasRequestedMonthCashFlow) {
-      return requested;
-    }
-
-    DateTime? latestCashFlowDate;
-    DateTime? latestSpendDate;
-    DateTime? latestActivityDate;
-    for (final resolvedTransaction in resolved) {
-      final date = resolvedTransaction.transaction.date;
-      if (latestActivityDate == null || date.isAfter(latestActivityDate)) {
-        latestActivityDate = date;
-      }
-      if (resolvedTransaction.transaction.pending) continue;
-      if ((resolvedTransaction.countsAsSpend ||
-              resolvedTransaction.countsAsIncome) &&
-          (latestCashFlowDate == null || date.isAfter(latestCashFlowDate))) {
-        latestCashFlowDate = date;
-      }
-      if (resolvedTransaction.countsAsSpend &&
-          (latestSpendDate == null || date.isAfter(latestSpendDate))) {
-        latestSpendDate = date;
-      }
-    }
-
-    return latestSpendDate ??
-        latestCashFlowDate ??
-        latestActivityDate ??
-        requested;
+    return DateTime(requested.year, requested.month, requested.day);
   }
 
   List<AccountStatementImport> statementImportsForScope(DashboardScope scope) {
