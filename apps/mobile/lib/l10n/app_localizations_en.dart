@@ -931,6 +931,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Activity this month — not the same as balance';
 
   @override
+  String get dashboardOverviewPendingCashFlowNote =>
+      'Totals update after pending items post.';
+
+  @override
   String get dashboardOverviewSavings => 'Savings';
 
   @override
@@ -1244,6 +1248,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transactionsMiniAnalyticsTopCategories => 'Top categories';
 
   @override
+  String get transactionsMiniAnalyticsPendingNote =>
+      'Totals update after pending items post.';
+
+  @override
+  String get transactionPendingChip => 'Pending';
+
+  @override
   String get dashboardTransactionsClearFilters => 'Clear';
 
   @override
@@ -1297,12 +1308,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dashboardTransactionsNoTransactionsMatch =>
       'No transactions match.';
-
-  @override
-  String get dashboardTransactionsFilterRole => 'Role';
-
-  @override
-  String get dashboardTransactionsFilterAllRoles => 'All roles';
 
   @override
   String get dashboardTransactionsTimeFilterAllHistory => 'All history';
@@ -2241,12 +2246,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categorySheetClose => 'Close';
 
   @override
-  String get transactionCategoryAutoRole => 'Auto role';
-
-  @override
-  String get transactionCategoryFinancialRoleTooltip => 'Financial role';
-
-  @override
   String get transactionCategoryNoCategories => 'No categories';
 
   @override
@@ -2493,11 +2492,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get transactionCategoryNotFoundSnack =>
       'Could not find this transaction.';
-
-  @override
-  String transactionCategoryUpdateRoleFailed(String error) {
-    return 'Could not update role: $error';
-  }
 
   @override
   String transactionCategoryDeleteTitle(String name) {

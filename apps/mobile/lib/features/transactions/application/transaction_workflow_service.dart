@@ -4,7 +4,6 @@ import 'dart:io';
 import '../../../core/models/models.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../dashboard/application/dashboard_spend_reference_controller.dart';
-import '../../finance/data/financial_audit_service.dart';
 import '../data/csv_import_service.dart';
 import '../data/transaction_service.dart';
 import '../domain/spend_categories.dart';
@@ -17,7 +16,6 @@ class TransactionWorkflowService {
     required this.csvImportService,
     required this.spendReferenceController,
     required this.importJobStatusService,
-    required this.financialAuditService,
     required this.deleteStatementImport,
     required this.refreshCategories,
     required this.categoryNameForId,
@@ -30,7 +28,6 @@ class TransactionWorkflowService {
   final CsvImportService csvImportService;
   final DashboardSpendReferenceController spendReferenceController;
   final ImportJobStatusService importJobStatusService;
-  final FinancialAuditService financialAuditService;
   final Future<void> Function({
     required String accountId,
     required String importId,
@@ -122,42 +119,6 @@ class TransactionWorkflowService {
     return true;
   }
 
-  Future<bool> setFinancialRoleOverride(
-    Transaction transaction,
-    FinancialRole? role,
-  ) async {
-    final record = await _findRecordForTransaction(transaction);
-    if (record == null) return false;
-    await transactionService.updateTransaction(
-      record.id,
-      financialRole: role == null ? null : financialRoleToStorageValue(role),
-      clearFinancialRole: role == null,
-    );
-    await _recordAuditEvent(
-      FinancialAuditEventInput(
-        eventType: 'transaction_role_override_updated',
-        entityType: 'transaction',
-        entityId: record.id,
-        source: 'manual',
-        previousValue: {'financial_role': record.financialRole},
-        newValue: {
-          'financial_role': role == null
-              ? null
-              : financialRoleToStorageValue(role),
-        },
-        metadata: {
-          'account_id': record.accountId,
-          'transaction_date': record.date.toIso8601String().split('T').first,
-          'description': record.description,
-          'amount': record.amount,
-        },
-      ),
-    );
-    await refreshAllState();
-    notifyTransactionDataChanged();
-    return true;
-  }
-
   Future<int> clearTransactionsForAccount(String accountId) async {
     final records = await transactionService.fetchTransactions(
       accountId: accountId.trim(),
@@ -167,14 +128,6 @@ class TransactionWorkflowService {
     }
     await refreshAllState();
     return records.length;
-  }
-
-  Future<void> _recordAuditEvent(FinancialAuditEventInput input) async {
-    try {
-      await financialAuditService.recordEvent(input);
-    } on Object {
-      // Audit writes should not make an already-applied transaction edit fail.
-    }
   }
 
   Future<int> deleteTransactionsForAccountInDateRange({

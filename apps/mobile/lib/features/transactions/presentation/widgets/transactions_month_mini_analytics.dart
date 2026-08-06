@@ -29,6 +29,7 @@ class TransactionsMonthMiniAnalytics extends StatelessWidget {
     final hasActivity =
         snapshot.spentThisMonth > 0 ||
         snapshot.incomeThisMonth > 0 ||
+        snapshot.hasPendingCashFlowThisMonth ||
         snapshot.topCategories.isNotEmpty ||
         snapshot.monthlyGroups.isNotEmpty;
 
@@ -91,6 +92,17 @@ class TransactionsMonthMiniAnalytics extends StatelessWidget {
               ),
             ],
           ),
+          if (snapshot.hasPendingCashFlowThisMonth) ...[
+            const SizedBox(height: 10),
+            Text(
+              l10n.transactionsMiniAnalyticsPendingNote,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: ClarityColors.warning,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+              ),
+            ),
+          ],
           if (sparklineValues.length >= 2) ...[
             const SizedBox(height: 14),
             Text(

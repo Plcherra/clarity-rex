@@ -7,7 +7,6 @@ import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/clarity_colors.dart';
-import '../../../../widgets/clarity_path_loader.dart';
 import '../../application/category_workflow_service.dart';
 import '../../domain/spend_categories.dart';
 
@@ -103,122 +102,6 @@ class _TransactionCategoryFieldState extends State<TransactionCategoryField> {
       child: CompositedTransformTarget(link: _categoryAnchorLink, child: chip),
     );
   }
-}
-
-class TransactionRoleField extends StatefulWidget {
-  const TransactionRoleField({
-    super.key,
-    required this.controller,
-    required this.transaction,
-  });
-
-  final TransactionUiController controller;
-  final Transaction transaction;
-
-  @override
-  State<TransactionRoleField> createState() => _TransactionRoleFieldState();
-}
-
-class _TransactionRoleFieldState extends State<TransactionRoleField> {
-  var _saving = false;
-
-  Future<void> _setRole(FinancialRole? role) async {
-    if (_saving) return;
-    setState(() => _saving = true);
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    final l10n = context.l10n;
-    try {
-      final ok = await widget.controller.setFinancialRoleOverride(
-        widget.transaction,
-        role,
-      );
-      if (!mounted) return;
-      if (!ok) {
-        messenger?.showSnackBar(
-          SnackBar(content: Text(l10n.transactionCategoryNotFoundSnack)),
-        );
-      }
-    } catch (error) {
-      if (!mounted) return;
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text(l10n.transactionCategoryUpdateRoleFailed('$error')),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final l10n = context.l10n;
-    final role = widget.transaction.financialRole;
-    final label = role == null ? l10n.transactionCategoryAutoRole : _roleLabel(role, l10n);
-
-    return PopupMenuButton<FinancialRole?>(
-      tooltip: l10n.transactionCategoryFinancialRoleTooltip,
-      enabled: !_saving,
-      onSelected: _setRole,
-      itemBuilder: (context) => [
-        PopupMenuItem<FinancialRole?>(
-          value: null,
-          child: Text(l10n.transactionCategoryAutoRole),
-        ),
-        for (final option in FinancialRole.values)
-          PopupMenuItem<FinancialRole?>(
-            value: option,
-            child: Text(_roleLabel(option, l10n)),
-          ),
-      ],
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: role == null
-              ? cs.surfaceContainerHighest
-              : cs.secondaryContainer,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_saving) ...[
-              const ClarityInlineLoader(size: 12, strokeWidth: 1.8),
-              const SizedBox(width: 6),
-            ] else ...[
-              Icon(
-                Icons.tune_rounded,
-                size: 13,
-                color: cs.onSurface.withValues(alpha: 0.55),
-              ),
-              const SizedBox(width: 5),
-            ],
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
-                color: cs.onSurface.withValues(alpha: 0.58),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-String _roleLabel(FinancialRole role, AppLocalizations l10n) {
-  return switch (role) {
-    FinancialRole.expense => l10n.commonExpense,
-    FinancialRole.income => l10n.commonIncome,
-    FinancialRole.transfer => l10n.commonTransfer,
-    FinancialRole.creditCardPayment => l10n.commonCreditCardPayment,
-    FinancialRole.refund => l10n.commonRefund,
-    FinancialRole.adjustment => l10n.commonAdjustment,
-  };
 }
 
 /// Full-screen tap target behind the panel; closes the menu without dimming.

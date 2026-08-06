@@ -202,8 +202,6 @@ final class TransactionService {
     String? categoryId,
     double? amount,
     String? type,
-    String? financialRole,
-    bool clearFinancialRole = false,
     String? description,
     DateTime? date,
     String? merchant,
@@ -217,11 +215,6 @@ final class TransactionService {
     if (categoryId != null) payload['category_id'] = categoryId;
     if (amount != null) payload['amount'] = amount;
     if (type != null) payload['type'] = type;
-    if (clearFinancialRole) {
-      payload['financial_role'] = null;
-    } else if (financialRole != null) {
-      payload['financial_role'] = financialRole;
-    }
     if (description != null) payload['description'] = description;
     if (date != null) payload['date'] = _dateOnly(date);
     if (merchant != null) payload['merchant'] = merchant;

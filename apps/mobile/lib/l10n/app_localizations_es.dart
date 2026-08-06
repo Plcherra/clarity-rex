@@ -939,6 +939,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Actividad este mes: no es lo mismo que el saldo';
 
   @override
+  String get dashboardOverviewPendingCashFlowNote =>
+      'Los totales se actualizan cuando se confirmen los pendientes.';
+
+  @override
   String get dashboardOverviewSavings => 'Ahorros';
 
   @override
@@ -1255,6 +1259,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get transactionsMiniAnalyticsTopCategories => 'Principales categorías';
 
   @override
+  String get transactionsMiniAnalyticsPendingNote =>
+      'Los totales se actualizan cuando se confirmen los pendientes.';
+
+  @override
+  String get transactionPendingChip => 'Pendiente';
+
+  @override
   String get dashboardTransactionsClearFilters => 'Claro';
 
   @override
@@ -1309,12 +1320,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get dashboardTransactionsNoTransactionsMatch =>
       'Ninguna transacción coincide.';
-
-  @override
-  String get dashboardTransactionsFilterRole => 'Role';
-
-  @override
-  String get dashboardTransactionsFilterAllRoles => 'Todos los roles';
 
   @override
   String get dashboardTransactionsTimeFilterAllHistory => 'toda la historia';
@@ -2274,12 +2279,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get categorySheetClose => 'Cerca';
 
   @override
-  String get transactionCategoryAutoRole => 'rol automático';
-
-  @override
-  String get transactionCategoryFinancialRoleTooltip => 'Papel financiero';
-
-  @override
   String get transactionCategoryNoCategories => 'Sin categorías';
 
   @override
@@ -2536,11 +2535,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get transactionCategoryNotFoundSnack =>
       'No se pudo encontrar esta transacción.';
-
-  @override
-  String transactionCategoryUpdateRoleFailed(String error) {
-    return 'No se pudo actualizar el rol: $error';
-  }
 
   @override
   String transactionCategoryDeleteTitle(String name) {

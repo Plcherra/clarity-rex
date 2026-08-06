@@ -57,6 +57,32 @@ void main() {
     expect(find.text('This month at a glance'), findsNothing);
   });
 
+  testWidgets('mini analytics shows pending note when cash flow is pending', (
+    tester,
+  ) async {
+    final snapshot = DashboardSnapshot(
+      totalBalance: 1200,
+      spentThisMonth: 100,
+      incomeThisMonth: 0,
+      availableThisMonth: -100,
+      pendingIncomeThisMonth: 735.63,
+      topCategories: [],
+      biggestLeaksThisMonth: [],
+      burnRunwayDays: null,
+      monthlyGroups: [],
+      referenceMonth: DateTime(2026, 8),
+    );
+
+    await tester.pumpWidget(
+      wrapWithL10n(TransactionsMonthMiniAnalytics(snapshot: snapshot)),
+    );
+
+    expect(
+      find.text('Totals update after pending items post.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('mini analytics sparkline uses the cash flow series', (
     tester,
   ) async {

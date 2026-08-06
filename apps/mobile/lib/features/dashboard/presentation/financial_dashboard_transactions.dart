@@ -40,7 +40,6 @@ class _DashboardTransactionsSectionState
   var _timeFilter = _TransactionsTimeFilter.all;
   var _sortMode = _TransactionsSortMode.newest;
   Set<String> _accountIds = {};
-  FinancialRole? _roleFilter;
   List<Transaction> _transactions = const [];
   List<Transaction> _allTransactions = const [];
   List<Account> _accounts = const [];
@@ -119,7 +118,6 @@ class _DashboardTransactionsSectionState
     var count = 0;
     if (_timeFilter != _TransactionsTimeFilter.all) count++;
     if (_sortMode != _TransactionsSortMode.newest) count++;
-    if (_roleFilter != null) count++;
     if (!_isAccountScope && _accountIds.isNotEmpty) count++;
     if (_searchController.text.trim().isNotEmpty) count++;
     return count;
@@ -128,7 +126,6 @@ class _DashboardTransactionsSectionState
   void _clearFilters() {
     setState(() {
       _accountIds = {};
-      _roleFilter = null;
       _timeFilter = _TransactionsTimeFilter.all;
       _sortMode = _TransactionsSortMode.newest;
       _searchController.clear();
@@ -157,9 +154,6 @@ class _DashboardTransactionsSectionState
         return false;
       }
       if (!_matchesTimeFilter(t, range)) return false;
-      if (_roleFilter != null && resolved.financialRole != _roleFilter) {
-        return false;
-      }
       if (query.isNotEmpty &&
           !_matchesSearch(l10n, resolved, query, accountsById)) {
         return false;
@@ -332,14 +326,11 @@ class _DashboardTransactionsSectionState
                     accountIds: _accountIds,
                     timeFilter: _timeFilter,
                     sortMode: _sortMode,
-                    roleFilter: _roleFilter,
                     onAccountIdsChanged: (value) =>
                         setState(() => _accountIds = value),
                     onTimeChanged: (value) =>
                         setState(() => _timeFilter = value),
                     onSortChanged: (value) => setState(() => _sortMode = value),
-                    onRoleChanged: (value) =>
-                        setState(() => _roleFilter = value),
                   ),
                   const SizedBox(height: 14),
                   _TransactionsModePicker(

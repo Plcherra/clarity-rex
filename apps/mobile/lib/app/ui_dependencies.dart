@@ -422,16 +422,6 @@ final class TransactionUiController extends _UiController {
   Future<bool> deleteTransaction(Transaction transaction) {
     return bindings.transactionWorkflowService.deleteTransaction(transaction);
   }
-
-  Future<bool> setFinancialRoleOverride(
-    Transaction transaction,
-    FinancialRole? role,
-  ) {
-    return bindings.transactionWorkflowService.setFinancialRoleOverride(
-      transaction,
-      role,
-    );
-  }
 }
 
 final class AccountUiController extends _UiController {

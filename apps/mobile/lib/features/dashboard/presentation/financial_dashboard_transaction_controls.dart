@@ -136,11 +136,9 @@ class _InlineFilterBar extends StatelessWidget {
     required this.accountIds,
     required this.timeFilter,
     required this.sortMode,
-    required this.roleFilter,
     required this.onAccountIdsChanged,
     required this.onTimeChanged,
     required this.onSortChanged,
-    required this.onRoleChanged,
   });
 
   final List<Account> accounts;
@@ -148,11 +146,9 @@ class _InlineFilterBar extends StatelessWidget {
   final Set<String> accountIds;
   final _TransactionsTimeFilter timeFilter;
   final _TransactionsSortMode sortMode;
-  final FinancialRole? roleFilter;
   final ValueChanged<Set<String>> onAccountIdsChanged;
   final ValueChanged<_TransactionsTimeFilter> onTimeChanged;
   final ValueChanged<_TransactionsSortMode> onSortChanged;
-  final ValueChanged<FinancialRole?> onRoleChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -179,18 +175,6 @@ class _InlineFilterBar extends StatelessWidget {
         values: _TransactionsSortMode.values,
         labelFor: (value) => _sortLabel(l10n, value),
         onSelected: onSortChanged,
-      ),
-      _PopupFilterChip<FinancialRole?>(
-        label: roleFilter == null
-            ? l10n.dashboardTransactionsFilterRole
-            : _financialRoleLabel(l10n, roleFilter!),
-        active: roleFilter != null,
-        icon: Icons.account_tree_outlined,
-        values: <FinancialRole?>[null, ...FinancialRole.values],
-        labelFor: (value) => value == null
-            ? l10n.dashboardTransactionsFilterAllRoles
-            : _financialRoleLabel(l10n, value),
-        onSelected: onRoleChanged,
       ),
     ];
 

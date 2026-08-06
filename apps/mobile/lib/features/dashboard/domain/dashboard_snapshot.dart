@@ -58,6 +58,8 @@ class DashboardSnapshot {
     required this.burnRunwayDays,
     required this.monthlyGroups,
     required this.referenceMonth,
+    this.pendingIncomeThisMonth = 0,
+    this.pendingSpentThisMonth = 0,
     this.monthlyCashFlow = const [],
     this.savings,
   });
@@ -70,6 +72,13 @@ class DashboardSnapshot {
   final double spentThisMonth;
   final double incomeThisMonth;
   final double availableThisMonth;
+
+  /// Inflows that would count as income once the bank posts them.
+  final double pendingIncomeThisMonth;
+
+  /// Outflows that would count as spend once the bank posts them.
+  final double pendingSpentThisMonth;
+
   final List<CategorySpend> topCategories;
   final List<CategoryLeakStat> biggestLeaksThisMonth;
   final int? burnRunwayDays;
@@ -83,6 +92,9 @@ class DashboardSnapshot {
 
   /// Null unless a savings account is connected in this scope.
   final SavingsSnapshot? savings;
+
+  bool get hasPendingCashFlowThisMonth =>
+      pendingIncomeThisMonth > 0 || pendingSpentThisMonth > 0;
 }
 
 DashboardSnapshot buildDashboardSnapshot({
@@ -111,12 +123,20 @@ DashboardSnapshot buildDashboardSnapshot({
 
   // Spend/income are computed over the scoped list, but role resolution uses global
   // transaction context so internal-payment matching remains correct.
+  // Pending rows stay out of the posted totals but are tracked so the UI can
+  // explain why a visible paycheck has not moved Income yet.
   var spent = 0.0;
   var income = 0.0;
+  var pendingSpent = 0.0;
+  var pendingIncome = 0.0;
   for (final r in resolved) {
     final t = r.transaction;
-    if (t.pending) continue;
     if (t.date.year != y || t.date.month != m) continue;
+    if (t.pending) {
+      if (r.countsAsSpend) pendingSpent += -t.amount;
+      if (r.countsAsIncome) pendingIncome += t.amount;
+      continue;
+    }
     if (r.countsAsSpend) spent += -t.amount;
     if (r.countsAsIncome) income += t.amount;
   }
@@ -179,6 +199,8 @@ DashboardSnapshot buildDashboardSnapshot({
     spentThisMonth: spent,
     incomeThisMonth: income,
     availableThisMonth: available,
+    pendingIncomeThisMonth: pendingIncome,
+    pendingSpentThisMonth: pendingSpent,
     topCategories: top5,
     biggestLeaksThisMonth: leaks,
     burnRunwayDays: runway,

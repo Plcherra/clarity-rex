@@ -191,7 +191,6 @@ final class AppComposition {
         csvImportService: csvImportService,
         spendReferenceController: spendReferenceController,
         importJobStatusService: importJobStatusService,
-        financialAuditService: financialAuditService,
         deleteStatementImport: accountStatementImportService.deleteImport,
         refreshCategories: categoryReadModel.refresh,
         categoryNameForId: categoryReadModel.categoryNameForId,

@@ -503,6 +503,7 @@
   "dashboardOverviewFromConnectedAccounts": "From your connected accounts",
   "dashboardOverviewThisMonthLabel": "This month",
   "dashboardOverviewActivityNotBalanceNote": "Activity this month — not the same as balance",
+  "dashboardOverviewPendingCashFlowNote": "Totals update after pending items post.",
   "dashboardOverviewSavings": "Savings",
   "dashboardOverviewSavingsMovedIn": "{amount} moved in",
   "@dashboardOverviewSavingsMovedIn": {
@@ -704,6 +705,8 @@
   "transactionsMiniAnalyticsNet": "Net",
   "transactionsMiniAnalyticsTrend": "Six-month spend trend",
   "transactionsMiniAnalyticsTopCategories": "Top categories",
+  "transactionsMiniAnalyticsPendingNote": "Totals update after pending items post.",
+  "transactionPendingChip": "Pending",
   "dashboardTransactionsClearFilters": "Clear",
   "dashboardTransactionsLoadingLabel": "Loading transactions",
   "dashboardTransactionsLoadError": "Could not load transactions.",
@@ -728,8 +731,6 @@
   "dashboardTransactionsAccountsDone": "Done",
   "dashboardTransactionsSelectAccountsTitle": "Accounts",
   "dashboardTransactionsNoTransactionsMatch": "No transactions match.",
-  "dashboardTransactionsFilterRole": "Role",
-  "dashboardTransactionsFilterAllRoles": "All roles",
   "dashboardTransactionsTimeFilterAllHistory": "All history",
   "dashboardTransactionsTimeFilterDashboardMonth": "Dashboard month",
   "dashboardTransactionsTimeFilterLatestTxMonth": "Latest tx month",
@@ -1160,8 +1161,6 @@
   "categorySheetMergeButton": "Merge",
   "categorySheetCategoryInUseTitle": "Category is in use",
   "categorySheetClose": "Close",
-  "transactionCategoryAutoRole": "Auto role",
-  "transactionCategoryFinancialRoleTooltip": "Financial role",
   "transactionCategoryNoCategories": "No categories",
   "transactionCategoryNewCategoryHint": "New category",
   "transactionCategoryOnlyThisOne": "Only this one",
@@ -1351,14 +1350,6 @@
     }
   },
   "transactionCategoryNotFoundSnack": "Could not find this transaction.",
-  "transactionCategoryUpdateRoleFailed": "Could not update role: {error}",
-  "@transactionCategoryUpdateRoleFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "transactionCategoryDeleteTitle": "Delete \"{name}\"?",
   "@transactionCategoryDeleteTitle": {
     "placeholders": {

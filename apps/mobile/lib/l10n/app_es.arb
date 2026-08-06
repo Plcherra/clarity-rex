@@ -1243,6 +1243,7 @@
   "dashboardOverviewAccountBalance": "Saldo de cuenta",
   "dashboardOverviewAccountHealth": "Estado de la cuenta",
   "dashboardOverviewActivityNotBalanceNote": "Actividad este mes: no es lo mismo que el saldo",
+  "dashboardOverviewPendingCashFlowNote": "Los totales se actualizan cuando se confirmen los pendientes.",
   "dashboardOverviewSavings": "Ahorros",
   "dashboardOverviewSavingsMovedIn": "{amount} ingresados",
   "@dashboardOverviewSavingsMovedIn": {
@@ -1476,9 +1477,7 @@
   "dashboardTransactionsFilterAccount": "Cuenta",
   "dashboardTransactionsFilterAllAccounts": "Todas las cuentas",
   "dashboardTransactionsFilterAllCategories": "Todas las categorias",
-  "dashboardTransactionsFilterAllRoles": "Todos los roles",
   "dashboardTransactionsFilterCategory": "Todas las categorias",
-  "dashboardTransactionsFilterRole": "Role",
   "dashboardTransactionsFilteredCount": "{filtered} de {total} transacciones | {dateRangeDescription}",
   "@dashboardTransactionsFilteredCount": {
     "placeholders": {
@@ -1549,6 +1548,8 @@
   "transactionsMiniAnalyticsNet": "Neto",
   "transactionsMiniAnalyticsTrend": "Tendencia de gasto a seis meses",
   "transactionsMiniAnalyticsTopCategories": "Principales categorías",
+  "transactionsMiniAnalyticsPendingNote": "Los totales se actualizan cuando se confirmen los pendientes.",
+  "transactionPendingChip": "Pendiente",
   "dashboardTransactionsSortLargest": "más grande",
   "dashboardTransactionsSortMerchant": "Comerciante A-Z",
   "dashboardTransactionsSortNewest": "El más nuevo",
@@ -2291,7 +2292,6 @@
     }
   },
   "transactionCategoryApplySimilarTitle": "¿Aplicar a transacciones similares?",
-  "transactionCategoryAutoRole": "rol automático",
   "transactionCategoryDeleteContent": "¿Eliminar esta categoría y borrarla de las transacciones asignadas?",
   "transactionCategoryDeleteTitle": "¿Eliminar \"{name}\"?",
   "@transactionCategoryDeleteTitle": {
@@ -2301,7 +2301,6 @@
       }
     }
   },
-  "transactionCategoryFinancialRoleTooltip": "Papel financiero",
   "transactionCategoryNewCategoryHint": "Nueva categoría",
   "transactionCategoryNoCategories": "Sin categorías",
   "transactionCategoryNotFoundSnack": "No se pudo encontrar esta transacción.",
@@ -2316,14 +2315,6 @@
   },
   "transactionCategoryUpdateFailed": "No se pudo actualizar la categoría: {error}",
   "@transactionCategoryUpdateFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "transactionCategoryUpdateRoleFailed": "No se pudo actualizar el rol: {error}",
-  "@transactionCategoryUpdateRoleFailed": {
     "placeholders": {
       "error": {
         "type": "String"

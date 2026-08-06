@@ -98,9 +98,21 @@ void main() {
           category: 'Shopping',
           pending: true,
         ),
+        _tx(
+          description: 'ACH CREDIT Bom Dough LLC PAYROLL',
+          account: 'checking',
+          amount: 607.82,
+          day: 6,
+          category: 'Income / Payroll',
+          pending: true,
+        ),
       ]);
 
       expect(snapshot.monthlyCashFlow.single.spend, closeTo(50, 0.001));
+      expect(snapshot.incomeThisMonth, 0);
+      expect(snapshot.pendingSpentThisMonth, closeTo(500, 0.001));
+      expect(snapshot.pendingIncomeThisMonth, closeTo(607.82, 0.001));
+      expect(snapshot.hasPendingCashFlowThisMonth, isTrue);
     });
 
     test('months come back oldest first, capped to the last twelve', () {

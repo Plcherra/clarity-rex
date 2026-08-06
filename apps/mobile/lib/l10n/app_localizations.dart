@@ -1751,6 +1751,12 @@ abstract class AppLocalizations {
   /// **'Activity this month — not the same as balance'**
   String get dashboardOverviewActivityNotBalanceNote;
 
+  /// No description provided for @dashboardOverviewPendingCashFlowNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Totals update after pending items post.'**
+  String get dashboardOverviewPendingCashFlowNote;
+
   /// No description provided for @dashboardOverviewSavings.
   ///
   /// In en, this message translates to:
@@ -2265,6 +2271,18 @@ abstract class AppLocalizations {
   /// **'Top categories'**
   String get transactionsMiniAnalyticsTopCategories;
 
+  /// No description provided for @transactionsMiniAnalyticsPendingNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Totals update after pending items post.'**
+  String get transactionsMiniAnalyticsPendingNote;
+
+  /// No description provided for @transactionPendingChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get transactionPendingChip;
+
   /// No description provided for @dashboardTransactionsClearFilters.
   ///
   /// In en, this message translates to:
@@ -2366,18 +2384,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No transactions match.'**
   String get dashboardTransactionsNoTransactionsMatch;
-
-  /// No description provided for @dashboardTransactionsFilterRole.
-  ///
-  /// In en, this message translates to:
-  /// **'Role'**
-  String get dashboardTransactionsFilterRole;
-
-  /// No description provided for @dashboardTransactionsFilterAllRoles.
-  ///
-  /// In en, this message translates to:
-  /// **'All roles'**
-  String get dashboardTransactionsFilterAllRoles;
 
   /// No description provided for @dashboardTransactionsTimeFilterAllHistory.
   ///
@@ -4117,18 +4123,6 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get categorySheetClose;
 
-  /// No description provided for @transactionCategoryAutoRole.
-  ///
-  /// In en, this message translates to:
-  /// **'Auto role'**
-  String get transactionCategoryAutoRole;
-
-  /// No description provided for @transactionCategoryFinancialRoleTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Financial role'**
-  String get transactionCategoryFinancialRoleTooltip;
-
   /// No description provided for @transactionCategoryNoCategories.
   ///
   /// In en, this message translates to:
@@ -4507,12 +4501,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not find this transaction.'**
   String get transactionCategoryNotFoundSnack;
-
-  /// No description provided for @transactionCategoryUpdateRoleFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not update role: {error}'**
-  String transactionCategoryUpdateRoleFailed(String error);
 
   /// No description provided for @transactionCategoryDeleteTitle.
   ///

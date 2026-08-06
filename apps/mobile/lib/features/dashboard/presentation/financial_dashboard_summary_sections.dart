@@ -135,6 +135,16 @@ class _FinancialOverviewCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (snapshot.hasPendingCashFlowThisMonth) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.dashboardOverviewPendingCashFlowNote,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: ClarityColors.warning,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
