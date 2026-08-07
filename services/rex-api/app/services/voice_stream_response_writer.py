@@ -172,10 +172,11 @@ class VoiceStreamResponseWriterMixin:
         response_text = final_response_text or streamed_text
         speakable_text = voice_speakable_text(response_text, memory_changes)
         if final_response_text and final_response_text != streamed_text:
+            # Drop unsent speculative chunks. Never re-queue the full final
+            # reply if any audio already left the wire — that double-speaks.
             if pending_audio_chunks:
                 cancel_pending_audio_chunks()
-                queue_audio_chunk(final_response_text)
-            elif first_audio_at is None:
+            if first_audio_at is None:
                 queue_audio_chunk(final_response_text)
         elif speech_buffer.strip():
             queue_audio_chunk(speech_buffer.strip())

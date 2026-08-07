@@ -413,6 +413,54 @@ async def test_voice_truth_check_replaces_pending_streamed_tts_chunks():
 
 
 @pytest.mark.asyncio
+async def test_voice_truth_check_does_not_respeake_after_audio_already_sent():
+    """If speculative audio already left the wire, do not queue the full final again."""
+
+    class _SlowTruthChatService:
+        async def stream_message(self, *args, **kwargs):
+            yield {"event": "conversation", "conversation_id": "conversation-1"}
+            raw_text = "I could not find anything about Jessica."
+            for token in raw_text.split(" "):
+                await asyncio.sleep(0)
+                yield {"event": "token", "token": f"{token} "}
+            # Let the first TTS chunk finish and flush before the truth rewrite.
+            await asyncio.sleep(0.05)
+            yield {
+                "event": "done",
+                "conversation_id": "conversation-1",
+                "response": "From saved memory, Jessica works with you.",
+                "messages": [],
+                "memory_changes": None,
+            }
+
+        async def save_voice_turn_metadata(self, **kwargs):
+            return {"id": "voice-turn-1"}
+
+    writer = _StreamingWriterProbe(
+        tts_delay=0.01,
+        chat_service=_SlowTruthChatService(),
+    )
+    timings = {}
+
+    await writer._stream_chat_and_audio(
+        "What do you know about Jessica?",
+        {"confidence": 0.95, "duration_seconds": 1.2},
+        timings,
+        turn_generation=1,
+    )
+
+    audio_events = [
+        event for event in writer.sent_events if event["event"] == "assistant.audio_chunk"
+    ]
+    spoken_text = " ".join(event["text"] for event in audio_events)
+    # Already-sent speculative audio is left alone — never followed by a full
+    # second reading of the corrected reply.
+    assert spoken_text.count("From saved memory, Jessica works with you.") == 0
+    assert "I could not find anything about Jessica." in spoken_text
+    assert timings["tts_chunk_count"] == 1
+
+
+@pytest.mark.asyncio
 async def test_voice_session_interrupt_cancels_pending_tts_tasks():
     session = VoiceStreamSession(
         websocket=object(),

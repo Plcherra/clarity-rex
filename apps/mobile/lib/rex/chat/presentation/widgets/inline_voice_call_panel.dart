@@ -43,26 +43,46 @@ class VoiceLiveTranscript extends StatelessWidget {
       );
     }
 
-    if (state.phase == VoiceCallPhase.speaking) {
+    if (state.phase == VoiceCallPhase.speaking ||
+        state.phase == VoiceCallPhase.thinking) {
+      final draft = state.lastAssistantResponse.trim();
+      final statusLabel = state.phase == VoiceCallPhase.speaking
+          ? l10n.voicePanelSpeaking
+          : l10n.voicePanelThinking;
       return Padding(
         padding: const EdgeInsets.only(
           top: RexUiTokens.space4,
           bottom: RexUiTokens.messageGap,
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _VoiceWaveIndicator(
-              phase: state.phase,
-              color: colors.textMuted,
-              compact: true,
+            Row(
+              children: [
+                _VoiceWaveIndicator(
+                  phase: state.phase,
+                  color: colors.textMuted,
+                  compact: true,
+                ),
+                const SizedBox(width: RexUiTokens.space8),
+                Text(
+                  statusLabel,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colors.textMuted,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: RexUiTokens.space8),
-            Text(
-              l10n.voicePanelSpeaking,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colors.textMuted,
+            if (draft.isNotEmpty) ...[
+              const SizedBox(height: RexUiTokens.space8),
+              Text(
+                draft,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.textPrimary,
+                  height: 1.35,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       );

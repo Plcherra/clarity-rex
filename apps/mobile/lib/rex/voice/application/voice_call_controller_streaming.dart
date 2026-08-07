@@ -26,6 +26,10 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     }
 
     final listenEpoch = ++_streamingListenEpoch;
+    // Claim the cycle immediately so assistant.done's safety restart cannot
+    // bump the epoch again before the async capture body sets inFlight.
+    _streamingListenEpochInFlight = true;
+    _suppressStaleSpeechFinal = false;
     if (ref.read(streamingVoiceEnabledProvider)) {
       unawaited(
         _streamNextUtterance(
@@ -48,6 +52,9 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         listenEpoch != _streamingListenEpoch ||
         state.phase != VoiceCallPhase.listening ||
         state.isMuted) {
+      if (listenEpoch == _streamingListenEpoch) {
+        _streamingListenEpochInFlight = false;
+      }
       return;
     }
 

@@ -269,8 +269,11 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
               streamingDrainSpeakText = '';
             }
             if (isActiveSession()) {
-              if (state.phase == VoiceCallPhase.thinking ||
-                  state.phase == VoiceCallPhase.speaking) {
+              // Drain already owns the happy-path resume. Only recover here
+              // when playback finished but listening never started.
+              if ((state.phase == VoiceCallPhase.thinking ||
+                      state.phase == VoiceCallPhase.speaking) &&
+                  !_hasActiveStreamingListenCycle()) {
                 debugPrint('rex_voice_playback safety_resume_after_done');
                 _finishAssistantResponseAndListen();
               } else if (state.phase == VoiceCallPhase.listening &&
