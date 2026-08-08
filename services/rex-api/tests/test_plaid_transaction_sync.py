@@ -74,6 +74,7 @@ class FakeCursorService:
         self.transaction_ids = set()
         self.fail_cursor_update = fail_cursor_update
         self.uncategorized_transactions = []
+        self.stored_by_plaid_id = {}
         self.categories = [
             {
                 "id": "category-coffee",
@@ -84,6 +85,16 @@ class FakeCursorService:
                 "id": "category-grocery",
                 "name": "Grocery / Supermarket",
                 "normalized_name": "grocery and supermarket",
+            },
+            {
+                "id": "category-fitness",
+                "name": "Fitness",
+                "normalized_name": "fitness",
+            },
+            {
+                "id": "category-misc",
+                "name": "Miscellaneous",
+                "normalized_name": "miscellaneous",
             },
         ]
 
@@ -111,6 +122,10 @@ class FakeCursorService:
         if method == "GET" and table == "categories":
             return self.categories
         if method == "GET" and table == "transactions":
+            plaid_id = (query or {}).get("plaid_transaction_id")
+            if isinstance(plaid_id, str) and plaid_id.startswith("eq."):
+                row = self.stored_by_plaid_id.get(plaid_id.removeprefix("eq."))
+                return [row] if row else []
             return self.uncategorized_transactions
         if method == "POST" and table == "categories":
             category_id = f"category-created-{len(self.categories) + 1}"
@@ -335,6 +350,57 @@ async def test_transaction_sync_is_idempotent_by_plaid_transaction_id():
         call["query"] == {"on_conflict": "user_id,plaid_transaction_id"}
         for call in upsert_calls
     )
+
+
+@pytest.mark.asyncio
+async def test_transaction_sync_preserves_existing_manual_category_id():
+    class ModifiedMiscPlaidClient(SinglePagePlaidClient):
+        async def sync_transactions(self, access_token, *, cursor=None, count=100):
+            return {
+                "added": [],
+                "modified": [
+                    {
+                        "transaction_id": "txn-sityodtong",
+                        "account_id": "plaid-account-1",
+                        "amount": 159.0,
+                        "date": "2026-08-07",
+                        "name": "Sityodtong Inc",
+                        "pending": False,
+                        "personal_finance_category": {
+                            "primary": "GENERAL_MERCHANDISE",
+                            "detailed": "GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE",
+                        },
+                    }
+                ],
+                "removed": [],
+                "next_cursor": "cursor-next",
+                "has_more": False,
+            }
+
+    cursor_service = FakeCursorService()
+    cursor_service.stored_by_plaid_id["txn-sityodtong"] = {
+        "date": "2026-08-07",
+        "category_id": "category-fitness",
+    }
+    sync = PlaidTransactionSync(
+        plaid_client=ModifiedMiscPlaidClient(),
+        cursor_service=cursor_service,
+    )
+
+    await sync.sync_transactions(
+        user_id="user-1",
+        item_id="item-record-1",
+        access_token="access-token-secret",
+        cursor="cursor-old",
+        account_map={"plaid-account-1": "linked-account-1"},
+    )
+
+    upsert_call = next(
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "POST" and call.get("table") == "transactions"
+    )
+    assert upsert_call["body"]["category_id"] == "category-fitness"
 
 
 @pytest.mark.asyncio

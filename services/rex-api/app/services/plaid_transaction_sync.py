@@ -148,15 +148,17 @@ class PlaidTransactionSync:
         linked_account_id = account_map.get(plaid_account_id)
         if not linked_account_id:
             return False
-        category_id = await self._category_id_for_transaction(
+        plaid_transaction_id = required_string(transaction, "transaction_id")
+        stored_date, stored_category_id = await self._stored_transaction_fields(
+            user_id=user_id,
+            plaid_transaction_id=plaid_transaction_id,
+        )
+        # Never overwrite a category the user (or a prior sync) already set.
+        # Merge upserts used to push Plaid's Miscellaneous back on every sync.
+        category_id = stored_category_id or await self._category_id_for_transaction(
             user_id=user_id,
             transaction=transaction,
             category_cache=category_cache,
-        )
-        plaid_transaction_id = required_string(transaction, "transaction_id")
-        stored_date = await self._stored_transaction_date(
-            user_id=user_id,
-            plaid_transaction_id=plaid_transaction_id,
         )
         rows = await self.cursor_service.supabase_request(
             "POST",
@@ -176,17 +178,17 @@ class PlaidTransactionSync:
         del rows
         return True
 
-    async def _stored_transaction_date(
+    async def _stored_transaction_fields(
         self,
         *,
         user_id: str,
         plaid_transaction_id: str,
-    ) -> Optional[str]:
+    ) -> tuple[Optional[str], Optional[str]]:
         rows = await self.cursor_service.supabase_request(
             "GET",
             TRANSACTIONS_TABLE,
             query={
-                "select": "date",
+                "select": "date,category_id",
                 "user_id": f"eq.{user_id}",
                 "plaid_transaction_id": f"eq.{plaid_transaction_id}",
                 "source": "eq.plaid",
@@ -194,8 +196,11 @@ class PlaidTransactionSync:
             },
         )
         if not rows:
-            return None
-        return string_or_none(rows[0].get("date"))
+            return None, None
+        return (
+            string_or_none(rows[0].get("date")),
+            string_or_none(rows[0].get("category_id")),
+        )
 
     async def _load_category_cache(self, user_id: str) -> dict[str, str]:
         rows = await self.cursor_service.supabase_request(

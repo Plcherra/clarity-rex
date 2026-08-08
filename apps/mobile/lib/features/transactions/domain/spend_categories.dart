@@ -410,26 +410,16 @@ bool isIncomeCategoryLabel(String label) =>
 
 /// Resolves the label used for grouping spending (CSV category or keyword bucket).
 ///
-/// Order: [Transaction.categoryLabel] (resolved persisted choice), then [categoryOverrides]
-/// for the same row key, then returned/reversed description checks, then
-/// heuristics / CSV category.
+/// Order: learned merchant rule, then [Transaction.categoryLabel], then
+/// [categoryOverrides], then returned/reversed checks, then heuristics / CSV.
 ///
-/// Rules are intentionally not supported; only manual per-transaction picks and
-/// built-in keyword inference are used.
+/// Merchant memory wins over a persisted Plaid category so a manual
+/// Misc → Fitness teach is not undone when sync rewrites `category_id`.
 String spendGroupLabel(
   Transaction t, {
   Map<String, String>? categoryOverrides,
   Map<String, String>? merchantCategoryMemory,
 }) {
-  final saved = t.categoryLabel?.trim();
-  if (saved != null && saved.isNotEmpty && !isUnresolvedCategoryLabel(saved)) {
-    return saved;
-  }
-  final key = transactionCategoryKey(t);
-  final manual = categoryOverrides?[key];
-  if (manual != null && manual.trim().isNotEmpty) {
-    return manual.trim();
-  }
   if (isReturnedOrReversedDescription(t.description)) {
     return kIgnoredCategoryLabel;
   }
@@ -438,6 +428,16 @@ String spendGroupLabel(
   final memo = mk.isNotEmpty ? (merchantCategoryMemory?[mk]) : null;
   if (memo != null && memo.trim().isNotEmpty) {
     return memo.trim();
+  }
+
+  final saved = t.categoryLabel?.trim();
+  if (saved != null && saved.isNotEmpty && !isUnresolvedCategoryLabel(saved)) {
+    return saved;
+  }
+  final key = transactionCategoryKey(t);
+  final manual = categoryOverrides?[key];
+  if (manual != null && manual.trim().isNotEmpty) {
+    return manual.trim();
   }
 
   final suggested = suggestCategoryFromDescription(

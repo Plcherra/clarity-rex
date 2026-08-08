@@ -157,11 +157,13 @@ final class DashboardTransactionReadData {
     required this.transactions,
     required this.allTransactions,
     required this.accounts,
+    this.merchantCategoryMemory = const {},
   });
 
   final List<Transaction> transactions;
   final List<Transaction> allTransactions;
   final List<Account> accounts;
+  final Map<String, String> merchantCategoryMemory;
 }
 
 final class AccountOverviewItem {
@@ -314,6 +316,7 @@ final class DashboardUiController extends _UiController {
       transactions: model.transactionsForScope(scope),
       allTransactions: model.transactions,
       accounts: model.accounts,
+      merchantCategoryMemory: model.merchantCategoryMemory,
     );
   }
 

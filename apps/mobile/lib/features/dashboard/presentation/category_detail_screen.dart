@@ -90,6 +90,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         data.transactions,
         categoryOverrides: const {},
         categoryDisplayRenamesLower: widget.controller.categoryDisplayRenames,
+        merchantCategoryMemory: data.merchantCategoryMemory,
         accountsById: {
           for (final account in data.accounts) account.id: account,
         },

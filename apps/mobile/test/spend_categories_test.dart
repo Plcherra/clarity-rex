@@ -112,6 +112,25 @@ void main() {
     expect(spendGroupLabel(transaction), 'Coffee / Quick Food');
   });
 
+  test('learned merchant rule beats persisted Plaid Miscellaneous label', () {
+    final transaction = Transaction(
+      date: DateTime(2026, 8, 7),
+      description: 'Sityodtong Inc',
+      amount: -159,
+      accountId: 'account-1',
+      categoryLabel: 'Miscellaneous',
+    );
+    final merchantKey = transactionMerchantKeyLower(transaction);
+
+    expect(
+      spendGroupLabel(
+        transaction,
+        merchantCategoryMemory: {merchantKey: 'Fitness'},
+      ),
+      'Fitness',
+    );
+  });
+
   test('unknown merchants resolve to a real fallback category', () {
     expect(
       suggestCategoryFromDescription('MYSTERY POS PURCHASE', amount: -12.34),
