@@ -1248,6 +1248,7 @@
   "dashboardOverviewAccountHealth": "Estado de la cuenta",
   "dashboardOverviewActivityNotBalanceNote": "Actividad este mes: no es lo mismo que el saldo",
   "dashboardOverviewPendingCashFlowNote": "Los totales se actualizan cuando se confirmen los pendientes.",
+  "dashboardOverviewCardPaymentAwaitingCreditNote": "Pago a tarjeta contado — el saldo se actualiza cuando el crédito se publique.",
   "dashboardOverviewSavings": "Ahorros",
   "dashboardOverviewSavingsMovedIn": "{amount} ingresados",
   "@dashboardOverviewSavingsMovedIn": {
@@ -1573,6 +1574,7 @@
   "transactionsMiniAnalyticsTrend": "Tendencia de gasto a seis meses",
   "transactionsMiniAnalyticsTopCategories": "Principales categorías",
   "transactionsMiniAnalyticsPendingNote": "Los totales se actualizan cuando se confirmen los pendientes.",
+  "transactionsMiniAnalyticsCardPaymentAwaitingCreditNote": "Pago a tarjeta contado — el saldo se actualiza cuando el crédito se publique.",
   "transactionPendingChip": "Pendiente",
   "dashboardNeedsCategoryLabel": "Necesita categoría",
   "dashboardTransactionsSortLargest": "más grande",

@@ -73,7 +73,8 @@ FinancialRole effectiveFinancialRole({
   );
   if (internalTransfer != null) return FinancialRole.transfer;
 
-  // Credit card payment: confirm by finding the opposite-side payment row.
+  // Credit card payment: prefer a both-leg match; otherwise soft-match a
+  // labeled depository outflow toward a connected card before the credit posts.
   if (effectiveCategoryLabel.trim().toLowerCase() ==
       'credit card payment'.toLowerCase()) {
     final match = findConfirmedCreditCardPaymentForTransaction(
@@ -82,7 +83,10 @@ FinancialRole effectiveFinancialRole({
       accountsById: accountsById,
     );
     if (match != null) return FinancialRole.creditCardPayment;
-    return FinancialRole.expense; // conservative until confirmed
+    if (looksLikeSoftCreditCardPayment(t: t, accountsById: accountsById)) {
+      return FinancialRole.creditCardPayment;
+    }
+    return FinancialRole.expense;
   }
 
   // Nobody is paid onto a credit card: inflows there are rewards, statement

@@ -517,7 +517,7 @@ void main() {
     );
   });
 
-  test('unconfirmed credit card payments count as spend until matched', () {
+  test('soft-matched credit card payments do not count as spend', () {
     final model = FinancialReadModel.fromRecords(
       accounts: const [
         Account(id: 'checking', name: 'Checking', type: AccountType.checking),
@@ -542,8 +542,8 @@ void main() {
 
     expect(resolved, hasLength(1));
     expect(resolved.single.transaction.description, contains('VISA'));
-    expect(resolved.single.financialRole, FinancialRole.expense);
-    expect(resolved.single.countsAsSpend, isTrue);
+    expect(resolved.single.financialRole, FinancialRole.creditCardPayment);
+    expect(resolved.single.countsAsSpend, isFalse);
   });
 
   test(

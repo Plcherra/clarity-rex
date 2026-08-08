@@ -154,21 +154,67 @@ void main() {
     expect(resolved.needsCategorization, isFalse);
   });
 
-  test('unconfirmed credit card payments stay expenses until matched', () {
+  test('soft-matched credit card payment does not count as spend', () {
     final transaction = Transaction(
       date: DateTime(2026, 3, 10),
       description: 'ONLINE BANKING PAYMENT TO CRD VISA',
       amount: -250,
       accountId: 'checking',
       categoryLabel: 'Credit Card Payment',
-      fingerprint: 'tx-unconfirmed-card-payment',
+      fingerprint: 'tx-soft-card-payment',
     );
+    final accountsById = {
+      'checking': const Account(
+        id: 'checking',
+        name: 'Bank of America',
+        type: AccountType.checking,
+      ),
+      'visa': const Account(
+        id: 'visa',
+        name: 'Visa',
+        type: AccountType.creditCard,
+      ),
+    };
 
     final resolved = resolveTransaction(
       t: transaction,
       categoryOverrides: const {},
       categoryDisplayRenamesLower: const {},
-      accountsById: const {},
+      accountsById: accountsById,
+      allTransactions: [transaction],
+    );
+
+    expect(resolved.financialRole, FinancialRole.creditCardPayment);
+    expect(resolved.countsAsSpend, isFalse);
+  });
+
+  test('labeled credit card payment without soft signals stays expense', () {
+    final transaction = Transaction(
+      date: DateTime(2026, 3, 10),
+      description: 'MONTHLY RENT LANDLORD',
+      amount: -250,
+      accountId: 'checking',
+      categoryLabel: 'Credit Card Payment',
+      fingerprint: 'tx-mislabeled-card-payment',
+    );
+    final accountsById = {
+      'checking': const Account(
+        id: 'checking',
+        name: 'Bank of America',
+        type: AccountType.checking,
+      ),
+      'visa': const Account(
+        id: 'visa',
+        name: 'Visa',
+        type: AccountType.creditCard,
+      ),
+    };
+
+    final resolved = resolveTransaction(
+      t: transaction,
+      categoryOverrides: const {},
+      categoryDisplayRenamesLower: const {},
+      accountsById: accountsById,
       allTransactions: [transaction],
     );
 

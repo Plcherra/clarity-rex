@@ -145,6 +145,16 @@ class _FinancialOverviewCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (snapshot.hasCreditCardPaymentAwaitingCreditThisMonth) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.dashboardOverviewCardPaymentAwaitingCreditNote,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: ClarityColors.warning,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

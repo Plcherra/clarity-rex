@@ -5,6 +5,7 @@ import 'dashboard_transaction_groups.dart';
 import 'monthly_cash_flow_series.dart';
 import 'savings_snapshot.dart';
 import '../../../core/models/models.dart';
+import '../../transactions/domain/internal_payment_matcher.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
 
@@ -61,6 +62,7 @@ class DashboardSnapshot {
     required this.referenceMonth,
     this.pendingIncomeThisMonth = 0,
     this.pendingSpentThisMonth = 0,
+    this.hasCreditCardPaymentAwaitingCreditThisMonth = false,
     this.monthlyCashFlow = const [],
     this.savings,
   });
@@ -79,6 +81,9 @@ class DashboardSnapshot {
 
   /// Outflows that would count as spend once the bank posts them.
   final double pendingSpentThisMonth;
+
+  /// Soft-matched credit-card payment this month with no card credit synced yet.
+  final bool hasCreditCardPaymentAwaitingCreditThisMonth;
 
   final List<CategorySpend> topCategories;
   final List<CategoryLeakStat> biggestLeaksThisMonth;
@@ -130,6 +135,7 @@ DashboardSnapshot buildDashboardSnapshot({
   var income = 0.0;
   var pendingSpent = 0.0;
   var pendingIncome = 0.0;
+  var awaitingCardCredit = false;
   for (final r in resolved) {
     final t = r.transaction;
     if (t.date.year != y || t.date.month != m) continue;
@@ -140,6 +146,16 @@ DashboardSnapshot buildDashboardSnapshot({
     }
     if (r.countsAsSpend) spent += -t.amount;
     if (r.countsAsIncome) income += t.amount;
+    if (r.financialRole == FinancialRole.creditCardPayment &&
+        t.amount < 0 &&
+        findConfirmedCreditCardPaymentForTransaction(
+              t: t,
+              allTransactions: allTransactions,
+              accountsById: accountsById,
+            ) ==
+            null) {
+      awaitingCardCredit = true;
+    }
   }
 
   final available = income - spent;
@@ -207,6 +223,7 @@ DashboardSnapshot buildDashboardSnapshot({
     availableThisMonth: available,
     pendingIncomeThisMonth: pendingIncome,
     pendingSpentThisMonth: pendingSpent,
+    hasCreditCardPaymentAwaitingCreditThisMonth: awaitingCardCredit,
     topCategories: top5,
     biggestLeaksThisMonth: leaks,
     burnRunwayDays: runway,

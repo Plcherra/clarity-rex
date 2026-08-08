@@ -943,6 +943,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Los totales se actualizan cuando se confirmen los pendientes.';
 
   @override
+  String get dashboardOverviewCardPaymentAwaitingCreditNote =>
+      'Pago a tarjeta contado — el saldo se actualiza cuando el crédito se publique.';
+
+  @override
   String get dashboardOverviewSavings => 'Ahorros';
 
   @override
@@ -1266,6 +1270,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get transactionsMiniAnalyticsPendingNote =>
       'Los totales se actualizan cuando se confirmen los pendientes.';
+
+  @override
+  String get transactionsMiniAnalyticsCardPaymentAwaitingCreditNote =>
+      'Pago a tarjeta contado — el saldo se actualiza cuando el crédito se publique.';
 
   @override
   String get transactionPendingChip => 'Pendiente';

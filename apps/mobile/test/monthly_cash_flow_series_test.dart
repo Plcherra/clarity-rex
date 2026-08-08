@@ -81,6 +81,28 @@ void main() {
       expect(july.net, closeTo(snapshot.availableThisMonth, 0.001));
     });
 
+    test('soft-matched card payment awaits credit note without inflating spend', () {
+      final snapshot = _snapshot([
+        _tx(
+          description: 'PUBLIX 1234',
+          account: 'checking',
+          amount: -480.35,
+          day: 3,
+          category: 'Grocery / Supermarket',
+        ),
+        _tx(
+          description: 'ONLINE BANKING PAYMENT TO CRD VISA',
+          account: 'checking',
+          amount: -900,
+          day: 20,
+          category: 'Credit Card Payment',
+        ),
+      ]);
+
+      expect(snapshot.spentThisMonth, closeTo(480.35, 0.001));
+      expect(snapshot.hasCreditCardPaymentAwaitingCreditThisMonth, isTrue);
+    });
+
     test('pending rows stay out until they settle', () {
       final snapshot = _snapshot([
         _tx(

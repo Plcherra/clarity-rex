@@ -32,6 +32,7 @@ class TransactionsMonthMiniAnalytics extends StatelessWidget {
         snapshot.spentThisMonth > 0 ||
         snapshot.incomeThisMonth > 0 ||
         snapshot.hasPendingCashFlowThisMonth ||
+        snapshot.hasCreditCardPaymentAwaitingCreditThisMonth ||
         snapshot.topCategories.isNotEmpty ||
         snapshot.monthlyGroups.isNotEmpty;
 
@@ -100,6 +101,17 @@ class TransactionsMonthMiniAnalytics extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               l10n.transactionsMiniAnalyticsPendingNote,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: ClarityColors.warning,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+              ),
+            ),
+          ],
+          if (snapshot.hasCreditCardPaymentAwaitingCreditThisMonth) ...[
+            const SizedBox(height: 10),
+            Text(
+              l10n.transactionsMiniAnalyticsCardPaymentAwaitingCreditNote,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: ClarityColors.warning,
                 fontWeight: FontWeight.w600,

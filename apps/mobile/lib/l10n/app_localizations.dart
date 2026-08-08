@@ -1757,6 +1757,12 @@ abstract class AppLocalizations {
   /// **'Totals update after pending items post.'**
   String get dashboardOverviewPendingCashFlowNote;
 
+  /// No description provided for @dashboardOverviewCardPaymentAwaitingCreditNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Card payment counted — balance updates when the card credit posts.'**
+  String get dashboardOverviewCardPaymentAwaitingCreditNote;
+
   /// No description provided for @dashboardOverviewSavings.
   ///
   /// In en, this message translates to:
@@ -2282,6 +2288,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Totals update after pending items post.'**
   String get transactionsMiniAnalyticsPendingNote;
+
+  /// No description provided for @transactionsMiniAnalyticsCardPaymentAwaitingCreditNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Card payment counted — balance updates when the card credit posts.'**
+  String get transactionsMiniAnalyticsCardPaymentAwaitingCreditNote;
 
   /// No description provided for @transactionPendingChip.
   ///

@@ -32,11 +32,46 @@ bool _looksLikePaymentDescription(String description) {
       h.contains('thank you');
 }
 
+bool _isDepository(AccountType type) =>
+    type == AccountType.checking || type == AccountType.savings;
+
+/// Soft credit-card payment: labeled payment leaving a depository account when
+/// a connected card is the likely destination, even if the card credit has not
+/// synced yet. Requires a payment-like description or a hint naming a
+/// connected card so miscategorized rent/etc. still counts as spend.
+bool looksLikeSoftCreditCardPayment({
+  required Transaction t,
+  required Map<String, Account> accountsById,
+}) {
+  final srcAccount = accountsById[t.accountId];
+  if (srcAccount == null || !_isDepository(srcAccount.type)) return false;
+  if (t.amount >= 0) return false;
+
+  final connectedCards = accountsById.values
+      .where((a) => a.type == AccountType.creditCard)
+      .toList(growable: false);
+  if (connectedCards.isEmpty) return false;
+
+  final desc = t.description;
+  if (_looksLikePaymentDescription(desc)) return true;
+
+  for (final card in connectedCards) {
+    final inst = card.institution;
+    if (inst != null &&
+        inst.trim().isNotEmpty &&
+        _containsHint(desc, inst)) {
+      return true;
+    }
+    if (_containsHint(desc, card.name)) return true;
+  }
+  return false;
+}
+
 /// Attempts to confirm that [t] is an internal credit-card payment by finding a
 /// counterpart payment row in a credit-card account.
 ///
-/// Conservative by default: if no strong match exists, returns null so callers
-/// keep treating [t] as an expense (prevents undercounting).
+/// Returns null when no strong both-leg match exists. Callers may still soft-
+/// match via [looksLikeSoftCreditCardPayment].
 ConfirmedPaymentMatch? findConfirmedCreditCardPaymentMatch({
   required Transaction t,
   required List<Transaction> allTransactions,

@@ -935,6 +935,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Totals update after pending items post.';
 
   @override
+  String get dashboardOverviewCardPaymentAwaitingCreditNote =>
+      'Card payment counted — balance updates when the card credit posts.';
+
+  @override
   String get dashboardOverviewSavings => 'Savings';
 
   @override
@@ -1255,6 +1259,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get transactionsMiniAnalyticsPendingNote =>
       'Totals update after pending items post.';
+
+  @override
+  String get transactionsMiniAnalyticsCardPaymentAwaitingCreditNote =>
+      'Card payment counted — balance updates when the card credit posts.';
 
   @override
   String get transactionPendingChip => 'Pending';
