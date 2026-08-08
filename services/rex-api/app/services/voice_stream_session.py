@@ -46,6 +46,8 @@ class VoiceStreamSession(
         self.conversation_id: Optional[str] = None
         self.financial_context: Optional[dict[str, Any]] = None
         self.write_confirmation: Optional[dict[str, Any]] = None
+        self.client_transcript: Optional[str] = None
+        self._last_streamed_transcript: Optional[str] = None
         self.input_mime_type = "audio/linear16"
         self.sample_rate = 16000
         self.client = ""
@@ -86,6 +88,8 @@ class VoiceStreamSession(
         self._audio_started_at = None
         self._audio_bytes = 0
         self._audio_chunks_received = 0
+        self.client_transcript = None
+        self._last_streamed_transcript = None
         await self._cancel_live_endpoint_check()
         await self._close_live_transcription()
         await self._cancel_active_turn()

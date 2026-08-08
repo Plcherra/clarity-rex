@@ -294,6 +294,10 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             }
             if (event.errorCode == 'empty_audio' ||
                 _isNoAudioError(event.detail ?? '')) {
+              if (_resendUtteranceEndWithClientTranscript()) {
+                debugPrint('rex_voice_stream empty_audio_resend_transcript');
+                break;
+              }
               debugPrint('rex_voice_stream empty_audio_recovered');
               _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
               break;

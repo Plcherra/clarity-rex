@@ -35,6 +35,7 @@ class DeepgramLiveTranscriptionSession:
         self._parse_message = parse_message
         self._append_final_segment = append_final_segment
         self._final_segments: list[str] = []
+        self._latest_partial_transcript = ""
         self._confidence: Optional[float] = None
         self._duration_seconds: Optional[float] = None
         self._request_id: Optional[str] = None
@@ -68,6 +69,11 @@ class DeepgramLiveTranscriptionSession:
             await self.close()
 
         final_transcript = " ".join(self._final_segments).strip()
+        if not final_transcript:
+            # Partials can arrive and be shown to the user while speech_final
+            # never lands before CloseStream — still treat the interim text
+            # as the turn transcript rather than empty_audio.
+            final_transcript = self._latest_partial_transcript.strip()
         if not final_transcript:
             raise DeepgramServiceError("I did not catch any audio.", status_code=422)
 
@@ -116,10 +122,15 @@ class DeepgramLiveTranscriptionSession:
             if self.on_transcript is not None:
                 await self.on_transcript(event)
 
+            transcript = str(event.get("transcript") or "").strip()
+            if event["event"] == "transcript.partial" and transcript:
+                self._latest_partial_transcript = transcript
+                continue
+
             if event["event"] == "transcript.final":
-                transcript = str(event["transcript"] or "").strip()
                 if transcript:
                     self._append_final_segment(self._final_segments, transcript)
+                    self._latest_partial_transcript = ""
                 self._confidence = event.get("confidence")
 
 

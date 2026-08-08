@@ -32,7 +32,20 @@ class VoiceStreamTurnProcessingMixin:
     _audio_chunks_received: int
     _turn_audio_bytes: int
     _turn_audio_chunks: int
+    client_transcript: Optional[str]
+    _last_streamed_transcript: Optional[str]
     deepgram_streaming_service: Any
+
+    def _take_fallback_transcript(self) -> str:
+        for candidate in (self.client_transcript, self._last_streamed_transcript):
+            text = str(candidate or "").strip()
+            if text:
+                self.client_transcript = None
+                self._last_streamed_transcript = None
+                return text
+        self.client_transcript = None
+        self._last_streamed_transcript = None
+        return ""
 
     async def _process_utterance(self) -> None:
         self._turn_generation += 1
@@ -156,16 +169,7 @@ class VoiceStreamTurnProcessingMixin:
         self._turn_audio_chunks = self._audio_chunk_count()
         self._audio_bytes = 0
         self._audio_chunks_received = 0
-
-        if live_transcription is None:
-            LOGGER.info(
-                "voice_empty_audio_recovered session_id=%s conversation_id=%s "
-                "mode=live",
-                self._session_id,
-                self.conversation_id,
-            )
-            await self._send_error("I did not catch any audio.", code="empty_audio")
-            return
+        fallback_transcript = self._take_fallback_transcript()
 
         timings: dict[str, int] = {}
         started_at = time.perf_counter()
@@ -173,21 +177,62 @@ class VoiceStreamTurnProcessingMixin:
             timings["capture_ms"] = self._elapsed_ms(audio_started_at)
         LOGGER.info(
             "voice_turn_accepted session_id=%s conversation_id=%s mode=live "
-            "audio_bytes=%s audio_chunks=%s",
+            "audio_bytes=%s audio_chunks=%s has_live_stt=%s has_fallback=%s",
             self._session_id,
             self.conversation_id,
             self._turn_audio_bytes,
             self._turn_audio_chunks,
+            live_transcription is not None,
+            bool(fallback_transcript),
         )
 
         try:
-            transcription = await live_transcription.finish()
+            transcription: dict[str, Any]
+            if live_transcription is None:
+                if not fallback_transcript:
+                    LOGGER.info(
+                        "voice_empty_audio_recovered session_id=%s "
+                        "conversation_id=%s mode=live",
+                        self._session_id,
+                        self.conversation_id,
+                    )
+                    await self._send_error(
+                        "I did not catch any audio.", code="empty_audio"
+                    )
+                    return
+                transcription = {
+                    "transcript": fallback_transcript,
+                    "confidence": None,
+                    "duration_seconds": None,
+                    "metadata": {"transport": "client-transcript-fallback"},
+                }
+            else:
+                try:
+                    transcription = await live_transcription.finish()
+                except DeepgramServiceError as error:
+                    if not fallback_transcript:
+                        raise
+                    LOGGER.info(
+                        "voice_stt_finish_fallback session_id=%s "
+                        "conversation_id=%s detail=%s",
+                        self._session_id,
+                        self.conversation_id,
+                        getattr(error, "detail", error),
+                    )
+                    transcription = {
+                        "transcript": fallback_transcript,
+                        "confidence": None,
+                        "duration_seconds": None,
+                        "metadata": {"transport": "client-transcript-fallback"},
+                    }
             timings["stt_ms"] = self._elapsed_ms(started_at)
             await self._record_stt_usage(
                 transcription,
                 latency_ms=timings["stt_ms"],
             )
             transcript = str(transcription.get("transcript") or "").strip()
+            if not transcript:
+                transcript = fallback_transcript
             if not transcript:
                 LOGGER.info(
                     "voice_blank_transcript_recovered session_id=%s "

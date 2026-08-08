@@ -142,6 +142,28 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     }
   }
 
+  bool _resendUtteranceEndWithClientTranscript() {
+    final session = _activeStreamingSession;
+    final transcript =
+        (_pendingUtteranceTranscript ?? _transcriptBuffer.visible).trim();
+    if (session == null ||
+        transcript.isEmpty ||
+        !state.isCallActive ||
+        _emptyVoiceTurnRecoveryCount > 0) {
+      return false;
+    }
+    // One resend before soft listen restart — keeps visible speech and
+    // lets the backend complete from client transcript authority.
+    _emptyVoiceTurnRecoveryCount++;
+    _streamingUtteranceEndSent = false;
+    _sendStreamingUtteranceEndIfNeeded(
+      session,
+      _streamingTurnSequence,
+      transcript: transcript,
+    );
+    return _streamingUtteranceEndSent;
+  }
+
   void _sendStreamingUtteranceEndIfNeeded(
     StreamingVoiceSession session,
     int turnSequence, {
@@ -172,6 +194,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     if (!needsFinance || readyFinance != null) {
       _markVoiceTurnUtteranceEnd(turnSequence);
       session.endUtterance(
+        transcript: utteranceTranscript,
         financialContext: readyFinance,
         writeConfirmation: writeConfirmation,
       );
@@ -189,6 +212,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
         }
         _markVoiceTurnUtteranceEnd(turnSequence);
         session.endUtterance(
+          transcript: utteranceTranscript,
           financialContext: financialContext,
           writeConfirmation: writeConfirmation,
         );

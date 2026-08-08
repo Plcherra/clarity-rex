@@ -491,6 +491,7 @@ class _FakeStreamingVoiceApi extends StreamingVoiceApi {
 class _FakeVoiceWebSocket implements VoiceWebSocket {
   final _events = StreamController<dynamic>.broadcast();
   final sentEvents = <String>[];
+  final sentPayloads = <Map<String, dynamic>>[];
   final sentAudioChunks = <Uint8List>[];
   var closeCount = 0;
 
@@ -515,6 +516,7 @@ class _FakeVoiceWebSocket implements VoiceWebSocket {
       final decoded = jsonDecode(data);
       if (decoded is Map<String, dynamic>) {
         sentEvents.add(decoded['event'] as String? ?? '');
+        sentPayloads.add(Map<String, dynamic>.from(decoded));
       }
     } else if (data is Uint8List) {
       sentEvents.add('audio.chunk');

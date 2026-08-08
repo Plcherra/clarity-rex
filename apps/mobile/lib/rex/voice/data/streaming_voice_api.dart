@@ -62,10 +62,16 @@ class StreamingVoiceSession {
   }
 
   void endUtterance({
+    String? transcript,
     Map<String, dynamic>? financialContext,
     Map<String, dynamic>? writeConfirmation,
   }) {
     final payload = <String, Object>{'event': 'utterance.end'};
+    final trimmedTranscript = transcript?.trim();
+    if (trimmedTranscript != null && trimmedTranscript.isNotEmpty) {
+      // Authority when live Deepgram finish() returns blank after partials.
+      payload['transcript'] = trimmedTranscript;
+    }
     if (financialContext != null) {
       payload['financial_context'] = financialContext;
     }

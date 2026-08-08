@@ -26,6 +26,8 @@ class VoiceStreamLiveTranscriptionMixin:
     async def _handle_live_transcript_event(self, event: dict[str, Any]) -> None:
         await self._send_transcript_event(event)
         transcript = str(event.get("transcript") or "").strip()
+        if transcript:
+            self._last_streamed_transcript = transcript
         if transcript and not self._requires_explicit_utterance_end():
             self._schedule_live_endpoint_check()
         if (

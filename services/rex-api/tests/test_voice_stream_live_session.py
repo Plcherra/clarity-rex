@@ -77,6 +77,50 @@ async def test_voice_stream_live_blank_transcription_recovers_as_empty_audio():
 
 
 @pytest.mark.asyncio
+async def test_voice_stream_live_blank_finish_uses_client_transcript_fallback():
+    class BlankLiveTranscription:
+        async def finish(self):
+            return {
+                "transcript": "   ",
+                "confidence": 0.2,
+                "duration_seconds": 0.1,
+                "metadata": {"transport": "websocket-live"},
+            }
+
+    websocket = FakeWebSocket()
+    chat = FakeChatService()
+    tts = FakeGoogleTTSService()
+    session = _live_session(websocket, chat, tts)
+    session.conversation_id = "conversation-existing"
+    session._live_transcription = BlankLiveTranscription()
+    session.client_transcript = "Buy more coffee"
+
+    await session._process_live_utterance()
+
+    assert chat.stream_calls[0]["message"] == "Buy more coffee"
+    assert any(event["event"] == "assistant.done" for event in websocket.events)
+    assert not any(
+        event.get("code") == "empty_audio" for event in websocket.events
+    )
+
+
+@pytest.mark.asyncio
+async def test_voice_stream_live_none_uses_streamed_transcript_fallback():
+    websocket = FakeWebSocket()
+    chat = FakeChatService()
+    tts = FakeGoogleTTSService()
+    session = _live_session(websocket, chat, tts)
+    session.conversation_id = "conversation-existing"
+    session._live_transcription = None
+    session._last_streamed_transcript = "Hello from partials"
+
+    await session._process_live_utterance()
+
+    assert chat.stream_calls[0]["message"] == "Hello from partials"
+    assert any(event["event"] == "assistant.done" for event in websocket.events)
+
+
+@pytest.mark.asyncio
 async def test_voice_stream_live_transcript_idle_uses_timing_contract(monkeypatch):
     delays = []
 

@@ -20,6 +20,8 @@ class VoiceStreamEventRouterMixin:
     locale: Optional[str]
     financial_context: Optional[dict[str, Any]]
     write_confirmation: Optional[dict[str, Any]]
+    client_transcript: Optional[str]
+    _last_streamed_transcript: Optional[str]
     _session_id: str
     _active_turn_task: Optional[asyncio.Task[None]]
     _live_transcription: Optional[Any]
@@ -148,8 +150,19 @@ class VoiceStreamEventRouterMixin:
                 self.write_confirmation = write_confirmation
             else:
                 self.write_confirmation = None
+            raw_transcript = payload.get("transcript")
+            if isinstance(raw_transcript, str) and raw_transcript.strip():
+                self.client_transcript = raw_transcript.strip()
+            else:
+                self.client_transcript = None
             await self._cancel_live_endpoint_check()
             if self._live_transcription is not None:
+                self._active_turn_task = asyncio.create_task(
+                    self._process_live_utterance()
+                )
+            elif self.client_transcript or self._last_streamed_transcript:
+                # Live STT already closed (e.g. prior blank finish) but the
+                # client still has the spoken text — complete the turn.
                 self._active_turn_task = asyncio.create_task(
                     self._process_live_utterance()
                 )

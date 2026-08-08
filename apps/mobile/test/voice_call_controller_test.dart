@@ -756,10 +756,93 @@ void main() {
         streamingApi.socket.sentEvents.where((event) => event == 'utterance.end'),
         hasLength(1),
       );
+      final endPayload = streamingApi.socket.sentPayloads.firstWhere(
+        (payload) => payload['event'] == 'utterance.end',
+      );
+      expect(endPayload['transcript'], 'Tell me about my budgets');
       final messages = container.read(chatProvider).messages;
       expect(messages, hasLength(1));
       expect(messages.first.content, 'Tell me about my budgets');
       expect(messages.first.isVoiceInterim, isFalse);
+    },
+  );
+
+  test(
+    'streaming empty_audio with known transcript resends instead of wiping',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Remember my coffee budget',
+      });
+      await Future<void>.delayed(Duration.zero);
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      expect(
+        streamingApi.socket.sentEvents.where((event) => event == 'utterance.end'),
+        hasLength(1),
+      );
+
+      streamingApi.socket.emit({
+        'event': 'error',
+        'code': 'empty_audio',
+        'detail': 'I did not catch any audio.',
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.thinking);
+      expect(
+        container.read(chatProvider).messages.first.content,
+        'Remember my coffee budget',
+      );
+      expect(
+        streamingApi.socket.sentEvents.where((event) => event == 'utterance.end'),
+        hasLength(2),
+      );
+      final resent = streamingApi.socket.sentPayloads.lastWhere(
+        (payload) => payload['event'] == 'utterance.end',
+      );
+      expect(resent['transcript'], 'Remember my coffee budget');
+      expect(streamingApi.socket.sentEvents, isNot(contains('user.interrupt')));
     },
   );
 
