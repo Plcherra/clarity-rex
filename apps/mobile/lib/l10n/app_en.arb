@@ -504,7 +504,6 @@
   "dashboardOverviewThisMonthLabel": "This month",
   "dashboardOverviewActivityNotBalanceNote": "Activity this month — not the same as balance",
   "dashboardOverviewPendingCashFlowNote": "Totals update after pending items post.",
-  "dashboardOverviewCardPaymentAwaitingCreditNote": "Card payment counted — balance updates when the card credit posts.",
   "dashboardOverviewSavings": "Savings",
   "dashboardOverviewSavingsMovedIn": "{amount} moved in",
   "@dashboardOverviewSavingsMovedIn": {
@@ -699,23 +698,6 @@
   "dashboardTransactionsSectionTitle": "Transactions",
   "dashboardSurfaceOverview": "Overview",
   "dashboardSurfaceTransactions": "Transactions",
-  "transactionsMiniAnalyticsTitle": "This month at a glance",
-  "transactionsMiniAnalyticsTitleForMonth": "{month} at a glance",
-  "@transactionsMiniAnalyticsTitleForMonth": {
-    "placeholders": {
-      "month": {
-        "type": "String"
-      }
-    }
-  },
-  "transactionsMiniAnalyticsSubtitle": "Same totals as Overview for this month",
-  "transactionsMiniAnalyticsSpent": "Spent",
-  "transactionsMiniAnalyticsIncome": "Income",
-  "transactionsMiniAnalyticsNet": "Net",
-  "transactionsMiniAnalyticsTrend": "Six-month spend trend",
-  "transactionsMiniAnalyticsTopCategories": "Top categories",
-  "transactionsMiniAnalyticsPendingNote": "Totals update after pending items post.",
-  "transactionsMiniAnalyticsCardPaymentAwaitingCreditNote": "Card payment counted — balance updates when the card credit posts.",
   "transactionPendingChip": "Pending",
   "dashboardNeedsCategoryLabel": "Needs category",
   "dashboardTransactionsClearFilters": "Clear",

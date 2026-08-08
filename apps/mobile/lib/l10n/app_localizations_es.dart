@@ -943,10 +943,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Los totales se actualizan cuando se confirmen los pendientes.';
 
   @override
-  String get dashboardOverviewCardPaymentAwaitingCreditNote =>
-      'Pago a tarjeta contado — el saldo se actualiza cuando el crédito se publique.';
-
-  @override
   String get dashboardOverviewSavings => 'Ahorros';
 
   @override
@@ -1238,42 +1234,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dashboardSurfaceTransactions => 'Transacciones';
-
-  @override
-  String get transactionsMiniAnalyticsTitle => 'Este mes de un vistazo';
-
-  @override
-  String transactionsMiniAnalyticsTitleForMonth(String month) {
-    return 'Vistazo de $month';
-  }
-
-  @override
-  String get transactionsMiniAnalyticsSubtitle =>
-      'Mismos totales que Resumen para este mes';
-
-  @override
-  String get transactionsMiniAnalyticsSpent => 'Gastado';
-
-  @override
-  String get transactionsMiniAnalyticsIncome => 'Ingresos';
-
-  @override
-  String get transactionsMiniAnalyticsNet => 'Neto';
-
-  @override
-  String get transactionsMiniAnalyticsTrend =>
-      'Tendencia de gasto a seis meses';
-
-  @override
-  String get transactionsMiniAnalyticsTopCategories => 'Principales categorías';
-
-  @override
-  String get transactionsMiniAnalyticsPendingNote =>
-      'Los totales se actualizan cuando se confirmen los pendientes.';
-
-  @override
-  String get transactionsMiniAnalyticsCardPaymentAwaitingCreditNote =>
-      'Pago a tarjeta contado — el saldo se actualiza cuando el crédito se publique.';
 
   @override
   String get transactionPendingChip => 'Pendiente';

@@ -54,11 +54,6 @@ class _DashboardTransactionsSectionState
 
   bool get _isAccountScope => widget.scope is AccountDashboardScope;
 
-  /// Glance totals are for the open dashboard month. Only on flat List when
-  /// search/filters are clear so matches stay under the controls.
-  bool get _showsDashboardMonthMiniAnalytics =>
-      _mode == _TransactionsViewMode.list && _activeFilterCount == 0;
-
   @override
   void initState() {
     super.initState();
@@ -373,11 +368,6 @@ class _DashboardTransactionsSectionState
                       }),
                     ),
                     const SizedBox(height: 16),
-                    // Glance sits above a long flat list so it stays reachable.
-                    if (_showsDashboardMonthMiniAnalytics) ...[
-                      TransactionsMonthMiniAnalytics(snapshot: widget.snapshot),
-                      const SizedBox(height: 16),
-                    ],
                     if (_refreshing)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),

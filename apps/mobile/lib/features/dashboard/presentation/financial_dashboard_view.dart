@@ -19,7 +19,6 @@ import '../../accounts/application/plaid_accounts_refresh.dart';
 import '../../accounts/presentation/widgets/connect_bank_setup_card.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
-import '../../transactions/presentation/widgets/transactions_month_mini_analytics.dart';
 import '../../transactions/presentation/widgets/transaction_line_tile.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';

@@ -1757,12 +1757,6 @@ abstract class AppLocalizations {
   /// **'Totals update after pending items post.'**
   String get dashboardOverviewPendingCashFlowNote;
 
-  /// No description provided for @dashboardOverviewCardPaymentAwaitingCreditNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Card payment counted — balance updates when the card credit posts.'**
-  String get dashboardOverviewCardPaymentAwaitingCreditNote;
-
   /// No description provided for @dashboardOverviewSavings.
   ///
   /// In en, this message translates to:
@@ -2234,66 +2228,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transactions'**
   String get dashboardSurfaceTransactions;
-
-  /// No description provided for @transactionsMiniAnalyticsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'This month at a glance'**
-  String get transactionsMiniAnalyticsTitle;
-
-  /// No description provided for @transactionsMiniAnalyticsTitleForMonth.
-  ///
-  /// In en, this message translates to:
-  /// **'{month} at a glance'**
-  String transactionsMiniAnalyticsTitleForMonth(String month);
-
-  /// No description provided for @transactionsMiniAnalyticsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Same totals as Overview for this month'**
-  String get transactionsMiniAnalyticsSubtitle;
-
-  /// No description provided for @transactionsMiniAnalyticsSpent.
-  ///
-  /// In en, this message translates to:
-  /// **'Spent'**
-  String get transactionsMiniAnalyticsSpent;
-
-  /// No description provided for @transactionsMiniAnalyticsIncome.
-  ///
-  /// In en, this message translates to:
-  /// **'Income'**
-  String get transactionsMiniAnalyticsIncome;
-
-  /// No description provided for @transactionsMiniAnalyticsNet.
-  ///
-  /// In en, this message translates to:
-  /// **'Net'**
-  String get transactionsMiniAnalyticsNet;
-
-  /// No description provided for @transactionsMiniAnalyticsTrend.
-  ///
-  /// In en, this message translates to:
-  /// **'Six-month spend trend'**
-  String get transactionsMiniAnalyticsTrend;
-
-  /// No description provided for @transactionsMiniAnalyticsTopCategories.
-  ///
-  /// In en, this message translates to:
-  /// **'Top categories'**
-  String get transactionsMiniAnalyticsTopCategories;
-
-  /// No description provided for @transactionsMiniAnalyticsPendingNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Totals update after pending items post.'**
-  String get transactionsMiniAnalyticsPendingNote;
-
-  /// No description provided for @transactionsMiniAnalyticsCardPaymentAwaitingCreditNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Card payment counted — balance updates when the card credit posts.'**
-  String get transactionsMiniAnalyticsCardPaymentAwaitingCreditNote;
 
   /// No description provided for @transactionPendingChip.
   ///

@@ -13,7 +13,7 @@ void main() {
     expect(
       source,
       contains(
-        'insights strip, collapsible charts, mini-analytics',
+        'insights strip, collapsible charts',
       ),
     );
   });

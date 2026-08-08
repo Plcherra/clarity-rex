@@ -81,7 +81,7 @@ void main() {
       expect(july.net, closeTo(snapshot.availableThisMonth, 0.001));
     });
 
-    test('soft-matched card payment awaits credit note without inflating spend', () {
+    test('soft-matched card payment does not inflate spend', () {
       final snapshot = _snapshot([
         _tx(
           description: 'PUBLIX 1234',
@@ -100,7 +100,6 @@ void main() {
       ]);
 
       expect(snapshot.spentThisMonth, closeTo(480.35, 0.001));
-      expect(snapshot.hasCreditCardPaymentAwaitingCreditThisMonth, isTrue);
     });
 
     test('pending rows stay out until they settle', () {

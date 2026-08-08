@@ -935,10 +935,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Totals update after pending items post.';
 
   @override
-  String get dashboardOverviewCardPaymentAwaitingCreditNote =>
-      'Card payment counted — balance updates when the card credit posts.';
-
-  @override
   String get dashboardOverviewSavings => 'Savings';
 
   @override
@@ -1228,41 +1224,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardSurfaceTransactions => 'Transactions';
-
-  @override
-  String get transactionsMiniAnalyticsTitle => 'This month at a glance';
-
-  @override
-  String transactionsMiniAnalyticsTitleForMonth(String month) {
-    return '$month at a glance';
-  }
-
-  @override
-  String get transactionsMiniAnalyticsSubtitle =>
-      'Same totals as Overview for this month';
-
-  @override
-  String get transactionsMiniAnalyticsSpent => 'Spent';
-
-  @override
-  String get transactionsMiniAnalyticsIncome => 'Income';
-
-  @override
-  String get transactionsMiniAnalyticsNet => 'Net';
-
-  @override
-  String get transactionsMiniAnalyticsTrend => 'Six-month spend trend';
-
-  @override
-  String get transactionsMiniAnalyticsTopCategories => 'Top categories';
-
-  @override
-  String get transactionsMiniAnalyticsPendingNote =>
-      'Totals update after pending items post.';
-
-  @override
-  String get transactionsMiniAnalyticsCardPaymentAwaitingCreditNote =>
-      'Card payment counted — balance updates when the card credit posts.';
 
   @override
   String get transactionPendingChip => 'Pending';

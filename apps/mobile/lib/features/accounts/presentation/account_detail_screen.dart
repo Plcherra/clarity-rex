@@ -403,7 +403,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
         }
         final title = account?.displayName ?? context.l10n.accountDetailFallbackTitle;
         // Account detail embeds the same FinancialDashboardView shell as the
-        // main Dashboard tab (insights strip, collapsible charts, mini-analytics).
+        // main Dashboard tab (insights strip, collapsible charts).
         return FinancialDashboardView(
           controller: widget.dashboardController,
           transactionController: widget.transactionController,
