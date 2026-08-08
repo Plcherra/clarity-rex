@@ -2088,7 +2088,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardChartCategorySpendSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'This month total · tap a category'**
+  /// **'Total · tap a category'**
   String get dashboardChartCategorySpendSubtitle;
 
   /// No description provided for @dashboardOverviewSpendShape.
@@ -2100,8 +2100,26 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardChartSpendRadarSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Top categories this month'**
+  /// **'Top categories'**
   String get dashboardChartSpendRadarSubtitle;
+
+  /// No description provided for @dashboardShowingMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {month}'**
+  String dashboardShowingMonth(String month);
+
+  /// No description provided for @dashboardMonthPreviousTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous month'**
+  String get dashboardMonthPreviousTooltip;
+
+  /// No description provided for @dashboardMonthNextTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get dashboardMonthNextTooltip;
 
   /// No description provided for @dashboardChartSpendRadarSpentLegend.
   ///

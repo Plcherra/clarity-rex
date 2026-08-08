@@ -256,6 +256,17 @@ final class DashboardUiController extends _UiController {
 
   DateTime get spendReference => bindings.spendReferenceController.spendReference;
 
+  /// Sets the Overview "showing month" and reloads dashboard surfaces that
+  /// key off [spendReference] (category spend, budget, pressure, drill-down).
+  void setSpendReference(DateTime month) {
+    bindings.spendReferenceController.spendReference = DateTime(
+      month.year,
+      month.month,
+      1,
+    );
+    notifyChanged();
+  }
+
   Map<String, String> get categoryDisplayRenames =>
       bindings.categoryReadModel.categoryDisplayRenames;
 
@@ -344,10 +355,10 @@ final class DashboardUiController extends _UiController {
     FinancialReadModel model,
     DashboardScope scope,
   ) {
-    final now = DateTime.now();
-    final reference = DateTime(now.year, now.month, now.day);
-    // Keep every "this month" surface on the real calendar month. Do not latch
-    // onto a prior month when the current month only has pending activity.
+    final requested = bindings.spendReferenceController.spendReference;
+    final reference = DateTime(requested.year, requested.month, 1);
+    // Honor the Overview month picker. Do not force "now" on every reload —
+    // that wiped the user's selected compare month.
     bindings.spendReferenceController.spendReference = reference;
     return model.dashboardReferenceForScope(scope, requested: reference);
   }

@@ -198,6 +198,32 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
                     onSelected: (surface) =>
                         setState(() => _surface = surface),
                   ),
+                  if (_surface == _DashboardSurface.overview) ...[
+                    const SizedBox(height: 8),
+                    DashboardMonthSwitcher(
+                      selectedMonth: widget.snapshot.referenceMonth,
+                      availableYearMonths: dashboardAvailableYearMonths(
+                        transactionDates: widget.scopedTransactions.map(
+                          (transaction) => transaction.date,
+                        ),
+                      ),
+                      onMonthSelected: widget.controller.setSpendReference,
+                    ),
+                    Center(
+                      child: Text(
+                        context.l10n.dashboardShowingMonth(
+                          formatYearMonthLabel(
+                            yearMonthKey(widget.snapshot.referenceMonth),
+                          ),
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurface.withValues(alpha: 0.55),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 14),
                 ],
               ),

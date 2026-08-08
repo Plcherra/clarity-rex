@@ -619,9 +619,19 @@
   "assistantAutoProposalsTypeMemory": "Memory (facts & preferences)",
   "chatShowMore": "Show more",
   "chatShowLess": "Show less",
-  "dashboardChartCategorySpendSubtitle": "This month total · tap a category",
+  "dashboardChartCategorySpendSubtitle": "Total · tap a category",
   "dashboardOverviewSpendShape": "Spend shape",
-  "dashboardChartSpendRadarSubtitle": "Top categories this month",
+  "dashboardChartSpendRadarSubtitle": "Top categories",
+  "dashboardShowingMonth": "Showing {month}",
+  "@dashboardShowingMonth": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardMonthPreviousTooltip": "Previous month",
+  "dashboardMonthNextTooltip": "Next month",
   "dashboardChartSpendRadarSpentLegend": "Spent",
   "dashboardChartSpendRadarBudgetLegend": "Budget",
   "dashboardChartSpendingPressureSubtitle": "Month-over-month pressure · tap a category",

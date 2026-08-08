@@ -1132,14 +1132,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatShowLess => 'Show less';
 
   @override
-  String get dashboardChartCategorySpendSubtitle =>
-      'This month total · tap a category';
+  String get dashboardChartCategorySpendSubtitle => 'Total · tap a category';
 
   @override
   String get dashboardOverviewSpendShape => 'Spend shape';
 
   @override
-  String get dashboardChartSpendRadarSubtitle => 'Top categories this month';
+  String get dashboardChartSpendRadarSubtitle => 'Top categories';
+
+  @override
+  String dashboardShowingMonth(String month) {
+    return 'Showing $month';
+  }
+
+  @override
+  String get dashboardMonthPreviousTooltip => 'Previous month';
+
+  @override
+  String get dashboardMonthNextTooltip => 'Next month';
 
   @override
   String get dashboardChartSpendRadarSpentLegend => 'Spent';
