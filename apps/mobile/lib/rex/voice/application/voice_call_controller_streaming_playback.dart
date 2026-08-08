@@ -165,9 +165,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
         .writeConfirmationForAffirmation(utteranceTranscript);
     final readyFinance =
         _readyFinancialContextForUtterance(utteranceTranscript);
-    final needsFinance = shouldAttachAssistantFinancialContext(
-      utteranceTranscript,
-    );
+    final needsFinance = _shouldAttachFinancialContext(utteranceTranscript);
 
     // Non-finance (or prefetch already ready): send utterance.end immediately.
     // Only await a cold finance build when this turn clearly needs money context.
@@ -200,8 +198,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
 
   void _prefetchFinancialContextIfNeeded(String transcript) {
     final normalized = transcript.trim();
-    if (normalized.isEmpty ||
-        !shouldAttachAssistantFinancialContext(normalized)) {
+    if (normalized.isEmpty || !_shouldAttachFinancialContext(normalized)) {
       return;
     }
     if (_prefetchedFinancialContextTranscript == normalized &&
@@ -228,8 +225,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
   /// Cached finance context only — returns null if prefetch is still in flight.
   Map<String, dynamic>? _readyFinancialContextForUtterance(String transcript) {
     final normalized = transcript.trim();
-    if (normalized.isEmpty ||
-        !shouldAttachAssistantFinancialContext(normalized)) {
+    if (normalized.isEmpty || !_shouldAttachFinancialContext(normalized)) {
       return null;
     }
     if (_prefetchedFinancialContextTranscript == normalized) {
@@ -255,9 +251,19 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     return _financialContext(normalized);
   }
 
+  bool _shouldAttachFinancialContext(String transcript) {
+    final chatMessages = ref.read(chatProvider).messages;
+    return shouldAttachAssistantFinancialContext(
+      transcript,
+      recentTurnTexts: priorTurnTextsForFinanceAttach(
+        chatMessages.map((m) => m.content),
+        currentMessage: transcript,
+      ),
+    );
+  }
+
   Future<Map<String, dynamic>?> _financialContext([String? transcript]) async {
-    if (transcript == null ||
-        !shouldAttachAssistantFinancialContext(transcript)) {
+    if (transcript == null || !_shouldAttachFinancialContext(transcript)) {
       return null;
     }
     final service = ref.read(assistantFinancialContextServiceProvider);

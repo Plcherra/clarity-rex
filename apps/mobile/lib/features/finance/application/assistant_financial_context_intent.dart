@@ -1,4 +1,7 @@
-bool shouldAttachAssistantFinancialContext(String message) {
+bool shouldAttachAssistantFinancialContext(
+  String message, {
+  Iterable<String>? recentTurnTexts,
+}) {
   final normalized = normalizedAssistantFinanceIntentText(message);
   if (normalized.isEmpty) {
     return false;
@@ -6,7 +9,16 @@ bool shouldAttachAssistantFinancialContext(String message) {
   if (looksLikePastChatRecall(normalized)) {
     return false;
   }
-  return hasAssistantFinanceIntent(normalized);
+  if (hasAssistantFinanceIntent(normalized)) {
+    return true;
+  }
+  if (recentTurnTexts == null || recentTurnTexts.isEmpty) {
+    return false;
+  }
+  return shouldAttachFinanceFollowUpContext(
+    normalized,
+    recentTurnTexts: recentTurnTexts,
+  );
 }
 
 String normalizedAssistantFinanceIntentText(String message) {
@@ -34,6 +46,101 @@ bool hasAssistantFinanceIntent(String normalized) {
   return assistantContextualMoneyIntentPatterns.any(
     (pattern) => pattern.hasMatch(normalized),
   );
+}
+
+/// Prior chat/voice turn texts for finance follow-up attach (newest first).
+///
+/// Skips at most one newest entry that matches [currentMessage] so locally
+/// appended in-flight user turns are not treated as prior context.
+List<String> priorTurnTextsForFinanceAttach(
+  Iterable<String> chronologicalContents, {
+  required String currentMessage,
+  int limit = 6,
+}) {
+  final normalizedCurrent = currentMessage.trim();
+  final prior = <String>[];
+  var skippedCurrent = false;
+  for (final raw in chronologicalContents.toList().reversed) {
+    final content = raw.trim();
+    if (content.isEmpty) {
+      continue;
+    }
+    if (!skippedCurrent &&
+        normalizedCurrent.isNotEmpty &&
+        content == normalizedCurrent) {
+      skippedCurrent = true;
+      continue;
+    }
+    prior.add(content);
+    if (prior.length >= limit) {
+      break;
+    }
+  }
+  return prior;
+}
+
+bool recentTurnsIndicateFinanceThread(Iterable<String> recentTurnTexts) {
+  // Newest-first: the most recent *substantive* topic wins. Short ok/yes and
+  // "look that up" lines are skipped so they neither open nor keep a thread.
+  // A newer non-finance topic (e.g. mom) closes the finance window even if an
+  // older money ask is still inside the turn limit.
+  for (final text in recentTurnTexts) {
+    final normalized = normalizedAssistantFinanceIntentText(text);
+    if (normalized.isEmpty) {
+      continue;
+    }
+    if (_isFinanceContinuationOnly(normalized)) {
+      continue;
+    }
+    if (hasAssistantFinanceIntent(normalized) ||
+        assistantFinanceThreadSignalPatterns.any(
+          (pattern) => pattern.hasMatch(normalized),
+        )) {
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+bool _isFinanceContinuationOnly(String normalized) {
+  if (hasAssistantFinanceIntent(normalized)) {
+    return false;
+  }
+  return looksLikeFinanceThreadContinuation(normalized);
+}
+
+/// True when the current message continues a finance thread without money nouns.
+bool looksLikeFinanceThreadContinuation(String normalized) {
+  if (normalized.isEmpty) {
+    return false;
+  }
+  if (assistantFinanceLookupContinuationPatterns.any(
+    (pattern) => pattern.hasMatch(normalized),
+  )) {
+    return true;
+  }
+  return looksLikeShortFinanceThreadContinuation(normalized);
+}
+
+bool looksLikeShortFinanceThreadContinuation(String normalized) {
+  final words = normalized.split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
+  if (words.isEmpty || words.length > 12) {
+    return false;
+  }
+  return assistantFinanceShortContinuationPatterns.any(
+    (pattern) => pattern.hasMatch(normalized),
+  );
+}
+
+bool shouldAttachFinanceFollowUpContext(
+  String normalizedMessage, {
+  required Iterable<String> recentTurnTexts,
+}) {
+  if (!looksLikeFinanceThreadContinuation(normalizedMessage)) {
+    return false;
+  }
+  return recentTurnsIndicateFinanceThread(recentTurnTexts);
 }
 
 final assistantDirectFinanceIntentPatterns = <RegExp>[
@@ -101,4 +208,38 @@ final assistantMemoryStorePatterns = <RegExp>[
   RegExp(r'\btell\b'),
   RegExp(r'\btold\b'),
   RegExp(r'\btold you\b'),
+];
+
+/// Assistant / unavailable copy that marks an open finance lookup thread.
+final assistantFinanceThreadSignalPatterns = <RegExp>[
+  RegExp(r'\bclarity financial data\b'),
+  RegExp(r'\breliable .{0,40}financial data\b'),
+  RegExp(r'\bfinancial (?:data|information|context)\b'),
+  RegExp(r'\bfetch_(?:account_summary|spend_insight)\b'),
+];
+
+/// Permission / lookup / go-ahead language that omits money nouns.
+final assistantFinanceLookupContinuationPatterns = <RegExp>[
+  RegExp(r'\blook(?:\s+\w+){0,2}\s+up\b'),
+  RegExp(r'\bpull(?:\s+\w+){0,2}\s+up\b'),
+  RegExp(r'\b(?:please\s+)?check(?:\s+(?:it|that|this|for me))\b'),
+  RegExp(r'\byes(?:\s+\w+){0,3}\s+check\b'),
+  RegExp(r'\bgo ahead\b'),
+  RegExp(r'\bgo for it\b'),
+  RegExp(r'\bplease (?:do|check|look|fetch|pull)\b'),
+  RegExp(
+    r'\b(?:want|need|needed) you to (?:look|check|fetch|pull|get)\b',
+  ),
+  RegExp(r'\b(?:give|gave|giving) you(?:\s+my)?\s+permission\b'),
+  RegExp(r'\byou have(?:\s+my)?\s+permission\b'),
+  RegExp(r'\bpermission to (?:look|check|fetch|pull)\b'),
+];
+
+/// Short whole-turn continuations when a finance thread is already active.
+final assistantFinanceShortContinuationPatterns = <RegExp>[
+  RegExp(
+    r'^(?:yes|yeah|yep|yup|ok|okay|sure|please|do it|please do|yes please|'
+    r'go ahead|go for it|check(?: it| that)?(?: please)?|'
+    r'look(?: it| that)? up)[.!?]*$',
+  ),
 ];

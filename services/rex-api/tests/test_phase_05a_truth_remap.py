@@ -168,7 +168,8 @@ async def test_finalize_off_explicit_goal_apply_no_denial_preamble() -> None:
     rex = (
         "I've saved that commitment.\n\n"
         "```rex_action\n"
-        '{"action":"create_goal","payload":{"title":"Buy dumbbells"},'
+        '{"action":"create_goal","payload":{"title":"Buy dumbbells",'
+        '"target_date":"2026-12-01"},'
         '"explicit":true}\n'
         "```"
     )
@@ -229,6 +230,67 @@ async def test_finalize_goals_off_soft_create_no_direct_save_promise() -> None:
     assert "saved that commitment" not in lowered
     assert "nothing was saved" in lowered
     assert "goal saves are switched off" in lowered
+
+
+@pytest.mark.asyncio
+async def test_finalize_off_opinion_chat_keeps_advice_not_unexecuted_fallback() -> None:
+    store = FakeMemoryService()
+    durable = DurableWriteService(memory_service=store)
+    user = (
+        "I have a goal to get $3500 by October for a motorcycle. "
+        "Should I do gym vs home workouts? I'm asking your opinion."
+    )
+    advice = (
+        "Updated thinking: with a $3500 motorcycle goal, home training is "
+        "usually cheaper while you save. A gym helps if you need structure — "
+        "does that match how you stick to plans?"
+    )
+    finalized = await finalize_grok_turn(
+        advice,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=durable,
+        proposal_settings=AssistantProposalSettings(
+            mode="off", memory=True, goals=True, threads=True
+        ),
+        brain_message=user,
+        user_message={"id": "u1", "content": user},
+        conversation_id="c1",
+        conversation_history=[],
+        turn_trace=None,
+        ai_messages=[],
+    )
+    assert finalized.get("proposed_turn") is None
+    assert store.plans == []
+    assert store.long_term_memory == []
+    assert finalized["response"] == advice
+    assert "confirmed saved change" not in finalized["response"].lower()
+
+
+@pytest.mark.asyncio
+async def test_finalize_off_false_saved_claim_still_scrubbed() -> None:
+    store = FakeMemoryService()
+    durable = DurableWriteService(memory_service=store)
+    user = "Please save that motorcycle goal for $3500 by October"
+    rex = "I've saved your motorcycle goal in Goals."
+    finalized = await finalize_grok_turn(
+        rex,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=durable,
+        proposal_settings=AssistantProposalSettings(
+            mode="off", memory=True, goals=True, threads=True
+        ),
+        brain_message=user,
+        user_message={"id": "u1", "content": user},
+        conversation_id="c1",
+        conversation_history=[],
+        turn_trace=None,
+        ai_messages=[],
+    )
+    assert finalized.get("proposed_turn") is None
+    assert store.plans == []
+    assert finalized["response"] == UNEXECUTED_MEMORY_FALLBACK
 
 
 def test_propose_knows_surface_never_says_goals() -> None:

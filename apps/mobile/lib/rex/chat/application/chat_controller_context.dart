@@ -60,7 +60,7 @@ extension ChatControllerContext on ChatController {
   }
 
   Future<Map<String, dynamic>?> _financialContext(String message) async {
-    if (!shouldAttachAssistantFinancialContext(message)) {
+    if (!_shouldAttachFinancialContext(message)) {
       return null;
     }
     final service = ref.read(assistantFinancialContextServiceProvider);
@@ -81,12 +81,21 @@ extension ChatControllerContext on ChatController {
     }
   }
 
+  bool _shouldAttachFinancialContext(String message) {
+    return shouldAttachAssistantFinancialContext(
+      message,
+      recentTurnTexts: priorTurnTextsForFinanceAttach(
+        state.messages.map((m) => m.content),
+        currentMessage: message,
+      ),
+    );
+  }
+
   DashboardInsightAnchor? _dashboardLinkAnchor(
     String message,
     Map<String, dynamic>? financialContext,
   ) {
-    if (financialContext == null ||
-        !shouldAttachAssistantFinancialContext(message)) {
+    if (financialContext == null || !_shouldAttachFinancialContext(message)) {
       return null;
     }
     if (_financialSyncNeedsRefresh(financialContext)) {

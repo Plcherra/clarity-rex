@@ -24,7 +24,10 @@ from app.services.action_truth_memory import (
     safe_unexecuted_saved_memory_claim_response,
 )
 from app.services.chat_turn_observability import ChatTurnTrace
-from app.services.save_intent_guards import has_explicit_save_intent
+from app.services.save_intent_guards import (
+    has_explicit_save_intent,
+    is_advice_seeking_turn,
+)
 
 
 def _intent_value(intent_decision) -> str:
@@ -164,7 +167,12 @@ class ChatResponseTruthService:
                 updated,
                 turn_trace,
             )
-        if self._user_requested_memory_save(user_message):
+        # Off / just-chat opinion turns mention goals and money without asking
+        # to save. Do not rewrite those replies into a failed-save lecture —
+        # only scrub real false success claims via the guard below.
+        if self._user_requested_memory_save(user_message) and not is_advice_seeking_turn(
+            user_message
+        ):
             updated = safe_unexecuted_memory_response(response)
             response = _apply_truth_guard(
                 "unexecuted_memory_request",

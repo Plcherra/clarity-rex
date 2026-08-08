@@ -126,6 +126,142 @@ void main() {
     );
   });
 
+  test(
+    'finance follow-up continuations attach when recent turns are finance',
+    () {
+      const financeAsk = 'Do you have my financial information?';
+      const assistantGap =
+          "I don't have reliable Clarity financial data available for this turn, "
+          "so I can't answer that without guessing.";
+
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'I give you permission I actually want you to look that up',
+          recentTurnTexts: const [assistantGap, financeAsk],
+        ),
+        isTrue,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'look that up',
+          recentTurnTexts: const [financeAsk],
+        ),
+        isTrue,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'go ahead',
+          recentTurnTexts: const [assistantGap, financeAsk],
+        ),
+        isTrue,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'yes please check',
+          recentTurnTexts: const [financeAsk],
+        ),
+        isTrue,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'please pull that up',
+          recentTurnTexts: priorTurnTextsForFinanceAttach(
+            const [
+              financeAsk,
+              assistantGap,
+              'please pull that up',
+            ],
+            currentMessage: 'please pull that up',
+          ),
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  test(
+    'finance follow-up continuations do not attach outside a finance thread',
+    () {
+      const momAsk = "How's my mom doing?";
+      const weather = "What's the weather vibe today?";
+
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'look that up',
+          recentTurnTexts: const [momAsk],
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'go ahead',
+          recentTurnTexts: const [weather],
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'yes please check',
+          recentTurnTexts: const [momAsk, weather],
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          "How's my mom",
+          recentTurnTexts: const [
+            'Do you have my financial information?',
+          ],
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          "What's the weather vibe",
+          recentTurnTexts: const [
+            'Do you have my financial information?',
+          ],
+        ),
+        isFalse,
+      );
+      // Newest substantive topic is mom — older finance ask must not stick.
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'look that up',
+          recentTurnTexts: const [
+            "How's my mom doing?",
+            'She lives in Miami.',
+            'Do you have my financial information?',
+          ],
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'ok',
+          recentTurnTexts: const [
+            "How's my mom doing?",
+            'Do you have my financial information?',
+          ],
+        ),
+        isFalse,
+      );
+    },
+  );
+
+  test('priorTurnTextsForFinanceAttach skips the in-flight current message', () {
+    expect(
+      priorTurnTextsForFinanceAttach(
+        const [
+          'Do you have my financial information?',
+          'look that up',
+        ],
+        currentMessage: 'look that up',
+      ),
+      ['Do you have my financial information?'],
+    );
+  });
+
   test('a word from a category label selects that whole category slice', () {
     final query = extractRexFinancialContextQuery(
       'How much did I spend on coffee this month?',

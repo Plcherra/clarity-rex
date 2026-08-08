@@ -146,6 +146,52 @@ def test_casual_success_without_memory_claim_is_not_blocked_by_saved_memory_guar
     assert response == "Got it — sounds like a good night."
 
 
+def test_opinion_reply_mentioning_goal_is_not_a_saved_memory_claim():
+    from app.services.action_truth_memory import (
+        response_claims_saved_memory_success,
+        safe_unexecuted_saved_memory_claim_response,
+    )
+
+    replies = [
+        (
+            "For your motorcycle goal, a gym membership can help if you use it. "
+            "Home works if you stay disciplined — does that match how you stick "
+            "to plans?"
+        ),
+        "Updated thinking: gym vs home — with a $3500 goal, home is cheaper.",
+        (
+            "I remembered your motorcycle goal from earlier. For gym vs home, "
+            "lean home while saving."
+        ),
+        "I noted that you have a $3500 motorcycle goal. Gym helps with structure.",
+    ]
+    for reply in replies:
+        assert response_claims_saved_memory_success(reply) is False
+        assert safe_unexecuted_saved_memory_claim_response(reply) == reply
+
+
+def test_false_saved_goal_claim_without_write_is_still_blocked():
+    from app.services.action_truth_memory import (
+        UNEXECUTED_MEMORY_FALLBACK,
+        response_claims_saved_memory_success,
+        safe_unexecuted_saved_memory_claim_response,
+    )
+
+    claim = "I've saved your motorcycle goal. For the gym, go home for now."
+    assert response_claims_saved_memory_success(claim) is True
+    assert safe_unexecuted_saved_memory_claim_response(claim) == UNEXECUTED_MEMORY_FALLBACK
+
+
+def test_progressive_save_claim_without_write_is_still_blocked():
+    from app.services.action_truth_memory import (
+        UNEXECUTED_MEMORY_FALLBACK,
+        safe_unexecuted_saved_memory_claim_response,
+    )
+
+    claim = "Got it--saving your Omen 45L PC now."
+    assert safe_unexecuted_saved_memory_claim_response(claim) == UNEXECUTED_MEMORY_FALLBACK
+
+
 def test_spanish_saved_memory_claim_without_write_is_blocked():
     from app.services.action_truth_memory import (
         response_claims_saved_memory_success,
