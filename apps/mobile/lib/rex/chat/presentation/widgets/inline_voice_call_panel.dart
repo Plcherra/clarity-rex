@@ -89,14 +89,14 @@ class VoiceLiveTranscript extends StatelessWidget {
     }
 
     if (state.phase == VoiceCallPhase.listening && !state.isMuted) {
-      final hasTranscript = transcript.isNotEmpty;
+      // Live speech belongs in the interim chat bubble only — showing the same
+      // string here duplicated the transcript (bubble + bottom status).
       return Padding(
         padding: const EdgeInsets.only(
           top: RexUiTokens.space4,
           bottom: RexUiTokens.messageGap,
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _VoiceWaveIndicator(
               phase: state.phase,
@@ -104,12 +104,10 @@ class VoiceLiveTranscript extends StatelessWidget {
               compact: true,
             ),
             const SizedBox(width: RexUiTokens.space8),
-            Expanded(
-              child: Text(
-                hasTranscript ? transcript : l10n.voicePanelStartTalking,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: hasTranscript ? colors.textPrimary : colors.textMuted,
-                ),
+            Text(
+              l10n.voicePanelStartTalking,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colors.textMuted,
               ),
             ),
           ],

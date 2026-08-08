@@ -41,6 +41,11 @@ extension VoiceCallControllerCommands on VoiceCallController {
     // Fresh STT for this listen cycle — late speech_final from a prior turn
     // must no longer be suppressed once we have new transcript evidence.
     _suppressStaleSpeechFinal = false;
+    if (_transcriptBuffer.visible.trim().isNotEmpty) {
+      // Real speech evidence resets the empty-turn streak so a prior soft
+      // recover cannot block empty_audio → chat fallback on this utterance.
+      _emptyVoiceTurnRecoveryCount = 0;
+    }
 
     state = state.copyWith(
       phase: VoiceCallPhase.listening,

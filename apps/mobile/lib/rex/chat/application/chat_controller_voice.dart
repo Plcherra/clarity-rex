@@ -161,7 +161,10 @@ extension ChatControllerVoice on ChatController {
     );
   }
 
-  void removeVoiceUserMessage(String localId) {
+  void removeVoiceUserMessage(
+    String localId, {
+    bool evenIfFinalized = false,
+  }) {
     if (localId.isEmpty) {
       return;
     }
@@ -171,7 +174,9 @@ extension ChatControllerVoice on ChatController {
     if (existingIndex < 0) {
       return;
     }
-    if (!state.messages[existingIndex].isVoiceInterim) {
+    // Soft-recover after a finalized-but-abandoned streaming turn must clear
+    // the orphan bubble; interim-only removal left duplicates on screen.
+    if (!evenIfFinalized && !state.messages[existingIndex].isVoiceInterim) {
       return;
     }
 

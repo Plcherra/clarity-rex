@@ -84,6 +84,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _streamingUtteranceEndSent = false;
   var _streamingTurnSequence = 0;
   int? _streamingTurnFinalizedSequence;
+  /// Turn sequence that already attempted empty_audio → chat+TTS fallback.
+  int? _chatFallbackTurnSequence;
   /// After a turn is finalized (idle/VAD/speech_final), ignore late speech_final
   /// until fresh transcript arrives for the next listen cycle.
   var _suppressStaleSpeechFinal = false;

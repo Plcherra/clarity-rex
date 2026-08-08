@@ -6,6 +6,10 @@ extension VoiceCallControllerChatSync on VoiceCallController {
   void _beginVoiceTurn(int turnSequence) {
     _transcriptBuffer.clear();
     _activeVoiceMessageLocalId = 'local-voice-$turnSequence';
+    _pendingUtteranceTranscript = null;
+    // Fresh listen cycle may accept speech_final; do not inherit suppress from
+    // a prior finalize → empty_audio → soft-recover path.
+    _suppressStaleSpeechFinal = false;
     _beginVoiceTurnTiming(turnSequence);
   }
 
@@ -55,13 +59,16 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     );
   }
 
-  void _removeActiveVoiceUserMessage() {
+  void _removeActiveVoiceUserMessage({bool evenIfFinalized = false}) {
     final localId = _activeVoiceMessageLocalId;
     if (localId == null) {
       return;
     }
 
-    ref.read(chatProvider.notifier).removeVoiceUserMessage(localId);
+    ref.read(chatProvider.notifier).removeVoiceUserMessage(
+      localId,
+      evenIfFinalized: evenIfFinalized,
+    );
     _resetActiveVoiceMessageLocalId();
   }
 

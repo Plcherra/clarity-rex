@@ -407,6 +407,21 @@ class _RecordingChatApi extends ChatApi {
   }
 }
 
+class _FailingChatApi extends ChatApi {
+  _FailingChatApi() : super(baseUrl: 'http://localhost');
+
+  @override
+  Future<ChatApiResponse> sendMessage(
+    String message, {
+    String? conversationId,
+    XFile? attachment,
+    Map<String, dynamic>? financialContext,
+    Map<String, dynamic>? writeConfirmation,
+  }) async {
+    throw Exception('chat_fallback_unavailable');
+  }
+}
+
 class _FakeCloudVoiceApi extends CloudVoiceApi {
   _FakeCloudVoiceApi() : super(baseUrl: 'http://localhost');
 

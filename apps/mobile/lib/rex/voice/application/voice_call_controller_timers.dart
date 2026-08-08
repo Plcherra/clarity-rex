@@ -91,10 +91,13 @@ extension VoiceCallControllerTimers on VoiceCallController {
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();
     _cancelSpeechFinalGrace();
+    _cancelListeningEndpointTimeout();
     unawaited(_stopInterimTranscription());
     unawaited(_captureService.cancel());
     unawaited(_streamingCaptureService.cancel());
     _stopBargeInMonitoring();
+    _suppressStaleSpeechFinal = false;
+    _resetPendingUtteranceTranscript();
     // Soft listen retry: do not interrupt live STT. interrupt() wipes Deepgram
     // audio and drops late speech_final — the stuck-on-listening loop.
     state = state.copyWith(
@@ -104,7 +107,9 @@ extension VoiceCallControllerTimers on VoiceCallController {
       clearError: true,
     );
     _clearVisibleTranscript();
-    _removeActiveVoiceUserMessage();
+    // Abandon the local user bubble even if finalize already flipped interim
+    // off — otherwise chat keeps the text while the bottom status resets.
+    _removeActiveVoiceUserMessage(evenIfFinalized: true);
     _startListeningCycle(generation);
   }
 

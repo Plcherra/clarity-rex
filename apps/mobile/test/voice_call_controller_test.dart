@@ -844,6 +844,171 @@ void main() {
   );
 
   test(
+    'empty_audio chat fallback still works after a prior soft-recover in the call',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final chatApi = _RecordingChatApi();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final playbackService = _ControlledAudioPlaybackService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          chatApiProvider.overrideWithValue(chatApi),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      // Prior empty turn soft-recovers and used to poison the shared counter so
+      // the next empty_audio with known text soft-recovered again instead of
+      // completing via chat+TTS.
+      streamingApi.socket.emit({
+        'event': 'error',
+        'code': 'empty_audio',
+        'detail': 'I did not catch any audio.',
+      });
+      await captureService.readyAt(1);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Wake me at five',
+      });
+      await Future<void>.delayed(Duration.zero);
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+
+      streamingApi.socket.emit({
+        'event': 'error',
+        'code': 'empty_audio',
+        'detail': 'I did not catch any audio.',
+      });
+      await Future<void>.delayed(Duration.zero);
+      await playbackService.playStarted.future.timeout(
+        const Duration(seconds: 1),
+      );
+
+      expect(chatApi.sentMessages, ['Wake me at five']);
+      expect(cloudVoiceApi.synthesizedTexts, ['Chat fallback reply.']);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+    },
+  );
+
+  test(
+    'soft recover after failed chat fallback clears orphan bubble and next speech_final',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          chatApiProvider.overrideWithValue(_FailingChatApi()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Save my launch plan',
+      });
+      await Future<void>.delayed(Duration.zero);
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      expect(container.read(chatProvider).messages, hasLength(1));
+      expect(
+        container.read(chatProvider).messages.first.isVoiceInterim,
+        isFalse,
+      );
+
+      streamingApi.socket.emit({
+        'event': 'error',
+        'code': 'empty_audio',
+        'detail': 'I did not catch any audio.',
+      });
+      await captureService.readyAt(1).timeout(const Duration(seconds: 2));
+
+      final afterRecover = container.read(voiceCallProvider);
+      expect(afterRecover.phase, VoiceCallPhase.listening);
+      expect(afterRecover.currentTranscript, isEmpty);
+      // Finalized local bubble must not survive an abandoned turn.
+      expect(container.read(chatProvider).messages, isEmpty);
+
+      // Next speech_final must finalize (suppress cleared on soft recover /
+      // beginVoiceTurn) — previously stuck on Start talking.
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'Try this again',
+        'speech_final': true,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      expect(
+        streamingApi.socket.sentEvents
+            .where((event) => event == 'utterance.end')
+            .length,
+        greaterThanOrEqualTo(2),
+      );
+    },
+  );
+
+  test(
     'streaming voice finalizes once when speech_final arrives twice same turn',
     () async {
       final captureService = _ScriptedStreamingAudioCaptureService();
@@ -1082,28 +1247,30 @@ void main() {
     expect(find.text(l10n.voicePanelProcessing), findsNothing);
   });
 
-  testWidgets('voice live transcript shows speech while listening', (
-    tester,
-  ) async {
-    const userText = 'Twitter account for Clarity';
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    await tester.pumpWidget(
-      wrapWithL10n(
-        Scaffold(
-          body: VoiceLiveTranscript(
-            state: VoiceCallState(
-              phase: VoiceCallPhase.listening,
-              currentTranscript: userText,
-              callStartedAt: DateTime(2026),
+  testWidgets(
+    'voice live transcript keeps Start talking while listening (no duplicate)',
+    (tester) async {
+      const userText = 'Twitter account for Clarity';
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.pumpWidget(
+        wrapWithL10n(
+          Scaffold(
+            body: VoiceLiveTranscript(
+              state: VoiceCallState(
+                phase: VoiceCallPhase.listening,
+                currentTranscript: userText,
+                callStartedAt: DateTime(2026),
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    expect(find.text(userText), findsOneWidget);
-    expect(find.text(l10n.voicePanelStartTalking), findsNothing);
-  });
+      // Interim chat bubble owns live speech; bottom status stays the prompt.
+      expect(find.text(userText), findsNothing);
+      expect(find.text(l10n.voicePanelStartTalking), findsOneWidget);
+    },
+  );
 
   testWidgets('inline voice panel has no manual interrupt button', (
     tester,

@@ -145,15 +145,20 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
   bool _completeStreamingTurnViaChatFallback() {
     final transcript =
         (_pendingUtteranceTranscript ?? _transcriptBuffer.visible).trim();
-    if (transcript.isEmpty ||
-        !state.isCallActive ||
-        _emptyVoiceTurnRecoveryCount > 0) {
+    if (transcript.isEmpty || !state.isCallActive) {
       return false;
     }
+    // One chat+TTS completion per streaming turn — do not share the soft-recover
+    // counter (startThinking resets that counter and blocked retries incorrectly).
+    final turnKey = _streamingTurnFinalizedSequence ?? _streamingTurnSequence;
+    if (_chatFallbackTurnSequence == turnKey) {
+      return false;
+    }
+    _chatFallbackTurnSequence = turnKey;
     // Streaming STT finished blank (common when only partials arrived). The
     // words are already on the client — complete via the same chat brain path
     // and Google TTS instead of wiping back to "Start talking".
-    _emptyVoiceTurnRecoveryCount++;
+    // Works without the backend client-transcript deploy.
     if (state.phase != VoiceCallPhase.thinking) {
       startThinking(finalTranscript: transcript);
     }
@@ -168,12 +173,15 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
       final writeConfirmation = chatNotifier.writeConfirmationForAffirmation(
         transcript,
       );
+      // Same rule as utterance.end: never block turn completion on a cold
+      // finance build. Prefetch may already be ready; otherwise omit.
+      final financialContext = _readyFinancialContextForUtterance(transcript);
       final result = await ref
           .read(chatApiProvider)
           .sendMessage(
             transcript,
             conversationId: state.conversationId,
-            financialContext: await _financialContext(transcript),
+            financialContext: financialContext,
             writeConfirmation: writeConfirmation,
           );
       if (!_isCurrentCall(generation) || !state.isCallActive) {
