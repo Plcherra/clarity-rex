@@ -11,6 +11,10 @@ from app.services.clarity_category_writes import (
     resolve_or_create_category,
 )
 from app.services.clarity_control_errors import ClarityControlServiceError
+from app.services.clarity_transaction_category_audit import (
+    load_transaction_category_before,
+    stamp_transaction_category_audit,
+)
 from app.services.http_client import request_with_retries
 
 __all__ = [
@@ -110,7 +114,19 @@ class ClarityControlService:
                 "import_id",
             ),
         )
-        return await self._patch_by_id("transactions", record_id, body)
+        before: dict[str, Any] = {}
+        if "category_id" in body:
+            before = await load_transaction_category_before(
+                self._request,
+                record_id,
+            )
+        rows = await self._patch_by_id("transactions", record_id, body)
+        return await stamp_transaction_category_audit(
+            self._request,
+            before=before,
+            body=body,
+            rows=rows,
+        )
 
     async def _execute_delete_transaction(
         self,

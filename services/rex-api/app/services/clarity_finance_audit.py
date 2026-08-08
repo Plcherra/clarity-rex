@@ -5,6 +5,10 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from app.services.clarity_control_service import MUTATING_ACTIONS
+from app.services.clarity_finance_audit_values import (
+    assistant_audit_values,
+    strip_audit_markers,
+)
 from app.services.financial_audit_service import (
     ASSISTANT_SOURCE,
     FinancialAuditService,
@@ -48,7 +52,7 @@ def _first_entity_id(result: list[dict[str, Any]], payload: dict[str, Any]) -> s
 def _refine_update_transaction_event(
     payload: dict[str, Any],
 ) -> tuple[str, str]:
-    if "category_id" in payload or "category_key" in payload:
+    if "category_id" in payload or "category_key" in payload or "new_category" in payload:
         return "transaction_category_updated", "transaction"
     return "transaction_updated", "transaction"
 
@@ -71,6 +75,12 @@ def build_assistant_audit_payload(
             return None
         event_type, entity_type = mapped
 
+    previous_value, new_value, metadata = assistant_audit_values(
+        action=cleaned_action,
+        payload=payload,
+        result=result,
+    )
+
     try:
         return build_audit_event_payload(
             user_id=user_id,
@@ -78,12 +88,9 @@ def build_assistant_audit_payload(
             entity_type=entity_type,
             source=ASSISTANT_SOURCE,
             entity_id=_first_entity_id(result, payload),
-            new_value={
-                "action": cleaned_action,
-                "result_count": len(result),
-                "payload_keys": sorted(str(key) for key in payload.keys()),
-            },
-            metadata={"clarity_action": cleaned_action},
+            previous_value=previous_value,
+            new_value=new_value,
+            metadata=metadata,
             allow_assistant_source=True,
         )
     except FinancialAuditValidationError:
@@ -104,6 +111,7 @@ async def record_assistant_finance_audit(
         payload=payload,
         result=result,
     )
+    strip_audit_markers(result)
     if event is None:
         return
     service = audit_service or FinancialAuditService()

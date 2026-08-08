@@ -96,13 +96,45 @@ def test_assistant_audit_payload_maps_bulk_category_update():
     payload = build_assistant_audit_payload(
         user_id="user-1",
         action="bulk_update_transaction_category",
-        payload={"category_id": "category-coffee", "transaction_ids": ["t1", "t2"]},
-        result=[{"id": "t1"}, {"id": "t2"}],
+        payload={
+            "category_id": "category-coffee",
+            "transaction_ids": ["t1", "t2"],
+            "new_category": {"name": "Coffee"},
+        },
+        result=[
+            {
+                "id": "t1",
+                "_audit_previous_category_name": "Miscellaneous",
+                "_audit_previous_category_id": "cat-misc",
+                "_audit_category_name": "Coffee",
+                "_audit_category_id": "category-coffee",
+            },
+            {
+                "id": "t2",
+                "_audit_previous_category_name": "Miscellaneous",
+                "_audit_category_name": "Coffee",
+            },
+        ],
     )
     assert payload is not None
     assert payload["event_type"] == "transaction_category_bulk_updated"
     assert payload["source"] == "assistant"
     assert payload["entity_id"] == "t1"
+    assert payload["previous_value"]["category_name"] == "Miscellaneous"
+    assert payload["new_value"]["category_name"] == "Coffee"
+    assert payload["metadata"]["transaction_count"] == 2
+
+
+def test_assistant_audit_payload_maps_create_category_name():
+    payload = build_assistant_audit_payload(
+        user_id="user-1",
+        action="create_category",
+        payload={"name": "Fitness"},
+        result=[{"id": "cat-1", "name": "Fitness"}],
+    )
+    assert payload is not None
+    assert payload["event_type"] == "category_created"
+    assert payload["new_value"]["category_name"] == "Fitness"
 
 
 def test_assistant_audit_payload_refines_category_update():

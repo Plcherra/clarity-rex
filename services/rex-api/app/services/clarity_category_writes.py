@@ -78,13 +78,87 @@ async def move_transactions_to_category(
     """Move the named ids — or every row matching a merchant — into a category."""
     category_id = await _target_category_id(request, payload)
     query = _match_query(payload)
-    return await request(
+    before_rows = await request(
+        "GET",
+        "transactions",
+        query={**query, "select": "id,category_id"},
+    )
+    previous_by_id = {
+        str(row.get("id") or "").strip(): str(row.get("category_id") or "").strip()
+        for row in before_rows
+        if str(row.get("id") or "").strip()
+    }
+    category_ids = {category_id, *(cid for cid in previous_by_id.values() if cid)}
+    names = await category_names_by_id(request, category_ids)
+    target_name = names.get(category_id) or _payload_new_category_name(payload)
+    rows = await request(
         "PATCH",
         "transactions",
         body={"category_id": category_id},
         query={**query, "select": "*"},
         prefer="return=representation",
     )
+    # Internal markers for Activity audit; stripped before the client response.
+    for row in rows:
+        transaction_id = str(row.get("id") or "").strip()
+        previous_id = previous_by_id.get(transaction_id) or ""
+        attach_category_move_audit_markers(
+            row,
+            previous_category_id=previous_id or None,
+            previous_category_name=names.get(previous_id),
+            category_id=category_id,
+            category_name=target_name,
+        )
+    return rows
+
+
+async def category_names_by_id(
+    request: RequestFn,
+    category_ids: set[str],
+) -> dict[str, str]:
+    wanted = {cid for cid in category_ids if cid}
+    if not wanted:
+        return {}
+    rows = await request(
+        "GET",
+        "categories",
+        query={"select": "id,name", "limit": "200"},
+    )
+    names: dict[str, str] = {}
+    for row in rows:
+        category_id = str(row.get("id") or "").strip()
+        name = str(row.get("name") or "").strip()
+        if category_id in wanted and name:
+            names[category_id] = name
+    return names
+
+
+def attach_category_move_audit_markers(
+    row: dict[str, Any],
+    *,
+    previous_category_id: str | None,
+    previous_category_name: str | None,
+    category_id: str | None,
+    category_name: str | None,
+) -> None:
+    """Stamp internal Activity markers onto a mutation result row."""
+    row["_audit_previous_category_id"] = previous_category_id or None
+    row["_audit_previous_category_name"] = previous_category_name
+    row["_audit_category_id"] = category_id or None
+    row["_audit_category_name"] = category_name
+
+
+def _payload_new_category_name(payload: dict[str, Any]) -> str | None:
+    nested = payload.get("new_category")
+    if isinstance(nested, dict):
+        name = str(nested.get("name") or "").strip()
+        if name:
+            return name
+    for key in ("category_name", "category_key", "name"):
+        name = str(payload.get(key) or "").strip()
+        if name:
+            return name
+    return None
 
 
 async def _target_category_id(request: RequestFn, payload: dict[str, Any]) -> str:

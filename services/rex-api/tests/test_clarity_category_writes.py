@@ -25,6 +25,11 @@ class FakeSupabase:
             created = {"id": "cat-new", **(kwargs.get("body") or {})}
             self.categories.append(created)
             return [created]
+        if method == "GET" and table == "transactions":
+            return [
+                {"id": "tx-1", "category_id": "cat-misc"},
+                {"id": "tx-2", "category_id": "cat-misc"},
+            ]
         if method == "PATCH" and table == "transactions":
             return [{"id": "tx-1"}, {"id": "tx-2"}]
         return [{"id": "row-1"}]
@@ -118,7 +123,9 @@ async def test_create_category_stores_the_name_the_app_would_store() -> None:
 
 @pytest.mark.asyncio
 async def test_moving_rows_into_a_new_category_creates_it_then_moves_them() -> None:
-    fake = FakeSupabase()
+    fake = FakeSupabase(
+        [{"id": "cat-misc", "name": "Miscellaneous", "normalized_name": "miscellaneous"}]
+    )
 
     result = await service_with(fake).execute(
         "bulk_update_transaction_category",
@@ -129,7 +136,9 @@ async def test_moving_rows_into_a_new_category_creates_it_then_moves_them() -> N
         confirmed=True,
     )
 
-    assert result == [{"id": "tx-1"}, {"id": "tx-2"}]
+    assert result[0]["id"] == "tx-1"
+    assert result[0]["_audit_previous_category_name"] == "Miscellaneous"
+    assert result[0]["_audit_category_name"] == "Fast Food"
     move = fake.call("PATCH", "transactions")
     assert move["body"] == {"category_id": "cat-new"}
     assert move["query"] == {
