@@ -143,6 +143,7 @@ final class FinancialAuditService {
     String? entityType,
     String? entityId,
     int limit = 25,
+    DateTime? since,
   }) async {
     final user = _currentUser;
     try {
@@ -157,6 +158,9 @@ final class FinancialAuditService {
       final id = entityId?.trim();
       if (id != null && id.isNotEmpty) {
         query = query.eq('entity_id', id);
+      }
+      if (since != null) {
+        query = query.gte('created_at', since.toUtc().toIso8601String());
       }
       final rows = await query
           .order('created_at', ascending: false)

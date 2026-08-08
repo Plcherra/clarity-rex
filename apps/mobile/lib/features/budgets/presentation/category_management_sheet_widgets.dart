@@ -2,55 +2,6 @@ part of 'category_management_sheet.dart';
 
 enum _CategoryManagementSection { categories, merchantRules, auditTrail }
 
-class _AuditEventRow extends StatelessWidget {
-  const _AuditEventRow({required this.event});
-
-  final FinancialAuditEvent event;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final l10n = context.l10n;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.12)),
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.18),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.history_rounded, color: cs.onSurfaceVariant),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _auditEventTitle(event, l10n),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  _auditEventSubtitle(event, l10n),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.52),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _CategoryManagementRow extends StatelessWidget {
   const _CategoryManagementRow({
     required this.category,
@@ -342,73 +293,6 @@ class _MerchantRuleManagementRow extends StatelessWidget {
 }
 
 enum _MerchantRuleAction { editCategory, toggleDisabled, delete }
-
-String _auditEventTitle(FinancialAuditEvent event, AppLocalizations l10n) {
-  return switch (event.eventType) {
-    'transaction_category_updated' =>
-      l10n.categorySheetAuditTransactionCategoryChanged,
-    'transaction_category_bulk_updated' =>
-      l10n.categorySheetAuditBulkCategoryChange,
-    'transaction_role_override_updated' =>
-      l10n.categorySheetAuditTransactionRoleChanged,
-    'category_deleted' => l10n.categorySheetAuditCategoryDeleted,
-    'category_merged' => l10n.categorySheetAuditCategoryMerged,
-    'category_visibility_updated' =>
-      l10n.categorySheetAuditCategoryVisibilityChanged,
-    'merchant_rule_category_updated' =>
-      l10n.categorySheetAuditMerchantRuleChanged,
-    'merchant_rule_disabled_updated' =>
-      l10n.categorySheetAuditMerchantRuleEnabledDisabled,
-    'merchant_rule_deleted' => l10n.categorySheetAuditMerchantRuleDeleted,
-    'category_renamed' => l10n.categorySheetAuditCategoryRenamed,
-    _ => event.eventType.replaceAll('_', ' '),
-  };
-}
-
-String _auditEventSubtitle(FinancialAuditEvent event, AppLocalizations l10n) {
-  final oldLabel = _auditLabel(event.previousValue, l10n);
-  final newLabel = _auditLabel(event.newValue, l10n);
-  final parts = <String>[];
-  if (oldLabel != null && newLabel != null && oldLabel != newLabel) {
-    parts.add('$oldLabel -> $newLabel');
-  } else if (newLabel != null) {
-    parts.add(newLabel);
-  } else if (oldLabel != null) {
-    parts.add(oldLabel);
-  }
-  final count = event.metadata['transaction_count'];
-  if (count is num && count > 1) {
-    parts.add(l10n.commonTransactionCount(count.toInt()));
-  }
-  parts.add(event.source);
-  parts.add(_dateTimeLabel(event.createdAt.toLocal()));
-  return parts.join(' · ');
-}
-
-String? _auditLabel(Map<String, dynamic> value, AppLocalizations l10n) {
-  for (final key in [
-    'category_name',
-    'name',
-    'merchant_display',
-    'merchant_key',
-    'financial_role',
-    'category_id',
-  ]) {
-    final raw = value[key];
-    if (raw is String && raw.trim().isNotEmpty) return raw.trim();
-  }
-  final hidden = value['hidden'];
-  if (hidden is bool) return hidden ? l10n.commonHidden : l10n.commonVisible;
-  return null;
-}
-
-String _dateTimeLabel(DateTime date) {
-  final month = date.month.toString().padLeft(2, '0');
-  final day = date.day.toString().padLeft(2, '0');
-  final hour = date.hour.toString().padLeft(2, '0');
-  final minute = date.minute.toString().padLeft(2, '0');
-  return '${date.year}-$month-$day $hour:$minute';
-}
 
 class _MerchantRuleStats {
   const _MerchantRuleStats({

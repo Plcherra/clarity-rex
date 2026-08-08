@@ -413,7 +413,7 @@ class _AuditTrailSection extends StatelessWidget {
         else
           for (var index = 0; index < auditEvents.length; index++) ...[
             if (index > 0) const SizedBox(height: 8),
-            _AuditEventRow(event: auditEvents[index]),
+            FinancialAuditEventRow(event: auditEvents[index]),
           ],
         const SizedBox(height: 8),
       ],

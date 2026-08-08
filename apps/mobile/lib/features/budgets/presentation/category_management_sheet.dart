@@ -7,6 +7,7 @@ import '../../../core/supabase/supabase_records.dart';
 import '../../categories/domain/category_normalization.dart';
 import '../../finance/application/financial_read_model_service.dart';
 import '../../finance/data/financial_audit_service.dart';
+import '../../finance/presentation/financial_audit_display.dart';
 import '../../transactions/data/merchant_category_rule_service.dart';
 import '../../transactions/domain/merchant_normalization.dart';
 import '../../transactions/domain/spend_categories.dart';

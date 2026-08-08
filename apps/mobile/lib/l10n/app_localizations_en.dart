@@ -2461,6 +2461,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categorySheetAuditCategoryRenamed => 'Category renamed';
 
   @override
+  String get financialAuditCategoryCreated => 'Category created';
+
+  @override
+  String get financialAuditCategoryUpdated => 'Category updated';
+
+  @override
+  String get financialAuditBudgetCreated => 'Budget created';
+
+  @override
+  String get financialAuditBudgetUpdated => 'Budget updated';
+
+  @override
+  String get financialAuditBudgetDeleted => 'Budget deleted';
+
+  @override
+  String get financialAuditAccountCreated => 'Account created';
+
+  @override
+  String get financialAuditAccountUpdated => 'Account updated';
+
+  @override
+  String get financialAuditAccountDeleted => 'Account deleted';
+
+  @override
+  String get financialAuditTransactionCreated => 'Transaction created';
+
+  @override
+  String get financialAuditTransactionUpdated => 'Transaction updated';
+
+  @override
+  String get financialAuditTransactionDeleted => 'Transaction deleted';
+
+  @override
+  String get financialAuditImportBatchDeleted => 'Import batch deleted';
+
+  @override
+  String get activityScreenTitle => 'Activity';
+
+  @override
+  String get activityScreenSubtitle => 'Recent financial changes';
+
+  @override
+  String get activityLoading => 'Loading activity';
+
+  @override
+  String get activityEmptyState => 'No financial changes recorded yet.';
+
+  @override
   String categoryUsageTxCount(int count) {
     return '$count tx';
   }

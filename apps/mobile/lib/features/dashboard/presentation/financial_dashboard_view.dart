@@ -9,6 +9,7 @@ import '../../../core/platform/app_capabilities.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../budgets/domain/budget_models.dart';
 import '../../finance/application/financial_read_model_service.dart';
+import '../../finance/presentation/activity_screen.dart';
 import '../domain/dashboard_snapshot.dart';
 import '../domain/dashboard_insight_anchor.dart';
 import '../domain/dashboard_transaction_groups.dart';
@@ -353,6 +354,19 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
               )
             : null,
         actions: [
+          IconButton(
+            key: const ValueKey('dashboard_activity_button'),
+            tooltip: l10n.activityScreenTitle,
+            icon: const Icon(Icons.history_rounded),
+            color: cs.onSurface.withValues(alpha: 0.72),
+            onPressed: () {
+              Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ActivityScreen(),
+                ),
+              );
+            },
+          ),
           if (widget.onUploadTransactions != null &&
               AppCapabilities.instance.supportsCsvImport)
             IconButton(

@@ -4478,6 +4478,102 @@ abstract class AppLocalizations {
   /// **'Category renamed'**
   String get categorySheetAuditCategoryRenamed;
 
+  /// No description provided for @financialAuditCategoryCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Category created'**
+  String get financialAuditCategoryCreated;
+
+  /// No description provided for @financialAuditCategoryUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Category updated'**
+  String get financialAuditCategoryUpdated;
+
+  /// No description provided for @financialAuditBudgetCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget created'**
+  String get financialAuditBudgetCreated;
+
+  /// No description provided for @financialAuditBudgetUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget updated'**
+  String get financialAuditBudgetUpdated;
+
+  /// No description provided for @financialAuditBudgetDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget deleted'**
+  String get financialAuditBudgetDeleted;
+
+  /// No description provided for @financialAuditAccountCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created'**
+  String get financialAuditAccountCreated;
+
+  /// No description provided for @financialAuditAccountUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Account updated'**
+  String get financialAuditAccountUpdated;
+
+  /// No description provided for @financialAuditAccountDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deleted'**
+  String get financialAuditAccountDeleted;
+
+  /// No description provided for @financialAuditTransactionCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction created'**
+  String get financialAuditTransactionCreated;
+
+  /// No description provided for @financialAuditTransactionUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction updated'**
+  String get financialAuditTransactionUpdated;
+
+  /// No description provided for @financialAuditTransactionDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction deleted'**
+  String get financialAuditTransactionDeleted;
+
+  /// No description provided for @financialAuditImportBatchDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Import batch deleted'**
+  String get financialAuditImportBatchDeleted;
+
+  /// No description provided for @activityScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get activityScreenTitle;
+
+  /// No description provided for @activityScreenSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent financial changes'**
+  String get activityScreenSubtitle;
+
+  /// No description provided for @activityLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading activity'**
+  String get activityLoading;
+
+  /// No description provided for @activityEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No financial changes recorded yet.'**
+  String get activityEmptyState;
+
   /// No description provided for @categoryUsageTxCount.
   ///
   /// In en, this message translates to:
