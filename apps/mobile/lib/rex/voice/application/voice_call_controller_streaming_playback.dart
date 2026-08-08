@@ -142,26 +142,69 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     }
   }
 
-  bool _resendUtteranceEndWithClientTranscript() {
-    final session = _activeStreamingSession;
+  bool _completeStreamingTurnViaChatFallback() {
     final transcript =
         (_pendingUtteranceTranscript ?? _transcriptBuffer.visible).trim();
-    if (session == null ||
-        transcript.isEmpty ||
+    if (transcript.isEmpty ||
         !state.isCallActive ||
         _emptyVoiceTurnRecoveryCount > 0) {
       return false;
     }
-    // One resend before soft listen restart — keeps visible speech and
-    // lets the backend complete from client transcript authority.
+    // Streaming STT finished blank (common when only partials arrived). The
+    // words are already on the client — complete via the same chat brain path
+    // and Google TTS instead of wiping back to "Start talking".
     _emptyVoiceTurnRecoveryCount++;
-    _streamingUtteranceEndSent = false;
-    _sendStreamingUtteranceEndIfNeeded(
-      session,
-      _streamingTurnSequence,
-      transcript: transcript,
-    );
-    return _streamingUtteranceEndSent;
+    if (state.phase != VoiceCallPhase.thinking) {
+      startThinking(finalTranscript: transcript);
+    }
+    unawaited(_runChatFallbackAfterEmptyAudio(transcript));
+    return true;
+  }
+
+  Future<void> _runChatFallbackAfterEmptyAudio(String transcript) async {
+    final generation = _callGeneration;
+    try {
+      final chatNotifier = ref.read(chatProvider.notifier);
+      final writeConfirmation = chatNotifier.writeConfirmationForAffirmation(
+        transcript,
+      );
+      final result = await ref
+          .read(chatApiProvider)
+          .sendMessage(
+            transcript,
+            conversationId: state.conversationId,
+            financialContext: await _financialContext(transcript),
+            writeConfirmation: writeConfirmation,
+          );
+      if (!_isCurrentCall(generation) || !state.isCallActive) {
+        return;
+      }
+
+      final assistantText =
+          (assistantTextFromApiResponse(result) ?? result.response).trim();
+      chatNotifier.applyBackendMessages(
+        conversationId: result.conversationId,
+        messages: result.messages,
+        fallbackAssistantResponse: assistantText,
+        memoryChanges: result.memoryChanges,
+      );
+      state = state.copyWith(
+        conversationId: result.conversationId,
+        clearError: true,
+      );
+
+      if (assistantText.isEmpty) {
+        _finishAssistantResponseAndListen();
+        return;
+      }
+      await speakTypedAssistantResponse(assistantText);
+    } on Object catch (error) {
+      if (!_isCurrentCall(generation) || !state.isCallActive) {
+        return;
+      }
+      debugPrint('rex_voice_stream empty_audio_chat_fallback_failed $error');
+      _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
+    }
   }
 
   void _sendStreamingUtteranceEndIfNeeded(

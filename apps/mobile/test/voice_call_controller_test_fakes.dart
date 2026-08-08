@@ -364,6 +364,49 @@ class _ControlledBargeInDetectionService implements BargeInDetectionService {
   }
 }
 
+class _RecordingChatApi extends ChatApi {
+  _RecordingChatApi({
+    this.responseText = 'Chat fallback reply.',
+    this.conversationId = 'conversation-chat-fallback',
+  }) : super(baseUrl: 'http://localhost');
+
+  final String responseText;
+  final String conversationId;
+  final sentMessages = <String>[];
+
+  @override
+  Future<ChatApiResponse> sendMessage(
+    String message, {
+    String? conversationId,
+    XFile? attachment,
+    Map<String, dynamic>? financialContext,
+    Map<String, dynamic>? writeConfirmation,
+  }) async {
+    sentMessages.add(message);
+    final resolvedConversationId = conversationId ?? this.conversationId;
+    return ChatApiResponse(
+      conversationId: resolvedConversationId,
+      response: responseText,
+      messages: [
+        ChatApiMessage(
+          id: 'user-1',
+          conversationId: resolvedConversationId,
+          role: 'user',
+          content: message,
+          timestamp: DateTime(2026),
+        ),
+        ChatApiMessage(
+          id: 'assistant-1',
+          conversationId: resolvedConversationId,
+          role: 'assistant',
+          content: responseText,
+          timestamp: DateTime(2026),
+        ),
+      ],
+    );
+  }
+}
+
 class _FakeCloudVoiceApi extends CloudVoiceApi {
   _FakeCloudVoiceApi() : super(baseUrl: 'http://localhost');
 

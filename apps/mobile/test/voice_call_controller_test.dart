@@ -8,6 +8,8 @@ import 'package:clarity/core/network/device_connectivity.dart';
 import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
+import 'package:clarity/rex/chat/data/chat_api.dart';
+import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
@@ -768,10 +770,13 @@ void main() {
   );
 
   test(
-    'streaming empty_audio with known transcript resends instead of wiping',
+    'streaming empty_audio with known transcript completes via chat fallback',
     () async {
       final captureService = _ScriptedStreamingAudioCaptureService();
       final streamingApi = _FakeStreamingVoiceApi();
+      final chatApi = _RecordingChatApi();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final playbackService = _ControlledAudioPlaybackService();
       final container = ProviderContainer(
         overrides: [
           microphonePermissionProvider.overrideWithValue(
@@ -786,9 +791,7 @@ void main() {
           audioCaptureServiceProvider.overrideWithValue(
             const _NoopAudioCaptureService(),
           ),
-          audioPlaybackServiceProvider.overrideWithValue(
-            const _NoopAudioPlaybackService(),
-          ),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
           streamingVoiceEnabledProvider.overrideWithValue(true),
           nativeIosVoiceEnabledProvider.overrideWithValue(false),
           streamingVoiceApiProvider.overrideWithValue(streamingApi),
@@ -798,6 +801,8 @@ void main() {
           bargeInDetectionServiceProvider.overrideWithValue(
             const _NoopBargeInDetectionService(),
           ),
+          chatApiProvider.overrideWithValue(chatApi),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
         ],
       );
       addTearDown(container.dispose);
@@ -816,10 +821,6 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
-      expect(
-        streamingApi.socket.sentEvents.where((event) => event == 'utterance.end'),
-        hasLength(1),
-      );
 
       streamingApi.socket.emit({
         'event': 'error',
@@ -827,21 +828,17 @@ void main() {
         'detail': 'I did not catch any audio.',
       });
       await Future<void>.delayed(Duration.zero);
-
-      final state = container.read(voiceCallProvider);
-      expect(state.phase, VoiceCallPhase.thinking);
-      expect(
-        container.read(chatProvider).messages.first.content,
-        'Remember my coffee budget',
+      await playbackService.playStarted.future.timeout(
+        const Duration(seconds: 1),
       );
+
+      expect(chatApi.sentMessages, ['Remember my coffee budget']);
+      expect(cloudVoiceApi.synthesizedTexts, ['Chat fallback reply.']);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
       expect(
         streamingApi.socket.sentEvents.where((event) => event == 'utterance.end'),
-        hasLength(2),
+        hasLength(1),
       );
-      final resent = streamingApi.socket.sentPayloads.lastWhere(
-        (payload) => payload['event'] == 'utterance.end',
-      );
-      expect(resent['transcript'], 'Remember my coffee budget');
       expect(streamingApi.socket.sentEvents, isNot(contains('user.interrupt')));
     },
   );
@@ -1085,10 +1082,11 @@ void main() {
     expect(find.text(l10n.voicePanelProcessing), findsNothing);
   });
 
-  testWidgets('voice live transcript does not show transcript while listening', (
+  testWidgets('voice live transcript shows speech while listening', (
     tester,
   ) async {
     const userText = 'Twitter account for Clarity';
+    final l10n = lookupAppLocalizations(const Locale('en'));
     await tester.pumpWidget(
       wrapWithL10n(
         Scaffold(
@@ -1103,7 +1101,8 @@ void main() {
       ),
     );
 
-    expect(find.text(userText), findsNothing);
+    expect(find.text(userText), findsOneWidget);
+    expect(find.text(l10n.voicePanelStartTalking), findsNothing);
   });
 
   testWidgets('inline voice panel has no manual interrupt button', (

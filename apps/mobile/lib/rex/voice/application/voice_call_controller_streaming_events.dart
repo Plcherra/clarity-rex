@@ -294,8 +294,8 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             }
             if (event.errorCode == 'empty_audio' ||
                 _isNoAudioError(event.detail ?? '')) {
-              if (_resendUtteranceEndWithClientTranscript()) {
-                debugPrint('rex_voice_stream empty_audio_resend_transcript');
+              if (_completeStreamingTurnViaChatFallback()) {
+                debugPrint('rex_voice_stream empty_audio_chat_fallback');
                 break;
               }
               debugPrint('rex_voice_stream empty_audio_recovered');

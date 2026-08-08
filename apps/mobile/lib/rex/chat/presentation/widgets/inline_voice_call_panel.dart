@@ -89,12 +89,14 @@ class VoiceLiveTranscript extends StatelessWidget {
     }
 
     if (state.phase == VoiceCallPhase.listening && !state.isMuted) {
+      final hasTranscript = transcript.isNotEmpty;
       return Padding(
         padding: const EdgeInsets.only(
           top: RexUiTokens.space4,
           bottom: RexUiTokens.messageGap,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _VoiceWaveIndicator(
               phase: state.phase,
@@ -102,10 +104,12 @@ class VoiceLiveTranscript extends StatelessWidget {
               compact: true,
             ),
             const SizedBox(width: RexUiTokens.space8),
-            Text(
-              l10n.voicePanelStartTalking,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colors.textMuted,
+            Expanded(
+              child: Text(
+                hasTranscript ? transcript : l10n.voicePanelStartTalking,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: hasTranscript ? colors.textPrimary : colors.textMuted,
+                ),
               ),
             ),
           ],

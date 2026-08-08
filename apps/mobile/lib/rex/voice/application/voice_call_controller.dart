@@ -12,6 +12,7 @@ import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
+import 'package:clarity/rex/chat/application/chat_response_text.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
