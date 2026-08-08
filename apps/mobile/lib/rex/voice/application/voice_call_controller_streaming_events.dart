@@ -141,25 +141,24 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
                 }
                 break;
               }
+              // Empty speech_final is noise / premature endpoint. Cancelling
+              // capture here completes the mic as "no audio" and soft-recovers
+              // to Start talking without ever sending the turn.
+              if (preferredTranscript.isEmpty) {
+                break;
+              }
               assistantText = '';
               responseAudioStarted = false;
-              if (preferredTranscript.isNotEmpty &&
-                  preferredTranscript != bufferTranscript) {
+              if (preferredTranscript != bufferTranscript) {
                 updateTranscript(preferredTranscript, isFinal: true);
               }
               _endTurnFromLocalEndpoint(
                 _callGeneration,
                 preferredTranscript: preferredTranscript,
               );
-              if (_streamingTurnFinalizedSequence != _streamingTurnSequence &&
-                  preferredTranscript.isNotEmpty) {
-                _finalizeStreamingTurn(
-                  transcript: preferredTranscript,
-                  session: session,
-                  turnSequence: _streamingTurnSequence,
-                );
+              if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
+                unawaited(_activeStreamingCaptureService?.cancel());
               }
-              unawaited(_activeStreamingCaptureService?.cancel());
             } else if (state.phase == VoiceCallPhase.listening) {
               updateTranscript(
                 event.transcript ?? state.currentTranscript,

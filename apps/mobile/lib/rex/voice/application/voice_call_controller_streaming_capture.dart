@@ -128,6 +128,12 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       if (listenEpoch != _streamingListenEpoch) {
         return;
       }
+      // Capture cancel after a real finalize, or while waiting on STT after
+      // speech, must not restart the listen loop.
+      if (_streamingTurnFinalizedSequence == _streamingTurnSequence ||
+          _speechFinalGraceTimer != null) {
+        return;
+      }
       _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
       return;
     }
@@ -290,6 +296,10 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         return;
       }
       if (listenEpoch != _streamingListenEpoch) {
+        return;
+      }
+      if (_streamingTurnFinalizedSequence == _streamingTurnSequence ||
+          _speechFinalGraceTimer != null) {
         return;
       }
       _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
