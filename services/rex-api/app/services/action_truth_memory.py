@@ -119,9 +119,28 @@ def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
     return any(term in text for term in terms)
 
 
+_RECALL_INVENTORY_RE = re.compile(
+    r"\bnot saved memory\b|"
+    r"\bchat history,\s*not saved memory\b|"
+    r"\bnothing\b.{0,48}\b(?:saved\s+)?in\s+knows\b|"
+    r"\bno(?:thing)?\b.{0,32}\bsaved\s+in\s+knows\b",
+    re.I,
+)
+
+
+def _is_recall_inventory_speech(text: str) -> bool:
+    """Chat-vs-Knows labeling / empty-inventory speech is not a write claim."""
+    if not _RECALL_INVENTORY_RE.search(text):
+        return False
+    # A real first-person write in the same reply still counts as a claim.
+    return not _contains_any(text, _FIRST_PERSON_WRITE_TERMS)
+
+
 def _looks_like_saved_memory_claim(text: str) -> bool:
     """Durable Knows/goal write framing — not conversational 'remembered' / 'updated thinking'."""
     if not _contains_any(text, _WRITE_SIGNAL_TERMS):
+        return False
+    if _is_recall_inventory_speech(text):
         return False
     if _contains_any(text, _DURABLE_SURFACE_TERMS):
         return True

@@ -22,6 +22,7 @@ class _DashboardTransactionsSection extends StatefulWidget {
     required this.scope,
     required this.pagePadding,
     required this.onCategoryTap,
+    this.merchantCategoryMemory = const {},
     this.accountController,
     this.onBankSyncCompleted,
   });
@@ -30,6 +31,7 @@ class _DashboardTransactionsSection extends StatefulWidget {
   final List<Transaction> scopedTransactions;
   final List<Transaction> allTransactions;
   final List<Account> accounts;
+  final Map<String, String> merchantCategoryMemory;
   final DashboardUiController controller;
   final TransactionUiController transactionController;
   final AccountUiController? accountController;
@@ -145,6 +147,7 @@ class _DashboardTransactionsSectionState
       widget.scopedTransactions,
       categoryOverrides: const {},
       categoryDisplayRenamesLower: widget.controller.categoryDisplayRenames,
+      merchantCategoryMemory: widget.merchantCategoryMemory,
       accountsById: {
         for (final account in widget.accounts) account.id: account,
       },

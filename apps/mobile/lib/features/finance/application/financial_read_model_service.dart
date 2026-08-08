@@ -44,10 +44,25 @@ final class FinancialReadModelService {
   final CategoryReadModel _categoryReadModel;
   Future<FinancialReadModel>? _inFlightLoad;
 
-  Future<FinancialReadModel> load() async {
-    final existingLoad = _inFlightLoad;
-    if (existingLoad != null) {
-      return existingLoad;
+  /// Loads the finance read model.
+  ///
+  /// When [forceReload] is true (after a write), never join an in-flight load
+  /// that may have started before the mutation — wait it out, then fetch fresh.
+  Future<FinancialReadModel> load({bool forceReload = false}) async {
+    if (forceReload) {
+      final existingLoad = _inFlightLoad;
+      if (existingLoad != null) {
+        try {
+          await existingLoad;
+        } on Object {
+          // Ignore; we still load a fresh snapshot below.
+        }
+      }
+    } else {
+      final existingLoad = _inFlightLoad;
+      if (existingLoad != null) {
+        return existingLoad;
+      }
     }
     final load = _loadFresh();
     _inFlightLoad = load;

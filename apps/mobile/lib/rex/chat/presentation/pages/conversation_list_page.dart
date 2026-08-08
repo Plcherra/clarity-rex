@@ -10,6 +10,7 @@ import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/chat/presentation/pages/conversation_list_actions.dart';
 import 'package:clarity/rex/chat/presentation/pages/conversation_list_chrome.dart';
+import 'package:clarity/rex/chat/presentation/widgets/chat_search_highlight.dart';
 import 'package:clarity/rex/chat/presentation/widgets/conversation_history_widgets.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
@@ -93,9 +94,19 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
   }
 
   Future<void> _openSearchResult(ConversationSearchResult result) async {
-    await ref
-        .read(chatProvider.notifier)
-        .loadConversation(result.conversationId);
+    final focusMessageId = result.message?.id.trim();
+    final highlightTerms = result.matchedTerms.isNotEmpty
+        ? result.matchedTerms
+        : chatSearchTermsFromQuery(
+            ref.read(conversationListProvider).searchQuery,
+          );
+    await ref.read(chatProvider.notifier).loadConversation(
+      result.conversationId,
+      focusMessageId: (focusMessageId == null || focusMessageId.isEmpty)
+          ? null
+          : focusMessageId,
+      focusHighlightTerms: highlightTerms,
+    );
     if (!mounted) {
       return;
     }

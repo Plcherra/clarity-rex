@@ -101,85 +101,106 @@ class _MemoryPersonEditSheetState extends State<MemoryPersonEditSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: colors.accent.withValues(alpha: 0.18),
-                  child: Text(
-                    _initial,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: colors.accent,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colors.surfaceSoft.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colors.textMuted.withValues(alpha: 0.12),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: TextField(
-                    controller: _nameController,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: colors.accent.withValues(alpha: 0.2),
+                          child: Text(
+                            _initial,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              color: colors.accent,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: TextField(
+                            controller: _nameController,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textCapitalization: TextCapitalization.words,
+                            decoration: InputDecoration(
+                              labelText: l10n.commonName,
+                              filled: false,
+                              border: const UnderlineInputBorder(),
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: colors.textMuted.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                ),
+                              ),
+                              focusedBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: colors.accent),
+                              ),
+                            ),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ),
+                      ],
                     ),
-                    textCapitalization: TextCapitalization.words,
-                    decoration: InputDecoration(
-                      labelText: l10n.commonName,
-                      filled: false,
-                      border: const UnderlineInputBorder(),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(
-                          color: colors.textMuted.withValues(alpha: 0.35),
+                    const SizedBox(height: 18),
+                    TextField(
+                      controller: _relationshipController,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        labelText: l10n.commonType,
+                        hintText: l10n.memoryEditPersonRelationshipHint,
+                        helperText: l10n.memoryEditPersonRelationshipHelper,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _birthdayController,
+                      keyboardType: TextInputType.datetime,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9/]')),
+                        LengthLimitingTextInputFormatter(10),
+                      ],
+                      decoration: InputDecoration(
+                        labelText: l10n.memoryDisplayBirthday,
+                        hintText: l10n.memoryEditPersonBirthdayHint,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _summaryController,
+                      minLines: 3,
+                      maxLines: 6,
+                      decoration: InputDecoration(
+                        labelText: l10n.commonSummary,
+                      ),
+                    ),
+                    if (updatedLabel.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        updatedLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.textMuted,
                         ),
                       ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: colors.accent),
-                      ),
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _relationshipController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: l10n.commonType,
-                hintText: l10n.memoryEditPersonRelationshipHint,
-                helperText: l10n.memoryEditPersonRelationshipHelper,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _birthdayController,
-              keyboardType: TextInputType.datetime,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9/]')),
-                LengthLimitingTextInputFormatter(10),
-              ],
-              decoration: InputDecoration(
-                labelText: l10n.memoryDisplayBirthday,
-                hintText: l10n.memoryEditPersonBirthdayHint,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _summaryController,
-              minLines: 2,
-              maxLines: 5,
-              decoration: InputDecoration(labelText: l10n.commonSummary),
-            ),
-            if (updatedLabel.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                updatedLabel,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.textMuted,
+                    ],
+                  ],
                 ),
               ),
-            ],
-            const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 18),
             Row(
               children: [
                 TextButton(

@@ -13,6 +13,7 @@ import 'finance_chart_primitives.dart';
 export 'finance_cash_flow_charts.dart';
 export 'finance_chart_primitives.dart';
 export 'finance_chart_range_switch.dart';
+export 'finance_spend_radar_chart.dart';
 
 String _chartCategoryLabel(AppLocalizations l10n, String category) {
   if (isNeedsCategoryGroupKey(category)) {

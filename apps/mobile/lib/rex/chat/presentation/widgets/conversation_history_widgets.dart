@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/layout/clarity_native_layout.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
+import 'package:clarity/rex/chat/presentation/widgets/chat_search_highlight.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
@@ -70,10 +71,12 @@ class ConversationSearchResultTile extends StatelessWidget {
     super.key,
     required this.result,
     required this.onTap,
+    this.searchQuery = '',
   });
 
   final ConversationSearchResult result;
   final VoidCallback onTap;
+  final String searchQuery;
 
   @override
   Widget build(BuildContext context) {
@@ -167,20 +170,44 @@ class ConversationSearchResultTile extends StatelessWidget {
                     ),
                     if (showPreview) ...[
                       SizedBox(height: native ? 2 : RexUiTokens.space8),
-                      Text(
-                        result.preview.trim().isEmpty
-                            ? l10n.conversationHistoryMatchedConversation
-                            : result.preview,
-                        maxLines: previewLines,
-                        overflow: TextOverflow.ellipsis,
-                        style: native
-                            ? ClarityNativeLayout.listPreview(
-                                context,
-                              )?.copyWith(height: 1.25)
-                            : theme.textTheme.bodyMedium?.copyWith(
-                                color: colors.textSecondary,
-                                height: 1.35,
+                      Builder(
+                        builder: (context) {
+                          final previewText = result.preview.trim().isEmpty
+                              ? l10n.conversationHistoryMatchedConversation
+                              : result.preview;
+                          final baseStyle =
+                              (native
+                                  ? ClarityNativeLayout.listPreview(
+                                      context,
+                                    )?.copyWith(height: 1.25)
+                                  : theme.textTheme.bodyMedium?.copyWith(
+                                      color: colors.textSecondary,
+                                      height: 1.35,
+                                    )) ??
+                              theme.textTheme.bodyMedium!;
+                          final terms = result.matchedTerms.isNotEmpty
+                              ? result.matchedTerms
+                              : chatSearchTermsFromQuery(searchQuery);
+                          return Text.rich(
+                            TextSpan(
+                              children: chatSearchHighlightSpans(
+                                text: previewText,
+                                terms: terms,
+                                baseStyle: baseStyle,
+                                highlightStyle: chatSearchHighlightStyle(
+                                  ClaritySearchHighlightColors(
+                                    background: colors.accent.withValues(
+                                      alpha: 0.28,
+                                    ),
+                                    foreground: colors.textPrimary,
+                                  ),
+                                ),
                               ),
+                            ),
+                            maxLines: previewLines,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
                     ],
                   ],

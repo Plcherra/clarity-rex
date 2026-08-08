@@ -219,6 +219,7 @@ final class DashboardViewData {
     this.scopedTransactions = const [],
     this.allTransactions = const [],
     this.accounts = const [],
+    this.merchantCategoryMemory = const {},
   });
 
   final DashboardSnapshot snapshot;
@@ -235,6 +236,9 @@ final class DashboardViewData {
   final List<Transaction> scopedTransactions;
   final List<Transaction> allTransactions;
   final List<Account> accounts;
+
+  /// Same merchant-rule map Overview uses when resolving spend buckets.
+  final Map<String, String> merchantCategoryMemory;
 
   bool get isResolvingImportedTransactions {
     return scopedTransactionCount == 0 && scopedStatementImportCount > 0;
@@ -286,6 +290,7 @@ final class DashboardUiController extends _UiController {
       scopedTransactions: scopedTransactions,
       allTransactions: model.transactions,
       accounts: model.accounts,
+      merchantCategoryMemory: model.merchantCategoryMemory,
     );
   }
 

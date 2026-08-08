@@ -134,7 +134,12 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
 
     if (state.phase == VoiceCallPhase.listening &&
         listenEpoch == _streamingListenEpoch) {
-      _endTurnFromLocalEndpoint(generation, recoverIfEmpty: true);
+      // Audio was captured: wait for late speech_final. Recovering immediately
+      // interrupts STT and drops the utterance (stuck listening loop).
+      _endTurnFromLocalEndpoint(generation, recoverIfEmpty: false);
+      if (_streamingTurnFinalizedSequence != _streamingTurnSequence) {
+        _armSpeechFinalGraceAfterCapture(generation, listenEpoch);
+      }
     }
     } finally {
       if (listenEpoch == _streamingListenEpoch) {
@@ -293,7 +298,12 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
 
     if (state.phase == VoiceCallPhase.listening &&
         listenEpoch == _streamingListenEpoch) {
-      _endTurnFromLocalEndpoint(generation, recoverIfEmpty: true);
+      // Audio was captured: wait for late speech_final. Recovering immediately
+      // interrupts STT and drops the utterance (stuck listening loop).
+      _endTurnFromLocalEndpoint(generation, recoverIfEmpty: false);
+      if (_streamingTurnFinalizedSequence != _streamingTurnSequence) {
+        _armSpeechFinalGraceAfterCapture(generation, listenEpoch);
+      }
     }
     } finally {
       if (listenEpoch == _streamingListenEpoch) {

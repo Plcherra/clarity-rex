@@ -101,6 +101,14 @@ class _DashboardOverviewBody extends StatelessWidget {
         onCategoryTap: onCategoryTap,
       ),
     );
+    final spendRadarChart = _DashboardChartSection(
+      title: l10n.dashboardOverviewSpendShape,
+      subtitle: l10n.dashboardChartSpendRadarSubtitle,
+      child: CategorySpendRadarChart(
+        categories: snapshot.topCategories,
+        budgetPerformance: budgetPerformance,
+      ),
+    );
     final trendChart = _DashboardChartSection(
       title: l10n.dashboardOverviewSixMonthTrend,
       child: SpendTrendChart(months: snapshot.monthlyCashFlow),
@@ -133,11 +141,13 @@ class _DashboardOverviewBody extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: trendChart),
+              Expanded(child: spendRadarChart),
               const SizedBox(width: 16),
               Expanded(child: pressureChart),
             ],
           ),
+          SizedBox(height: sectionGap),
+          trendChart,
         ] else ...[
           _DashboardCollapsibleChartGroup(
             title: l10n.dashboardSectionCoreCharts,
@@ -148,6 +158,8 @@ class _DashboardOverviewBody extends StatelessWidget {
               cashFlowChart,
               SizedBox(height: sectionGap),
               categoryChart,
+              SizedBox(height: sectionGap),
+              spendRadarChart,
             ],
           ),
           SizedBox(height: sectionGap),

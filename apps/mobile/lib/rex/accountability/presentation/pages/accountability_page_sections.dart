@@ -77,12 +77,14 @@ class _OpenThreadsSection extends StatelessWidget {
     required this.onClose,
     required this.onPause,
     required this.onEdit,
+    required this.onOpen,
   });
 
   final List<OpenThread> threads;
   final ValueChanged<OpenThread> onClose;
   final ValueChanged<OpenThread> onPause;
   final ValueChanged<OpenThread> onEdit;
+  final ValueChanged<OpenThread> onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +99,7 @@ class _OpenThreadsSection extends StatelessWidget {
               onClose: () => onClose(thread),
               onPause: () => onPause(thread),
               onEdit: () => onEdit(thread),
+              onTap: () => onOpen(thread),
             ),
           )
           .toList(growable: false),

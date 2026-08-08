@@ -722,7 +722,15 @@
   "chatTranscriptPromptThinkTonight": "Ayúdame a pensar esta noche.",
   "chatTranscriptReadyTitle": "Rex está listo",
   "chatTranscriptWelcomeMessage": "Soy Rex. Cuéntame qué está pasando, qué cambió o qué quieres que recuerde.",
-  "rexViewOnDashboard": "Ver en el Panel",
+  "rexViewOnDashboard": "Ver gastos",
+  "rexViewCategorySpend": "Ver {category}",
+  "@rexViewCategorySpend": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
   "rexRefreshAccounts": "Actualizar cuentas",
   "commonAccount": "Cuenta",
   "commonAcrossAccounts": "En {accountCount} cuenta conectada {accountCountSuffix}",
@@ -1364,6 +1372,10 @@
   "chatShowMore": "Ver más",
   "chatShowLess": "Ver menos",
   "dashboardChartCategorySpendSubtitle": "Total de este mes · toca una categoría",
+  "dashboardOverviewSpendShape": "Forma del gasto",
+  "dashboardChartSpendRadarSubtitle": "Principales categorías este mes",
+  "dashboardChartSpendRadarSpentLegend": "Gastado",
+  "dashboardChartSpendRadarBudgetLegend": "Presupuesto",
   "dashboardChartSpendingPressureSubtitle": "Presión mes a mes · toca una categoría",
   "dashboardChartCategoryDrilldownHint": "Ver transacciones de {category}",
   "@dashboardChartCategoryDrilldownHint": {

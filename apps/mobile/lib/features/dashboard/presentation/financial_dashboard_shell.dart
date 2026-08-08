@@ -14,6 +14,7 @@ class _DashboardScrollBody extends StatefulWidget {
     required this.transactionCount,
     required this.loadIssues,
     required this.accountCount,
+    this.merchantCategoryMemory = const {},
     this.accountController,
     this.onBankSyncCompleted,
     this.scrollToAnchor,
@@ -34,6 +35,7 @@ class _DashboardScrollBody extends StatefulWidget {
   final int transactionCount;
   final List<FinancialReadModelLoadIssue> loadIssues;
   final int accountCount;
+  final Map<String, String> merchantCategoryMemory;
   final DashboardInsightAnchor? scrollToAnchor;
   final VoidCallback? onScrollToAnchorHandled;
 
@@ -239,6 +241,7 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
                       scopedTransactions: widget.scopedTransactions,
                       allTransactions: widget.allTransactions,
                       accounts: widget.accounts,
+                      merchantCategoryMemory: widget.merchantCategoryMemory,
                       controller: widget.controller,
                       transactionController: widget.transactionController,
                       accountController: widget.accountController,

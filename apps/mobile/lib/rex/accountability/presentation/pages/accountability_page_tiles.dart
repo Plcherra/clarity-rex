@@ -87,12 +87,14 @@ class _OpenThreadTile extends StatelessWidget {
     required this.onClose,
     required this.onPause,
     required this.onEdit,
+    required this.onTap,
   });
 
   final OpenThread thread;
   final VoidCallback onClose;
   final VoidCallback onPause;
   final VoidCallback onEdit;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -105,9 +107,11 @@ class _OpenThreadTile extends StatelessWidget {
       icon: null,
       title: thread.title,
       subtitle: openThreadSubtitle(context.l10n, thread),
+      subtitleMaxLines: 3,
       deadline: thread.updatedAt,
       priority: 3,
       status: thread.status,
+      onTap: onTap,
       trailing: _OpenThreadActions(
         onEdit: onEdit,
         onPause: onPause,
@@ -131,6 +135,7 @@ class _AccountabilityTile extends StatelessWidget {
     this.metaSuffix,
     this.footer,
     this.showMeta = true,
+    this.subtitleMaxLines = 1,
   });
 
   final Widget leading;
@@ -149,6 +154,7 @@ class _AccountabilityTile extends StatelessWidget {
   /// Sits under the tile body, full width — the goal's steps go here.
   final Widget? footer;
   final bool showMeta;
+  final int subtitleMaxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -185,7 +191,7 @@ class _AccountabilityTile extends StatelessWidget {
                 const SizedBox(height: RexUiTokens.space2),
                 Text(
                   subtitle!,
-                  maxLines: 1,
+                  maxLines: subtitleMaxLines,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colors.textMuted,

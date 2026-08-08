@@ -76,11 +76,19 @@ def continuing_reply_for_propose(
     )
 
 
+_CONTINUE_AFTER_APPLY = "What else is on your mind about this?"
+
+
+def _with_continue(status: str) -> str:
+    """Status is fine as the opener; never ship status alone."""
+    return f"{status} {_CONTINUE_AFTER_APPLY}"
+
+
 def continuing_reply_for_apply(grok_reply: str, *, title: str) -> str:
     """Keep Grok's voice after a command apply; note visibility in Goals."""
     text = str(grok_reply or "").strip()
     if not text or _is_truth_denial(text):
-        return f"Done — updated in Goals: {title}."
+        return _with_continue(f"Done — updated in Goals: {title}.")
     if "goals" in text.lower() and (
         "updated" in text.lower() or "saved" in text.lower()
     ):
@@ -99,14 +107,14 @@ def continuing_reply_for_goal_apply(
     kind = str(write_kind or "").strip()
     if kind == "delete":
         if not text or _is_truth_denial(text):
-            return f"Done — deleted from Goals: {title}."
+            return _with_continue(f"Done — deleted from Goals: {title}.")
         lowered = text.lower()
         if "goals" in lowered and "deleted" in lowered:
             return text
         return f"{text}\n\nDeleted from Goals."
     if kind in {"plan", "milestone"}:
         if not text or _is_truth_denial(text):
-            return f"Done — saved in Goals: {title}."
+            return _with_continue(f"Done — saved in Goals: {title}.")
         lowered = text.lower()
         if "goals" in lowered and (
             "saved" in lowered or "updated" in lowered
@@ -120,7 +128,7 @@ def continuing_reply_for_knows_apply(grok_reply: str, *, title: str) -> str:
     """Keep Grok's voice after a Knows apply."""
     text = str(grok_reply or "").strip()
     if not text or _is_truth_denial(text):
-        return f"Done — saved in Knows: {title}."
+        return _with_continue(f"Done — saved in Knows: {title}.")
     lowered = text.lower()
     if "knows" in lowered and (
         "saved" in lowered or "updated" in lowered or "deleted" in lowered

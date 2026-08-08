@@ -2091,6 +2091,30 @@ abstract class AppLocalizations {
   /// **'This month total · tap a category'**
   String get dashboardChartCategorySpendSubtitle;
 
+  /// No description provided for @dashboardOverviewSpendShape.
+  ///
+  /// In en, this message translates to:
+  /// **'Spend shape'**
+  String get dashboardOverviewSpendShape;
+
+  /// No description provided for @dashboardChartSpendRadarSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top categories this month'**
+  String get dashboardChartSpendRadarSubtitle;
+
+  /// No description provided for @dashboardChartSpendRadarSpentLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent'**
+  String get dashboardChartSpendRadarSpentLegend;
+
+  /// No description provided for @dashboardChartSpendRadarBudgetLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get dashboardChartSpendRadarBudgetLegend;
+
   /// No description provided for @dashboardChartSpendingPressureSubtitle.
   ///
   /// In en, this message translates to:
@@ -3064,8 +3088,14 @@ abstract class AppLocalizations {
   /// No description provided for @rexViewOnDashboard.
   ///
   /// In en, this message translates to:
-  /// **'View on Dashboard'**
+  /// **'View spending'**
   String get rexViewOnDashboard;
+
+  /// No description provided for @rexViewCategorySpend.
+  ///
+  /// In en, this message translates to:
+  /// **'View {category}'**
+  String rexViewCategorySpend(String category);
 
   /// No description provided for @rexRefreshAccounts.
   ///

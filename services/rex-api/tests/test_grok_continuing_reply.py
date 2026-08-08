@@ -63,3 +63,10 @@ def test_apply_keeps_conversation_and_notes_goals() -> None:
     )
     assert "5am" in reply.lower()
     assert "goals" in reply.lower()
+
+
+def test_apply_empty_reply_notes_goals_and_keeps_talking() -> None:
+    reply = continuing_reply_for_apply("", title="Wake at 5:30am")
+    assert "wake at 5:30am" in reply.lower()
+    assert "goals" in reply.lower()
+    assert "what else" in reply.lower()

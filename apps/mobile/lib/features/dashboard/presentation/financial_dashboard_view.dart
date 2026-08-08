@@ -432,6 +432,7 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             scopedTransactions: data.scopedTransactions,
             allTransactions: data.allTransactions,
             accounts: data.accounts,
+            merchantCategoryMemory: data.merchantCategoryMemory,
             budgetPerformance: data.budgetPerformance,
             transactionCount: data.scopedTransactionCount,
             loadIssues: data.loadIssues,
@@ -462,7 +463,8 @@ class _DashboardDataNotifier extends ChangeNotifier {
   bool get loading => _loading;
 
   void setLoading() {
-    _data = null;
+    // Keep the previous snapshot visible while reloading so a mutation refresh
+    // cannot flash empty or stick on a cancelled generation with no data.
     _loading = true;
     _error = null;
     notifyListeners();

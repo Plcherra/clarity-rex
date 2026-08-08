@@ -882,6 +882,11 @@ void main() {
         streamingApi.socket.sentEvents.where((event) => event == 'utterance.end'),
         isEmpty,
       );
+      // Must not wipe Deepgram while waiting for late speech_final.
+      expect(
+        streamingApi.socket.sentEvents,
+        isNot(contains('user.interrupt')),
+      );
 
       streamingApi.socket.emit({
         'event': 'transcript.final',
@@ -1934,7 +1939,8 @@ void main() {
       final state = container.read(voiceCallProvider);
       expect(state.phase, VoiceCallPhase.listening);
       expect(state.errorMessage, isNull);
-      expect(streamingApi.socket.sentEvents, contains('user.interrupt'));
+      // Soft empty recover must not wipe live STT (stuck listening loop).
+      expect(streamingApi.socket.sentEvents, isNot(contains('user.interrupt')));
       expect(streamingApi.socket.sentEvents, isNot(contains('session.end')));
       expect(streamingApi.socket.closeCount, 0);
 

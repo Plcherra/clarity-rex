@@ -10,6 +10,7 @@ import 'package:clarity/rex/chat/presentation/widgets/chat_attachment_image.dart
 import 'package:clarity/rex/chat/presentation/widgets/chat_bubble_effects.dart'
     show ChatStreamingCursor, ChatTypingDots;
 import 'package:clarity/rex/chat/presentation/widgets/chat_message_expandable_body.dart';
+import 'package:clarity/rex/chat/presentation/widgets/chat_search_highlight.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
@@ -30,8 +31,11 @@ class ChatMessageBubble extends StatelessWidget {
     this.onDismissClarityAction,
     this.suppressClarityActions = false,
     this.dashboardLinkAnchor,
+    this.dashboardLinkCategoryLabel,
     this.onDashboardLinkTap,
     this.isVoiceInterim = false,
+    this.isSearchFocus = false,
+    this.searchHighlightTerms = const [],
   });
 
   final String text;
@@ -47,7 +51,10 @@ class ChatMessageBubble extends StatelessWidget {
   final ValueChanged<ClarityActionCard>? onDismissClarityAction;
   final bool suppressClarityActions;
   final DashboardInsightAnchor? dashboardLinkAnchor;
+  final String? dashboardLinkCategoryLabel;
   final VoidCallback? onDashboardLinkTap;
+  final bool isSearchFocus;
+  final List<String> searchHighlightTerms;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +80,27 @@ class ChatMessageBubble extends StatelessWidget {
     final fileAttachment = imageAttachment == null
         ? _buildFileAttachmentChip(context, maxWidth)
         : null;
+    final highlightStyle = isSearchFocus && searchHighlightTerms.isNotEmpty
+        ? chatSearchHighlightStyle(
+            ClaritySearchHighlightColors(
+              background: colors.accent.withValues(alpha: isUser ? 0.34 : 0.3),
+              foreground: colors.textPrimary,
+            ),
+          )
+        : null;
+    var userBodySpans = chatMessageInlineMarkdownSpans(
+      text,
+      theme,
+      foreground,
+      codeBackground,
+    );
+    if (highlightStyle != null) {
+      userBodySpans = applyChatSearchHighlights(
+        spans: userBodySpans,
+        terms: searchHighlightTerms,
+        highlightStyle: highlightStyle,
+      );
+    }
 
     return Padding(
       padding: EdgeInsets.only(
@@ -125,6 +153,12 @@ class ChatMessageBubble extends StatelessWidget {
                           : RexUiTokens.radiusLarge,
                     ),
                   ),
+                  border: isSearchFocus
+                      ? Border.all(
+                          color: colors.accent.withValues(alpha: 0.85),
+                          width: 1.5,
+                        )
+                      : null,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -155,12 +189,7 @@ class ChatMessageBubble extends StatelessWidget {
                                           height: 1.35,
                                           letterSpacing: 0,
                                         ),
-                                        children: chatMessageInlineMarkdownSpans(
-                                          text,
-                                          theme,
-                                          foreground,
-                                          codeBackground,
-                                        ),
+                                        children: userBodySpans,
                                       ),
                                     )
                                   : ChatMessageExpandableBody(
@@ -177,6 +206,8 @@ class ChatMessageBubble extends StatelessWidget {
                                       streamingCursor: isStreaming
                                           ? ChatStreamingCursor(color: foreground)
                                           : null,
+                                      highlightTerms: searchHighlightTerms,
+                                      highlightStyle: highlightStyle,
                                     ),
                             if (!isUser &&
                                 clarityActions.isNotEmpty &&
@@ -202,14 +233,22 @@ class ChatMessageBubble extends StatelessWidget {
                                           DashboardInsightAnchor
                                               .connectedAccounts
                                       ? context.l10n.rexRefreshAccounts
-                                      : context.l10n.rexViewOnDashboard,
+                                      : ((dashboardLinkCategoryLabel
+                                                    ?.trim()
+                                                    .isNotEmpty ??
+                                                false)
+                                            ? context.l10n.rexViewCategorySpend(
+                                                dashboardLinkCategoryLabel!
+                                                    .trim(),
+                                              )
+                                            : context.l10n.rexViewOnDashboard),
                                 ),
                                 avatar: Icon(
                                   dashboardLinkAnchor ==
                                           DashboardInsightAnchor
                                               .connectedAccounts
                                       ? Icons.sync_rounded
-                                      : Icons.dashboard_outlined,
+                                      : Icons.pie_chart_outline_rounded,
                                   size: 18,
                                   color: Theme.of(context).colorScheme.primary,
                                 ),

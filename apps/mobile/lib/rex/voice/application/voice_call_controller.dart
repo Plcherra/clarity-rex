@@ -95,6 +95,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
   Timer? _noSpeechTimeoutTimer;
   /// Transcript-stability endpoint for flutter_streaming (STT idle → utterance.end).
   Timer? _listeningEndpointTimer;
+  /// After local VAD captured audio with no transcript yet, wait briefly for
+  /// Deepgram speech_final before soft-recovering listen.
+  Timer? _speechFinalGraceTimer;
   _VoiceTurnTiming? _activeVoiceTurnTiming;
   String? _activeVoiceMessageLocalId;
   String? _pendingUtteranceTranscript;
@@ -115,6 +118,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       _cancelThinkingTimeout();
       _cancelNoSpeechTimeout();
       _cancelListeningEndpointTimeout();
+      _cancelSpeechFinalGrace();
       final captureService = _activeCaptureService;
       final playbackService = _activePlaybackService;
       final interimSpeechToTextService = _activeInterimSpeechToTextService;

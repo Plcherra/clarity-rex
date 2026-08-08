@@ -87,37 +87,16 @@ extension VoiceCallControllerTimers on VoiceCallController {
       failL10n((l10n) => l10n.voiceErrorStillDidNotHear);
       return;
     }
-    if (_isAwaitingFollowUpSpeech) {
-      final generation = ++_callGeneration;
-      _cancelThinkingTimeout();
-      _cancelNoSpeechTimeout();
-      unawaited(_stopInterimTranscription());
-      unawaited(_captureService.cancel());
-      unawaited(_streamingCaptureService.cancel());
-      _stopBargeInMonitoring();
-      final streamingSession = _activeStreamingSession;
-      streamingSession?.interrupt();
-      state = state.copyWith(
-        phase: VoiceCallPhase.listening,
-        isCapturingSpeech: false,
-        clearCurrentTranscript: true,
-        clearError: true,
-      );
-      _clearVisibleTranscript();
-      _removeActiveVoiceUserMessage();
-      _startListeningCycle(generation);
-      return;
-    }
     final generation = ++_callGeneration;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();
+    _cancelSpeechFinalGrace();
     unawaited(_stopInterimTranscription());
     unawaited(_captureService.cancel());
     unawaited(_streamingCaptureService.cancel());
     _stopBargeInMonitoring();
-    final streamingSession = _activeStreamingSession;
-    streamingSession?.interrupt();
-
+    // Soft listen retry: do not interrupt live STT. interrupt() wipes Deepgram
+    // audio and drops late speech_final — the stuck-on-listening loop.
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       isCapturingSpeech: false,
@@ -127,6 +106,36 @@ extension VoiceCallControllerTimers on VoiceCallController {
     _clearVisibleTranscript();
     _removeActiveVoiceUserMessage();
     _startListeningCycle(generation);
+  }
+
+  void _armSpeechFinalGraceAfterCapture(int generation, int listenEpoch) {
+    _speechFinalGraceTimer?.cancel();
+    _speechFinalGraceTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (!_isCurrentCall(generation) ||
+          listenEpoch != _streamingListenEpoch ||
+          !state.isCallActive ||
+          state.phase != VoiceCallPhase.listening ||
+          state.isMuted) {
+        return;
+      }
+      if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
+        return;
+      }
+      final transcript = _transcriptBuffer.visible.trim();
+      if (transcript.isNotEmpty) {
+        _endTurnFromLocalEndpoint(
+          generation,
+          preferredTranscript: transcript,
+        );
+        return;
+      }
+      _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
+    });
+  }
+
+  void _cancelSpeechFinalGrace() {
+    _speechFinalGraceTimer?.cancel();
+    _speechFinalGraceTimer = null;
   }
 
   void _markListeningReady() {

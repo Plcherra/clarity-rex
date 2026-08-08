@@ -1146,6 +1146,19 @@ class AppLocalizationsEs extends AppLocalizations {
       'Total de este mes · toca una categoría';
 
   @override
+  String get dashboardOverviewSpendShape => 'Forma del gasto';
+
+  @override
+  String get dashboardChartSpendRadarSubtitle =>
+      'Principales categorías este mes';
+
+  @override
+  String get dashboardChartSpendRadarSpentLegend => 'Gastado';
+
+  @override
+  String get dashboardChartSpendRadarBudgetLegend => 'Presupuesto';
+
+  @override
   String get dashboardChartSpendingPressureSubtitle =>
       'Presión mes a mes · toca una categoría';
 
@@ -1710,7 +1723,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'Soy Rex. Cuéntame qué está pasando, qué cambió o qué quieres que recuerde.';
 
   @override
-  String get rexViewOnDashboard => 'Ver en el Panel';
+  String get rexViewOnDashboard => 'Ver gastos';
+
+  @override
+  String rexViewCategorySpend(String category) {
+    return 'Ver $category';
+  }
 
   @override
   String get rexRefreshAccounts => 'Actualizar cuentas';

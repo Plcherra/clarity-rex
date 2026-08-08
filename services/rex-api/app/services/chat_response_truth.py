@@ -180,10 +180,14 @@ class ChatResponseTruthService:
                 updated,
                 turn_trace,
             )
-        # Reading Knows out loud is not a write claim. "You have Marcella saved"
-        # is exactly what the user asked for, and the guard cannot hear the
-        # difference — so it stands down when the turn actually read Knows.
-        if not memory_status_has_saved_knowledge(memory_status):
+        # Reading Knows or chat history out loud is not a write claim. Honest
+        # recall often says "chat history, not saved memory" — that must not be
+        # rewritten into a failed-save lecture. Stand down when this turn
+        # actually read Knows or loaded chat-search hits.
+        if (
+            not memory_status_has_saved_knowledge(memory_status)
+            and not chat_search_results_loaded
+        ):
             updated = safe_unexecuted_saved_memory_claim_response(response)
             response = _apply_truth_guard(
                 "unexecuted_saved_memory_claim",

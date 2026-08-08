@@ -208,6 +208,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
       onClose: _closeOpenThread,
       onPause: _pauseOpenThread,
       onEdit: _editOpenThread,
+      onOpen: _editOpenThread,
     );
   }
 

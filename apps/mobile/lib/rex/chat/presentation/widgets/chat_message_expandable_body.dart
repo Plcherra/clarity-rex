@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:clarity/rex/chat/presentation/widgets/chat_search_highlight.dart';
+
 List<InlineSpan> chatMessageInlineMarkdownSpans(
   String value,
   ThemeData theme,
@@ -56,6 +58,8 @@ class ChatMessageExpandableBody extends StatelessWidget {
     required this.theme,
     required this.isStreaming,
     this.streamingCursor,
+    this.highlightTerms = const [],
+    this.highlightStyle,
   });
 
   final String text;
@@ -65,15 +69,25 @@ class ChatMessageExpandableBody extends StatelessWidget {
   final ThemeData theme;
   final bool isStreaming;
   final Widget? streamingCursor;
+  final List<String> highlightTerms;
+  final TextStyle? highlightStyle;
 
   @override
   Widget build(BuildContext context) {
-    final spans = chatMessageInlineMarkdownSpans(
+    var spans = chatMessageInlineMarkdownSpans(
       text,
       theme,
       foreground,
       codeBackground,
     );
+    final markStyle = highlightStyle;
+    if (markStyle != null && highlightTerms.isNotEmpty) {
+      spans = applyChatSearchHighlights(
+        spans: spans,
+        terms: highlightTerms,
+        highlightStyle: markStyle,
+      );
+    }
 
     return SelectableText.rich(
       TextSpan(

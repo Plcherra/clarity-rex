@@ -128,7 +128,8 @@ class _ChatPageState extends ConsumerState<ChatPage>
           voiceMessageChanged ||
           next.isLoading != (previous?.isLoading ?? false) ||
           next.errorMessage != previous?.errorMessage;
-      if (shouldScroll) {
+      // Search hits jump mid-thread; do not yank to the newest message.
+      if (shouldScroll && next.focusMessageId == null) {
         _scrollToBottom();
       }
 
@@ -514,6 +515,10 @@ class _ChatPageState extends ConsumerState<ChatPage>
                   errorMessage: chat.errorMessage,
                   scrollController: _scrollController,
                   voiceState: voiceCall.isIdle ? null : voiceCall,
+                  focusMessageId: chat.focusMessageId,
+                  focusHighlightTerms: chat.focusHighlightTerms,
+                  onFocusConsumed: () =>
+                      ref.read(chatProvider.notifier).clearFocusMessageId(),
                   onPromptSelected: (prompt) {
                     _messageController.text = prompt;
                     _messageController.selection = TextSelection.collapsed(

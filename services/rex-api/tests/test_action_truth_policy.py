@@ -114,6 +114,38 @@ def test_confirm_only_ask_without_past_tense_is_not_memory_success_claim():
     assert safe_unexecuted_saved_memory_claim_response(reply) == reply
 
 
+def test_chat_history_not_saved_memory_label_is_not_a_write_claim():
+    from app.services.action_truth_memory import (
+        response_claims_saved_memory_success,
+        safe_unexecuted_saved_memory_claim_response,
+    )
+
+    reply = (
+        "From chat history, not saved memory: you mentioned Melissa at work "
+        "and that things feel complicated with friends finding out."
+    )
+    assert response_claims_saved_memory_success(reply) is False
+    assert safe_unexecuted_saved_memory_claim_response(reply) == reply
+
+
+def test_truth_keeps_chat_search_reply_when_results_loaded():
+    from app.services.chat_response_truth import ChatResponseTruthService
+
+    reply = (
+        "From chat history, not saved memory: you mentioned Melissa earlier "
+        "today in a long work conversation."
+    )
+    kept = ChatResponseTruthService().truthful_generated_response(
+        reply,
+        [],
+        unsupported_actions=[],
+        user_message="what did we talk about Melissa?",
+        chat_search_results_loaded=True,
+    )
+    assert kept == reply
+    assert "confirmed saved change" not in kept.lower()
+
+
 def test_yes_saved_shorthand_without_write_is_blocked():
     from app.services.action_truth_memory import (
         response_claims_saved_memory_success,

@@ -12,12 +12,12 @@ class DashboardRefreshCoordinator {
   final void Function() notifyTransactionDataChanged;
 
   Future<List<Transaction>> refreshAllState() async {
-    final model = await financialReadModelService.load();
+    final model = await financialReadModelService.load(forceReload: true);
     notifyTransactionDataChanged();
     return model.transactions;
   }
 
   Future<void> syncAfterTransactionWorkflow() async {
-    await financialReadModelService.load();
+    await financialReadModelService.load(forceReload: true);
   }
 }

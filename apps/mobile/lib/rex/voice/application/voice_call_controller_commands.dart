@@ -98,6 +98,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
 
     _cancelNoSpeechTimeout();
     _cancelListeningEndpointTimeout();
+    _cancelSpeechFinalGrace();
     _isAwaitingFollowUpSpeech = false;
     if (finalTranscript != null && finalTranscript.trim().isNotEmpty) {
       _emptyVoiceTurnRecoveryCount = 0;

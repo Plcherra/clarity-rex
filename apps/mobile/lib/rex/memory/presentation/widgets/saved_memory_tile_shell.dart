@@ -179,7 +179,7 @@ class SavedMemoryTileShell extends StatelessWidget {
                           const SizedBox(height: RexUiTokens.space2),
                           Text(
                             detailLine,
-                            maxLines: 1,
+                            maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: active

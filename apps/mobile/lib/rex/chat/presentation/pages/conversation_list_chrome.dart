@@ -187,6 +187,7 @@ class ConversationListSearchResultsSliver extends StatelessWidget {
         final result = results[index];
         return ConversationSearchResultTile(
           result: result,
+          searchQuery: state.searchQuery,
           onTap: () => onResultTap(result),
         );
       }, childCount: results.length),

@@ -22,6 +22,7 @@ import 'package:clarity/rex/chat/data/chat_api.dart';
 import 'package:clarity/rex/chat/application/chat_memory_change_parser.dart';
 import 'package:clarity/rex/chat/application/chat_response_text.dart';
 import 'package:clarity/rex/chat/application/chat_state.dart';
+import 'package:clarity/rex/chat/application/finance_deep_link_label.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
 import 'package:clarity/rex/memory/application/memory_controller.dart';
@@ -138,13 +139,24 @@ class ChatController extends Notifier<ChatState> {
     unawaited(_refreshGoalsOverviewIfNeeded(memoryChanges));
   }
 
-  Future<void> loadConversation(String conversationId) async {
+  Future<void> loadConversation(
+    String conversationId, {
+    String? focusMessageId,
+    List<String> focusHighlightTerms = const [],
+  }) async {
     // Drop any Text say-yes pending id from the previous chat before hydrate.
+    final terms = focusHighlightTerms
+        .map((term) => term.trim())
+        .where((term) => term.isNotEmpty)
+        .toList(growable: false);
     state = state.copyWith(
       conversationId: conversationId,
       isLoading: true,
       clearError: true,
       clearTextConfirmationPending: true,
+      focusMessageId: focusMessageId,
+      clearFocusMessageId: focusMessageId == null,
+      focusHighlightTerms: terms,
     );
 
     try {
@@ -156,11 +168,21 @@ class ChatController extends Notifier<ChatState> {
         conversationId: conversationId,
         isLoading: false,
         clearError: true,
+        focusMessageId: focusMessageId,
+        clearFocusMessageId: focusMessageId == null,
+        focusHighlightTerms: terms,
       );
       await _hydratePendingWriteProposal(conversationId);
     } on Object catch (error) {
       state = state.copyWith(isLoading: false, errorMessage: localizedError(error));
     }
+  }
+
+  void clearFocusMessageId() {
+    if (state.focusMessageId == null) {
+      return;
+    }
+    state = state.copyWith(clearFocusMessageId: true);
   }
 
   Future<void> _hydratePendingWriteProposal(String conversationId) async {

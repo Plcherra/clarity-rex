@@ -620,6 +620,10 @@
   "chatShowMore": "Show more",
   "chatShowLess": "Show less",
   "dashboardChartCategorySpendSubtitle": "This month total · tap a category",
+  "dashboardOverviewSpendShape": "Spend shape",
+  "dashboardChartSpendRadarSubtitle": "Top categories this month",
+  "dashboardChartSpendRadarSpentLegend": "Spent",
+  "dashboardChartSpendRadarBudgetLegend": "Budget",
   "dashboardChartSpendingPressureSubtitle": "Month-over-month pressure · tap a category",
   "dashboardChartCategoryDrilldownHint": "See {category} transactions",
   "@dashboardChartCategoryDrilldownHint": {
@@ -943,7 +947,15 @@
   "attachmentSheetFilesTitle": "Files",
   "attachmentSheetFilesSubtitle": "Choose PDF, text, CSV, markdown, or image files.",
   "chatTranscriptWelcomeMessage": "I'm Rex. Tell me what's happening, what changed, or what you want me to remember.",
-  "rexViewOnDashboard": "View on Dashboard",
+  "rexViewOnDashboard": "View spending",
+  "rexViewCategorySpend": "View {category}",
+  "@rexViewCategorySpend": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
   "rexRefreshAccounts": "Refresh accounts",
   "chatTranscriptReadyTitle": "Rex is ready",
   "chatTranscriptPromptRemember": "What should I remember?",

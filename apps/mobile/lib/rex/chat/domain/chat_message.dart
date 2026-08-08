@@ -16,6 +16,7 @@ class ChatMessage {
     this.attachmentPreviewBytes,
     this.attachmentName,
     this.dashboardLinkAnchor,
+    this.dashboardLinkCategoryLabel,
     this.isVoiceInterim = false,
   });
 
@@ -30,6 +31,9 @@ class ChatMessage {
   final List<int>? attachmentPreviewBytes;
   final String? attachmentName;
   final DashboardInsightAnchor? dashboardLinkAnchor;
+
+  /// Optional category name for the finance deep-link chip (e.g. "Food & Drink").
+  final String? dashboardLinkCategoryLabel;
 
   bool get isUser => role == ChatMessageRole.user;
 
@@ -57,11 +61,13 @@ class ChatMessage {
     List<int>? attachmentPreviewBytes,
     String? attachmentName,
     DashboardInsightAnchor? dashboardLinkAnchor,
+    String? dashboardLinkCategoryLabel,
     bool? isVoiceInterim,
     bool clearAttachmentLocalPath = false,
     bool clearAttachmentPreviewBytes = false,
     bool clearAttachmentName = false,
     bool clearDashboardLinkAnchor = false,
+    bool clearDashboardLinkCategoryLabel = false,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -83,6 +89,9 @@ class ChatMessage {
       dashboardLinkAnchor: clearDashboardLinkAnchor
           ? null
           : dashboardLinkAnchor ?? this.dashboardLinkAnchor,
+      dashboardLinkCategoryLabel: clearDashboardLinkCategoryLabel
+          ? null
+          : dashboardLinkCategoryLabel ?? this.dashboardLinkCategoryLabel,
     );
   }
 }

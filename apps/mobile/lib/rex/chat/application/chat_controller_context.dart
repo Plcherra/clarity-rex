@@ -104,6 +104,20 @@ extension ChatControllerContext on ChatController {
     return resolveDashboardInsightAnchor(message);
   }
 
+  String? _dashboardLinkCategoryLabel(
+    String message,
+    Map<String, dynamic>? financialContext,
+    DashboardInsightAnchor? anchor, {
+    String? assistantReply,
+  }) {
+    return financeDeepLinkCategoryLabel(
+      anchor: anchor,
+      userMessage: message,
+      financialContext: financialContext,
+      assistantReply: assistantReply,
+    );
+  }
+
   bool _financialSyncNeedsRefresh(Map<String, dynamic> financialContext) {
     final freshness = financialContext['freshness'];
     if (freshness is! Map<String, dynamic>) {
@@ -206,6 +220,7 @@ extension ChatControllerContext on ChatController {
   List<ChatMessage> _messagesFromApiResponse(
     ChatApiResponse response, {
     DashboardInsightAnchor? dashboardLink,
+    String? dashboardLinkCategoryLabel,
   }) {
     return _mergePendingAttachments(
       state.messages,
@@ -215,6 +230,7 @@ extension ChatControllerContext on ChatController {
         ),
         memoryChanges: response.memoryChanges,
         dashboardLink: dashboardLink,
+        dashboardLinkCategoryLabel: dashboardLinkCategoryLabel,
       ),
     );
   }
@@ -269,6 +285,7 @@ extension ChatControllerContext on ChatController {
     List<ChatMessage> messages, {
     Map<String, dynamic>? memoryChanges,
     DashboardInsightAnchor? dashboardLink,
+    String? dashboardLinkCategoryLabel,
   }) {
     final clarityActions = clarityActionCardsFromMemoryChanges(memoryChanges);
     if (clarityActions.isEmpty && dashboardLink == null) {
@@ -284,6 +301,9 @@ extension ChatControllerContext on ChatController {
               : clarityActions,
           dashboardLinkAnchor:
               dashboardLink ?? updated[index].dashboardLinkAnchor,
+          dashboardLinkCategoryLabel:
+              dashboardLinkCategoryLabel ??
+              updated[index].dashboardLinkCategoryLabel,
         );
         return List.unmodifiable(updated);
       }
@@ -298,6 +318,7 @@ extension ChatControllerContext on ChatController {
           timestamp: DateTime.now(),
           clarityActions: clarityActions,
           dashboardLinkAnchor: dashboardLink,
+          dashboardLinkCategoryLabel: dashboardLinkCategoryLabel,
         ),
       );
     }

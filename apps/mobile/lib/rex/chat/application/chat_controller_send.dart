@@ -87,6 +87,14 @@ extension ChatControllerSend on ChatController {
         financialContext: financialContext,
         writeConfirmation: writeConfirmation,
       );
+      final assistantText = assistantTextFromApiResponse(result) ??
+          result.response;
+      final dashboardCategoryLabel = _dashboardLinkCategoryLabel(
+        message,
+        financialContext,
+        dashboardLink,
+        assistantReply: assistantText,
+      );
 
       state = state.copyWith(
         conversationId: result.conversationId,
@@ -94,6 +102,7 @@ extension ChatControllerSend on ChatController {
             ? _messagesFromApiResponse(
                 result,
                 dashboardLink: dashboardLink,
+                dashboardLinkCategoryLabel: dashboardCategoryLabel,
               )
             : List.unmodifiable([
                 ...state.messages,
@@ -106,6 +115,7 @@ extension ChatControllerSend on ChatController {
                     result.memoryChanges,
                   ),
                   dashboardLinkAnchor: dashboardLink,
+                  dashboardLinkCategoryLabel: dashboardCategoryLabel,
                 ),
               ]),
         isLoading: false,
@@ -115,8 +125,9 @@ extension ChatControllerSend on ChatController {
       await _refreshSavedMemoryOverviewIfNeeded(result.memoryChanges);
       await _refreshGoalsOverviewIfNeeded(result.memoryChanges);
       unawaited(ref.read(conversationListProvider.notifier).loadConversations());
-      return assistantTextFromApiResponse(result) ??
-          latestAssistantContent(state.messages);
+      return assistantText.isEmpty
+          ? latestAssistantContent(state.messages)
+          : assistantText;
     } on ChatApiException catch (error) {
       state = state.copyWith(isLoading: false, errorMessage: localizedError(error));
       return null;
@@ -165,17 +176,27 @@ extension ChatControllerSend on ChatController {
           );
         } else if (event is ChatStreamDone) {
           final response = event.response;
+          final assistantText = assistantTextFromApiResponse(response) ??
+              response.response;
+          final dashboardCategoryLabel = _dashboardLinkCategoryLabel(
+            message,
+            financialContext,
+            dashboardLink,
+            assistantReply: assistantText,
+          );
           state = state.copyWith(
             conversationId: response.conversationId,
             messages: response.messages.isNotEmpty
                 ? _messagesFromApiResponse(
                     response,
                     dashboardLink: dashboardLink,
+                    dashboardLinkCategoryLabel: dashboardCategoryLabel,
                   )
                 : _messagesWithAssistantExtras(
                     _messagesWithStreamingStopped(state.messages),
                     memoryChanges: response.memoryChanges,
                     dashboardLink: dashboardLink,
+                    dashboardLinkCategoryLabel: dashboardCategoryLabel,
                   ),
             isLoading: false,
             clearError: true,
@@ -184,8 +205,9 @@ extension ChatControllerSend on ChatController {
           await _refreshSavedMemoryOverviewIfNeeded(response.memoryChanges);
           await _refreshGoalsOverviewIfNeeded(response.memoryChanges);
           unawaited(ref.read(conversationListProvider.notifier).loadConversations());
-          return assistantTextFromApiResponse(response) ??
-              latestAssistantContent(state.messages);
+          return assistantText.isEmpty
+              ? latestAssistantContent(state.messages)
+              : assistantText;
         }
       }
 

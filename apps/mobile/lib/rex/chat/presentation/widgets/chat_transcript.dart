@@ -15,7 +15,7 @@ import 'package:clarity/rex/voice/presentation/voice_elapsed_format.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_diamond_loader.dart';
 
-class ChatTranscript extends StatelessWidget {
+class ChatTranscript extends StatefulWidget {
   const ChatTranscript({
     super.key,
     required this.messages,
@@ -26,6 +26,9 @@ class ChatTranscript extends StatelessWidget {
     required this.onDismissClarityAction,
     this.onDashboardLinkTap,
     this.voiceState,
+    this.focusMessageId,
+    this.focusHighlightTerms = const [],
+    this.onFocusConsumed,
   });
 
   final List<ChatMessage> messages;
@@ -36,25 +39,90 @@ class ChatTranscript extends StatelessWidget {
   final ValueChanged<ClarityActionCard> onDismissClarityAction;
   final ValueChanged<DashboardInsightAnchor>? onDashboardLinkTap;
   final VoiceCallState? voiceState;
+  final String? focusMessageId;
+  final List<String> focusHighlightTerms;
+  final VoidCallback? onFocusConsumed;
 
   static String welcomeMessage(AppLocalizations l10n) =>
       l10n.chatTranscriptWelcomeMessage;
 
   @override
+  State<ChatTranscript> createState() => _ChatTranscriptState();
+}
+
+class _ChatTranscriptState extends State<ChatTranscript> {
+  final GlobalKey _focusMessageKey = GlobalKey();
+  String? _lastFocusedId;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleFocusScroll();
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatTranscript oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final focusId = widget.focusMessageId?.trim();
+    if (focusId == null || focusId.isEmpty) {
+      return;
+    }
+    final messagesChanged = !identical(widget.messages, oldWidget.messages);
+    final focusChanged = focusId != oldWidget.focusMessageId;
+    if ((focusChanged || messagesChanged) && focusId != _lastFocusedId) {
+      _scheduleFocusScroll();
+    }
+  }
+
+  void _scheduleFocusScroll() {
+    final focusId = widget.focusMessageId?.trim();
+    if (focusId == null || focusId.isEmpty || focusId == _lastFocusedId) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_scrollToFocusedMessage(focusId));
+    });
+  }
+
+  Future<void> _scrollToFocusedMessage(String focusId) async {
+    final target = _focusMessageKey.currentContext;
+    if (target == null) {
+      return;
+    }
+    _lastFocusedId = focusId;
+    await Scrollable.ensureVisible(
+      target,
+      alignment: 0.18,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+    );
+    // Keep border + term highlights visible long enough to find the hit.
+    await Future<void>.delayed(const Duration(milliseconds: 2800));
+    if (mounted) {
+      widget.onFocusConsumed?.call();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final messages = widget.messages;
     final hasMessages = messages.isNotEmpty;
     final showVoiceTranscript =
-        voiceState != null && !voiceState!.isIdle;
+        widget.voiceState != null && !widget.voiceState!.isIdle;
     // Text + voice: pending durable writes must stay visible above the composer.
     final pendingActions = pendingClarityActions(messages);
     final baseBottomPadding = MediaQuery.viewInsetsOf(context).bottom > 0
         ? RexUiTokens.space12
         : RexUiTokens.space24;
     final transcriptPadH = RexUiTokens.transcriptPaddingHOf(context);
+    final focusId = widget.focusMessageId?.trim();
 
     final scrollView = CustomScrollView(
-      controller: scrollController,
+      controller: widget.scrollController,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
@@ -71,21 +139,28 @@ class ChatTranscript extends StatelessWidget {
               delegate: SliverChildListDelegate([
                 if (!hasMessages)
                   _EmptyChatState(
-                    welcomeMessage: welcomeMessage(l10n),
-                    onPromptSelected: onPromptSelected,
+                    welcomeMessage: ChatTranscript.welcomeMessage(l10n),
+                    onPromptSelected: widget.onPromptSelected,
                   )
                 else
                   ...messages.asMap().entries.map(
                     (entry) {
                       final message = entry.value;
                       final showVoiceProcessing =
-                          voiceState != null &&
+                          widget.voiceState != null &&
                           _shouldShowVoiceProcessingIndicator(
-                            voiceState: voiceState!,
+                            voiceState: widget.voiceState!,
                             messages: messages,
                             messageIndex: entry.key,
                           );
+                      final isFocused =
+                          focusId != null &&
+                          focusId.isNotEmpty &&
+                          message.id == focusId;
                       return Padding(
+                        key: isFocused
+                            ? _focusMessageKey
+                            : ValueKey('chat-msg-${message.id}'),
                         padding: const EdgeInsets.only(
                           bottom: RexUiTokens.messageGap,
                         ),
@@ -102,21 +177,29 @@ class ChatTranscript extends StatelessWidget {
                                   message.attachmentPreviewBytes,
                               attachmentName: message.attachmentName,
                               clarityActions: message.clarityActions,
-                              onConfirmClarityAction: onConfirmClarityAction,
-                              onDismissClarityAction: onDismissClarityAction,
+                              onConfirmClarityAction:
+                                  widget.onConfirmClarityAction,
+                              onDismissClarityAction:
+                                  widget.onDismissClarityAction,
                               suppressClarityActions: true,
                               dashboardLinkAnchor: message.dashboardLinkAnchor,
+                              dashboardLinkCategoryLabel:
+                                  message.dashboardLinkCategoryLabel,
                               onDashboardLinkTap:
                                   message.dashboardLinkAnchor == null ||
-                                      onDashboardLinkTap == null
+                                      widget.onDashboardLinkTap == null
                                   ? null
-                                  : () => onDashboardLinkTap!(
+                                  : () => widget.onDashboardLinkTap!(
                                       message.dashboardLinkAnchor!,
                                     ),
+                              isSearchFocus: isFocused,
+                              searchHighlightTerms: isFocused
+                                  ? widget.focusHighlightTerms
+                                  : const [],
                             ),
                             if (showVoiceProcessing)
                               _VoiceProcessingIndicator(
-                                voiceState: voiceState!,
+                                voiceState: widget.voiceState!,
                               ),
                           ],
                         ),
@@ -126,16 +209,16 @@ class ChatTranscript extends StatelessWidget {
                 if (pendingActions.isNotEmpty) ...[
                   ClarityActionCardsStrip(
                     actions: pendingActions,
-                    onConfirm: onConfirmClarityAction,
-                    onDismiss: onDismissClarityAction,
+                    onConfirm: widget.onConfirmClarityAction,
+                    onDismiss: widget.onDismissClarityAction,
                   ),
                   const SizedBox(height: RexUiTokens.confirmCardGap),
                 ],
                 if (showVoiceTranscript)
-                  VoiceLiveTranscript(state: voiceState!),
-                if (errorMessage != null) ...[
+                  VoiceLiveTranscript(state: widget.voiceState!),
+                if (widget.errorMessage != null) ...[
                   const SizedBox(height: RexUiTokens.space8),
-                  _ChatErrorBanner(message: errorMessage!),
+                  _ChatErrorBanner(message: widget.errorMessage!),
                 ],
                 const SizedBox(height: RexUiTokens.space8),
               ]),
@@ -152,7 +235,7 @@ class ChatTranscript extends StatelessWidget {
       return scrollView;
     }
     return Scrollbar(
-      controller: scrollController,
+      controller: widget.scrollController,
       child: scrollView,
     );
   }
