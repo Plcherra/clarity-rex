@@ -147,16 +147,16 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
 
 class PackageStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
-  // Match mobile walking endpointing (~6s): allow mid-phrase breaths / think
+  // Match mobile walking endpointing (~8s): allow mid-phrase breaths / think
   // pauses; still hand off soon after the user actually stops.
   static const _maximumStreamingSilenceAfterSpeech = Duration(
-    milliseconds: 6000,
+    milliseconds: 8000,
   );
   static const _minimumStreamingSpeechDuration = Duration(milliseconds: 260);
-  static const _streamingSpeechStartThresholdDb = -50.0;
+  static const _streamingSpeechStartThresholdDb = -55.0;
   // Quieter floor so soft walking speech / trailing syllables do not look like
-  // silence and end the turn in ~1s.
-  static const _streamingSilenceThresholdDb = -66.0;
+  // silence during a breath pause.
+  static const _streamingSilenceThresholdDb = -72.0;
 
   PackageStreamingAudioCaptureService({
     AudioRecorder? recorder,

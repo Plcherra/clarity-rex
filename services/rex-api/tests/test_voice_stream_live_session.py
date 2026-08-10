@@ -138,7 +138,10 @@ async def test_voice_stream_live_transcript_idle_uses_timing_contract(monkeypatc
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("client_name", ["ios_native", "flutter_streaming"])
+@pytest.mark.parametrize(
+    "client_name",
+    ["ios_native", "flutter_streaming", "flutter_streaming_web"],
+)
 async def test_voice_stream_client_waits_for_explicit_utterance_end(
     monkeypatch,
     client_name,

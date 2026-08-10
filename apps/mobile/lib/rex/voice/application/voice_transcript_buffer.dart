@@ -106,6 +106,15 @@ class VoiceTranscriptBuffer {
       _finalText = next;
       return;
     }
+    final overlap = _suffixPrefixOverlapWordCount(_finalText, next);
+    if (overlap >= 2) {
+      final priorWords = _finalText.split(' ');
+      final nextWords = next.split(' ');
+      _finalText = _collapseRepeatedText(
+        [...priorWords, ...nextWords.skip(overlap)].join(' '),
+      );
+      return;
+    }
     _finalText = _collapseRepeatedText('$_finalText $next');
   }
 
@@ -128,21 +137,95 @@ class VoiceTranscriptBuffer {
         }
       }
       if (collapsed.length != sentences.length) {
-        return collapsed.join(' ');
+        return _collapseAdjacentRepeatedPhrases(collapsed.join(' '));
       }
     }
 
     final words = normalized.split(' ');
-    if (words.length < 6 || words.length.isOdd) {
-      return normalized;
+    if (words.length >= 6 && words.length.isEven) {
+      final midpoint = words.length ~/ 2;
+      final firstHalf = words.take(midpoint).join(' ');
+      final secondHalf = words.skip(midpoint).join(' ');
+      if (_sameForComparison(firstHalf, secondHalf)) {
+        return _collapseAdjacentRepeatedPhrases(firstHalf);
+      }
     }
-    final midpoint = words.length ~/ 2;
-    final firstHalf = words.take(midpoint).join(' ');
-    final secondHalf = words.skip(midpoint).join(' ');
-    if (_sameForComparison(firstHalf, secondHalf)) {
-      return firstHalf;
+    return _collapseAdjacentRepeatedPhrases(normalized);
+  }
+
+  /// "I guess I guess" / "some some" from overlapping Deepgram finals.
+  static String _collapseAdjacentRepeatedPhrases(String text) {
+    final words = text
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .toList(growable: true);
+    if (words.length < 2) {
+      return text;
     }
-    return normalized;
+
+    final output = <String>[];
+    var index = 0;
+    while (index < words.length) {
+      var collapsed = false;
+      for (var phraseLen = 3; phraseLen >= 1; phraseLen--) {
+        if (index + (phraseLen * 2) > words.length) {
+          continue;
+        }
+        final first = words.sublist(index, index + phraseLen);
+        final second = words.sublist(
+          index + phraseLen,
+          index + (phraseLen * 2),
+        );
+        if (!_wordListsSimilar(first, second)) {
+          continue;
+        }
+        output.addAll(first);
+        index += phraseLen * 2;
+        collapsed = true;
+        break;
+      }
+      if (!collapsed) {
+        output.add(words[index]);
+        index++;
+      }
+    }
+    return output.join(' ');
+  }
+
+  static bool _wordListsSimilar(List<String> left, List<String> right) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (var index = 0; index < left.length; index++) {
+      if (!_wordsSimilar(
+        _normalizeForComparison(left[index]),
+        _normalizeForComparison(right[index]),
+      )) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static int _suffixPrefixOverlapWordCount(String left, String right) {
+    final leftWords = _wordsForComparison(left);
+    final rightWords = _wordsForComparison(right);
+    if (leftWords.isEmpty || rightWords.isEmpty) {
+      return 0;
+    }
+    final maxOverlap = leftWords.length < rightWords.length
+        ? leftWords.length
+        : rightWords.length;
+    var best = 0;
+    for (var size = maxOverlap; size >= 2; size--) {
+      final suffix = leftWords.sublist(leftWords.length - size);
+      final prefix = rightWords.sublist(0, size);
+      if (_wordListsSimilar(suffix, prefix)) {
+        best = size;
+        break;
+      }
+    }
+    return best;
   }
 
   static bool _contains(String text, String possibleDuplicate) {

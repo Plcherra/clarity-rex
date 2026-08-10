@@ -692,7 +692,7 @@ void main() {
     expect(container.read(voiceCallBargeInEnabledProvider), isFalse);
     expect(
       container.read(voiceCallTranscriptIdleTimeoutProvider),
-      const Duration(milliseconds: 6000),
+      const Duration(milliseconds: 8000),
     );
     expect(
       container.read(voiceCallNoSpeechTimeoutProvider),
@@ -2980,7 +2980,7 @@ void main() {
       addTearDown(container.dispose);
 
       const partialTranscript =
-          'Great. So my next goal should buy this bar and what do you recommend for, like, some weights because I got I gotta gotta lift';
+          'Great. So my next goal should buy this bar and what do you recommend for, like, some weights because I got I gotta lift';
       const fullTranscript =
           '$partialTranscript something. You know?';
 
@@ -3056,7 +3056,7 @@ void main() {
       addTearDown(container.dispose);
 
       const firstSegment =
-          'Great. So my next goal should buy this bar and what do you recommend for, like, some weights because I got I gotta gotta lift';
+          'Great. So my next goal should buy this bar and what do you recommend for, like, some weights because I got I gotta lift';
       const fullTranscript = '$firstSegment something. You know?';
 
       final controller = container.read(voiceCallProvider.notifier);

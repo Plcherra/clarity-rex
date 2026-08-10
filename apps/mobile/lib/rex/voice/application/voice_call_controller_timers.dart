@@ -123,9 +123,9 @@ extension VoiceCallControllerTimers on VoiceCallController {
 
   void _armSpeechFinalGraceAfterCapture(int generation, int listenEpoch) {
     _speechFinalGraceTimer?.cancel();
-    // Match local VAD post-speech silence (~6s) so walking pauses and slow
-    // Deepgram finals can still finalize before we soft-recover listen.
-    _speechFinalGraceTimer = Timer(const Duration(milliseconds: 6500), () {
+    // Match local VAD post-speech silence so walking pauses and slow Deepgram
+    // finals can still finalize before we soft-recover listen.
+    _speechFinalGraceTimer = Timer(const Duration(milliseconds: 8500), () {
       if (!_isCurrentCall(generation) ||
           listenEpoch != _streamingListenEpoch ||
           !state.isCallActive ||

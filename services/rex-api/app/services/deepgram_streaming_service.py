@@ -313,6 +313,12 @@ class DeepgramStreamingService:
         if transcript.startswith(previous):
             segments[-1] = transcript
             return
+        overlap = _suffix_prefix_overlap_words(previous, transcript)
+        if overlap >= 2:
+            prev_words = previous.split()
+            next_words = transcript.split()
+            segments[-1] = " ".join([*prev_words, *next_words[overlap:]]).strip()
+            return
         segments.append(transcript)
 
     def _parse_message(self, raw_message: str | bytes) -> Optional[dict[str, Any]]:
@@ -355,3 +361,16 @@ class DeepgramStreamingService:
                 "transport": "websocket",
             },
         }
+
+
+def _suffix_prefix_overlap_words(left: str, right: str) -> int:
+    """Count overlapping trailing/leading words between consecutive finals."""
+    left_words = left.split()
+    right_words = right.split()
+    if not left_words or not right_words:
+        return 0
+    max_overlap = min(len(left_words), len(right_words))
+    for size in range(max_overlap, 1, -1):
+        if left_words[-size:] == right_words[:size]:
+            return size
+    return 0

@@ -21,6 +21,10 @@ def test_tiny_system_has_truth_and_gate_no_reply_length() -> None:
     assert "concise" not in prompt.lower()
     assert "response style" not in prompt.lower()
     assert "persona" not in prompt.lower()
+    # Unsupported is for unperformable external actions, not public-topic chat.
+    assert "anything outside Clarity" not in prompt
+    assert "public topics" in prompt.lower()
+    assert "send/call/book outside the app" in prompt
 
 
 def test_the_prompt_no_longer_repeats_what_the_tool_schema_already_says() -> None:

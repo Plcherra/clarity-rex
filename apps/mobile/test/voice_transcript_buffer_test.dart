@@ -113,5 +113,20 @@ void main() {
         'on a dealership yeah',
       );
     });
+
+    test('collapses adjacent repeated short phrases from overlapping finals', () {
+      final buffer = VoiceTranscriptBuffer();
+      buffer.appendFinal('I guess');
+      buffer.appendFinal('I guess I have some questions');
+
+      expect(buffer.visible, 'I guess I have some questions');
+    });
+
+    test('collapses duplicated single words inside one segment', () {
+      final buffer = VoiceTranscriptBuffer();
+      buffer.appendFinal('I have some some questions too');
+
+      expect(buffer.visible, 'I have some questions too');
+    });
   });
 }
