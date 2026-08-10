@@ -47,6 +47,41 @@ class VoiceTranscriptBuffer {
     return buffer.visible;
   }
 
+  /// Drop a prior completed utterance when STT/interim replays it as a prefix
+  /// of the next turn (common with sticky on-device STT and preferFullest merges).
+  static String stripLeadingUtterance(
+    String transcript, {
+    String? priorUtterance,
+  }) {
+    final current = _normalize(transcript);
+    final prior = _normalize(priorUtterance);
+    if (current.isEmpty || prior.isEmpty) {
+      return current;
+    }
+    if (_sameForComparison(current, prior)) {
+      return '';
+    }
+    final currentCmp = _normalizeForComparison(current);
+    final priorCmp = _normalizeForComparison(prior);
+    if (!currentCmp.startsWith(priorCmp)) {
+      return current;
+    }
+    // Map the comparison-prefix length back onto the display string by walking
+    // words so punctuation/casing differences do not leave a sticky stump.
+    final priorWords = priorCmp
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .toList(growable: false);
+    if (priorWords.isEmpty) {
+      return current;
+    }
+    final displayWords = current.split(' ');
+    if (displayWords.length <= priorWords.length) {
+      return '';
+    }
+    return displayWords.skip(priorWords.length).join(' ').trim();
+  }
+
   void _appendSegment(String transcript) {
     final next = _collapseRepeatedText(_normalize(transcript));
     if (next.isEmpty) {

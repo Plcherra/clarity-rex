@@ -106,6 +106,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
   _VoiceTurnTiming? _activeVoiceTurnTiming;
   String? _activeVoiceMessageLocalId;
   String? _pendingUtteranceTranscript;
+  /// Last completed user utterance — stripped from the next turn's STT so
+  /// sticky engines cannot stack turn N into turn N+1's bubble.
+  String? _lastCompletedUtteranceTranscript;
 
   @override
   VoiceCallState build() {

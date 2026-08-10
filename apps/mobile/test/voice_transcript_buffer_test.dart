@@ -70,5 +70,31 @@ void main() {
         'Everything good? I also want some weights so I can exercise at home.',
       );
     });
+
+    test('stripLeadingUtterance removes sticky prior turn prefix', () {
+      const prior =
+          'OK so I am about to buy my first bike when I got my learning permit';
+      const next =
+          'OK so I am about to buy my first bike when I got my learning permit '
+          'and I know it is possible with the CBR 600';
+
+      expect(
+        VoiceTranscriptBuffer.stripLeadingUtterance(
+          next,
+          priorUtterance: prior,
+        ),
+        'and I know it is possible with the CBR 600',
+      );
+    });
+
+    test('stripLeadingUtterance keeps unrelated new speech', () {
+      expect(
+        VoiceTranscriptBuffer.stripLeadingUtterance(
+          'and I know it is possible',
+          priorUtterance: 'OK so I am about to buy my first bike',
+        ),
+        'and I know it is possible',
+      );
+    });
   });
 }

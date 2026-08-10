@@ -9,12 +9,16 @@ extension VoiceCallControllerCommands on VoiceCallController {
     }
 
     _isAwaitingFollowUpSpeech = false;
-    if (transcript.trim().isNotEmpty) {
+    final cleaned = VoiceTranscriptBuffer.stripLeadingUtterance(
+      transcript,
+      priorUtterance: _lastCompletedUtteranceTranscript,
+    );
+    if (cleaned.isNotEmpty) {
       _emptyVoiceTurnRecoveryCount = 0;
     }
     _cancelNoSpeechTimeout();
-    if (transcript.trim().isNotEmpty) {
-      _transcriptBuffer.updatePartial(transcript);
+    if (cleaned.isNotEmpty) {
+      _transcriptBuffer.updatePartial(cleaned);
     }
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
@@ -31,12 +35,20 @@ extension VoiceCallControllerCommands on VoiceCallController {
       return;
     }
 
+    final cleaned = VoiceTranscriptBuffer.stripLeadingUtterance(
+      transcript,
+      priorUtterance: _lastCompletedUtteranceTranscript,
+    );
+    if (cleaned.isEmpty) {
+      return;
+    }
+
     _isAwaitingFollowUpSpeech = false;
     _cancelNoSpeechTimeout();
     if (isFinal) {
-      _transcriptBuffer.appendFinal(transcript);
+      _transcriptBuffer.appendFinal(cleaned);
     } else {
-      _transcriptBuffer.updatePartial(transcript);
+      _transcriptBuffer.updatePartial(cleaned);
     }
     // Fresh STT for this listen cycle — late speech_final from a prior turn
     // must no longer be suppressed once we have new transcript evidence.
@@ -108,7 +120,10 @@ extension VoiceCallControllerCommands on VoiceCallController {
     if (finalTranscript != null && finalTranscript.trim().isNotEmpty) {
       _emptyVoiceTurnRecoveryCount = 0;
     }
-    _finalizeVoiceTranscriptInChat(finalTranscript: finalTranscript);
+    _finalizeVoiceTranscriptInChat(
+      finalTranscript: finalTranscript,
+      rememberCompleted: true,
+    );
     _clearVisibleTranscript();
 
     state = state.copyWith(

@@ -10,7 +10,16 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     // Fresh listen cycle may accept speech_final; do not inherit suppress from
     // a prior finalize → empty_audio → soft-recover path.
     _suppressStaleSpeechFinal = false;
+    state = state.copyWith(clearCurrentTranscript: true);
     _beginVoiceTurnTiming(turnSequence);
+  }
+
+  void _rememberCompletedUtterance(String transcript) {
+    final text = transcript.trim();
+    if (text.isEmpty) {
+      return;
+    }
+    _lastCompletedUtteranceTranscript = text;
   }
 
   void _resetActiveVoiceMessageLocalId() {
@@ -38,11 +47,18 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     );
   }
 
-  void _finalizeVoiceTranscriptInChat({String? finalTranscript}) {
-    final text = VoiceTranscriptBuffer.preferFullest([
+  void _finalizeVoiceTranscriptInChat({
+    String? finalTranscript,
+    bool rememberCompleted = false,
+  }) {
+    final merged = VoiceTranscriptBuffer.preferFullest([
       ?finalTranscript,
       _transcriptBuffer.visible,
-    ]).trim();
+    ]);
+    final text = VoiceTranscriptBuffer.stripLeadingUtterance(
+      merged,
+      priorUtterance: _lastCompletedUtteranceTranscript,
+    ).trim();
     if (text.isEmpty) {
       _removeActiveVoiceUserMessage();
       return;
@@ -57,6 +73,9 @@ extension VoiceCallControllerChatSync on VoiceCallController {
       keepLocalId: localId,
       finalContent: text,
     );
+    if (rememberCompleted) {
+      _rememberCompletedUtterance(text);
+    }
   }
 
   void _removeActiveVoiceUserMessage({bool evenIfFinalized = false}) {

@@ -118,10 +118,14 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             if (event.speechFinal) {
               final eventTranscript = (event.transcript ?? '').trim();
               final bufferTranscript = _transcriptBuffer.visible.trim();
-              final preferredTranscript = VoiceTranscriptBuffer.preferFullest([
-                eventTranscript,
-                bufferTranscript,
-              ]).trim();
+              final preferredTranscript =
+                  VoiceTranscriptBuffer.stripLeadingUtterance(
+                    VoiceTranscriptBuffer.preferFullest([
+                      eventTranscript,
+                      bufferTranscript,
+                    ]),
+                    priorUtterance: _lastCompletedUtteranceTranscript,
+                  ).trim();
               final alreadyFinalized =
                   _streamingTurnFinalizedSequence == _streamingTurnSequence ||
                   _streamingUtteranceEndSent ||
@@ -130,6 +134,8 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
               // reset playback or start a second utterance.end (double talk).
               if (alreadyFinalized ||
                   state.phase != VoiceCallPhase.listening) {
+                // Polish the committed bubble only — never remember again or
+                // the next turn will strip this turn's own words.
                 if (preferredTranscript.isNotEmpty &&
                     (_streamingTurnFinalizedSequence ==
                             _streamingTurnSequence ||

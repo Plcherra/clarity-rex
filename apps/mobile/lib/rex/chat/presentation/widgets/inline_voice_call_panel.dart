@@ -43,13 +43,14 @@ class VoiceLiveTranscript extends StatelessWidget {
       );
     }
 
-    if (state.phase == VoiceCallPhase.speaking ||
-        state.phase == VoiceCallPhase.thinking) {
-      // Reply text already lives in the chat bubble. Showing
-      // lastAssistantResponse here duplicated the whole answer under Speaking.
-      final statusLabel = state.phase == VoiceCallPhase.speaking
-          ? l10n.voicePanelSpeaking
-          : l10n.voicePanelThinking;
+    if (state.phase == VoiceCallPhase.thinking) {
+      // Timed "Thinking…" / "Thought for Xs" already renders under the user
+      // bubble via ChatTranscript — avoid a second Thinking label here.
+      return const SizedBox.shrink();
+    }
+
+    if (state.phase == VoiceCallPhase.speaking) {
+      // Reply text already lives in the chat bubble.
       return Padding(
         padding: const EdgeInsets.only(
           top: RexUiTokens.space4,
@@ -64,7 +65,7 @@ class VoiceLiveTranscript extends StatelessWidget {
             ),
             const SizedBox(width: RexUiTokens.space8),
             Text(
-              statusLabel,
+              l10n.voicePanelSpeaking,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colors.textMuted,
               ),

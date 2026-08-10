@@ -1480,7 +1480,7 @@ void main() {
 
     expect(find.text(userText), findsNothing);
     expect(find.text(l10n.voicePanelProcessing), findsNothing);
-    expect(find.text(l10n.voicePanelThinking), findsOneWidget);
+    expect(find.text(l10n.voicePanelThinking), findsNothing);
   });
 
   testWidgets(
@@ -1504,6 +1504,28 @@ void main() {
 
       expect(find.text(reply), findsNothing);
       expect(find.text(l10n.voicePanelSpeaking), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'voice live transcript hides Thinking while timed indicator owns it',
+    (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.pumpWidget(
+        wrapWithL10n(
+          Scaffold(
+            body: VoiceLiveTranscript(
+              state: VoiceCallState(
+                phase: VoiceCallPhase.thinking,
+                thinkingStartedAt: DateTime(2026),
+                callStartedAt: DateTime(2026),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(l10n.voicePanelThinking), findsNothing);
     },
   );
 
