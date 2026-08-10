@@ -347,6 +347,9 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
     } finally {
       if (identical(_activeStreamingSession, session)) {
         debugPrint('rex_voice_stream listener_detached');
+        VoiceTransportDiagnostics.instance.setWebSocketState(
+          streamEndedCleanly ? 'closed' : 'failed',
+        );
         _activeStreamingSession = null;
         _activeStreamingEventsTask = null;
         if (!streamEndedCleanly && state.isCallActive) {

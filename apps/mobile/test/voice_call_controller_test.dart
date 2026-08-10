@@ -12,6 +12,7 @@ import 'package:clarity/rex/chat/data/chat_api.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
+import 'package:clarity/rex/voice/data/voice_transport_diagnostics.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/audio_playback_service.dart';
 import 'package:clarity/rex/voice/data/audio_session_service.dart';
@@ -3432,7 +3433,7 @@ void main() {
   );
 
   test(
-    'manual-endpoint-only blocks REST VAD when stream connect fails',
+    'manual fallback: WS fail keeps Listening, red stop sends one chat turn, no sticky next turn',
     () async {
       final captureService = _RecordingAudioCaptureService();
       final cloudVoiceApi = _FakeCloudVoiceApi();
@@ -3474,25 +3475,63 @@ void main() {
       expect(await controller.startCall(), isTrue);
       await Future<void>.delayed(const Duration(milliseconds: 40));
 
-      // Must not fall into REST amplitude auto-submit.
+      final transport = VoiceTransportDiagnostics.instance;
+      expect(transport.streamingVoiceEnabled, isTrue);
+      expect(transport.manualEndpointOnly, isTrue);
+      expect(transport.webSocketState, 'failed');
+      expect(transport.transport, 'local_stt');
       expect(captureService.captureCount, 0);
       expect(cloudVoiceApi.voiceTurnCount, 0);
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
 
+      controller.updateTranscript('I want to wait');
+      controller.updateTranscript('I want to wait for the full license');
       controller.updateTranscript(
         'I want to wait for the full license before buying',
       );
       await Future<void>.delayed(Duration.zero);
+
+      // Screenshot / capture interruption must not submit.
+      controller.didChangeAppLifecycleState(AppLifecycleState.inactive);
+      await Future<void>.delayed(Duration.zero);
+      expect(chatApi.sentMessages, isEmpty);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      controller.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(chatApi.sentMessages, isEmpty);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+
+      const spoken = 'I want to wait for the full license before buying';
       expect(await controller.submitManualEndTurn(), isTrue);
       await playbackService.playStarted.future.timeout(
         const Duration(seconds: 1),
       );
 
       expect(cloudVoiceApi.voiceTurnCount, 0);
-      expect(chatApi.sentMessages, [
-        'I want to wait for the full license before buying',
-      ]);
+      expect(chatApi.sentMessages, [spoken]);
+      expect(cloudVoiceApi.synthesizedTexts, ['Chat fallback reply.']);
+      expect(transport.lastSubmitAuthority, 'red_stop');
+      expect(transport.transport, 'chat_synthesize_fallback');
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+
+      playbackService.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+
+      // Next turn must not inherit prior utterance as a sticky prefix.
+      controller.updateTranscript('$spoken and also the road test');
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(voiceCallProvider).currentTranscript,
+        'and also the road test',
+      );
+      final interim = container
+          .read(chatProvider)
+          .messages
+          .where((m) => m.role == ChatMessageRole.user)
+          .last;
+      expect(interim.content, 'and also the road test');
+      expect(chatApi.sentMessages, hasLength(1));
     },
   );
 

@@ -44,6 +44,10 @@ extension VoiceCallControllerCloudFallback on VoiceCallController {
     final turnSequence = ++_streamingTurnSequence;
     _streamingUtteranceEndSent = false;
     _beginVoiceTurn(turnSequence);
+    VoiceTransportDiagnostics.instance
+      ..setTransport('local_stt', reason: 'manual_listen_stream_unavailable')
+      ..setFallbackReason('stream_unavailable_manual_listen')
+      ..setConnectionError(streamError, code: 'stream_unavailable');
     _voiceTrace.record(
       event: 'manual_cloud_listen',
       reason: 'stream_unavailable',
@@ -93,6 +97,13 @@ extension VoiceCallControllerCloudFallback on VoiceCallController {
       return;
     }
 
+    VoiceTransportDiagnostics.instance
+      ..setTransport(
+        'rest_cloud_capture',
+        reason: 'streaming_unavailable_cloud_fallback',
+      )
+      ..setFallbackReason('rest_cloud_capture');
+
     final turnSequence = ++_streamingTurnSequence;
     _streamingUtteranceEndSent = false;
     _beginVoiceTurn(turnSequence);
@@ -133,6 +144,7 @@ extension VoiceCallControllerCloudFallback on VoiceCallController {
       return;
     }
 
+    VoiceTransportDiagnostics.instance.setSubmitAuthority('automatic:rest_vad');
     endpointUtterance();
     unawaited(_stopInterimTranscription());
     await _sendCapturedUtterance(recording, generation);

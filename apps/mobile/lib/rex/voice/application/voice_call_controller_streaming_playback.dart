@@ -169,6 +169,15 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
       return false;
     }
     _chatFallbackListenEpoch = listenKey;
+    VoiceTransportDiagnostics.instance
+      ..setTransport(
+        'chat_synthesize_fallback',
+        reason: force ? 'manual_red_stop' : 'auto_chat_fallback',
+      )
+      ..setFallbackReason(
+        force ? 'manual_red_stop_no_stream' : 'auto_chat_fallback',
+      )
+      ..setSubmitAuthority(force ? 'red_stop' : 'automatic:chat_fallback');
     // Streaming STT finished blank (common when only partials arrived). The
     // words are already on the client — complete via the same chat brain path
     // and Google TTS instead of wiping back to "Start talking".

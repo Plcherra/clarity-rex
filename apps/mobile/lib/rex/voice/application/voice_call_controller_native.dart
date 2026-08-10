@@ -50,6 +50,10 @@ extension VoiceCallControllerNativeSession on VoiceCallController {
     }
 
     _isUsingNativeVoice = true;
+    VoiceTransportDiagnostics.instance.setTransport(
+      'native_bridge',
+      reason: 'experimental_native_ios',
+    );
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       clearError: true,

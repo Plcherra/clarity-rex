@@ -28,6 +28,7 @@ import 'package:clarity/rex/voice/data/speech_to_text_service.dart';
 import 'package:clarity/rex/voice/data/streaming_audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/streaming_audio_playback_queue.dart';
 import 'package:clarity/rex/voice/data/streaming_voice_api.dart';
+import 'package:clarity/rex/voice/data/voice_transport_diagnostics.dart';
 import 'package:clarity/rex/voice/data/voice_vad_telemetry.dart';
 import 'package:clarity/rex/voice/application/voice_permission_service.dart';
 import 'package:clarity/rex/voice/application/voice_transcript_buffer.dart';
@@ -274,11 +275,23 @@ class VoiceCallController extends Notifier<VoiceCallState>
       sessionId: 'voice-$generation-${startedAt.millisecondsSinceEpoch}',
       buildSha: ClarityBuildProvenance.gitShaDefine,
     );
+    VoiceTransportDiagnostics.instance.resetForCall(
+      streamingEnabled: ref.read(streamingVoiceEnabledProvider),
+      cloudEnabled: ref.read(cloudVoiceEnabledProvider),
+      manualOnly: _manualEndpointOnly,
+    );
     _voiceTrace.record(
       event: 'call.start',
       reason: 'user',
       turnId: '0',
       fromPhase: VoiceCallPhase.idle.name,
+      toPhase: VoiceCallPhase.listening.name,
+    );
+    _voiceTrace.record(
+      event: 'transport.flags',
+      reason: VoiceTransportDiagnostics.instance.summaryLine(),
+      turnId: '0',
+      fromPhase: VoiceCallPhase.listening.name,
       toPhase: VoiceCallPhase.listening.name,
     );
 

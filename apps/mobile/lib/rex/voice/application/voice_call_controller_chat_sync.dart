@@ -245,6 +245,11 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     _cancelListeningEndpointTimeout();
     _cancelSpeechFinalGrace();
     _markVoiceTurnFinalize(turnSequence);
+    VoiceTransportDiagnostics.instance.setSubmitAuthority(
+      reason == VoiceTurnFinalizeReason.manualStop
+          ? 'red_stop'
+          : 'automatic:${reason.code}',
+    );
     _voiceTrace.record(
       event: 'utterance.end',
       reason: reason.code,

@@ -23,6 +23,9 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
           unawaited(staleSession.endSession());
         }
         try {
+          VoiceTransportDiagnostics.instance
+            ..setTransport('streaming_ws', reason: 'connect_attempt')
+            ..setWebSocketState('connecting');
           final connectedSession = await ref
               .read(streamingVoiceApiProvider)
               .connect(
@@ -33,14 +36,26 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
           _activeStreamingSession = connectedSession;
           _activeStreamingEventsTask = _handleStreamingEvents(connectedSession);
           unawaited(_activeStreamingEventsTask);
+          VoiceTransportDiagnostics.instance
+            ..setTransport('streaming_ws', reason: 'websocket_connected')
+            ..setWebSocketState('connected')
+            ..setConnectionError(null);
         } on StreamingVoiceApiException catch (error) {
           debugPrint('rex_voice_stream connect_failed ${error.message}');
+          VoiceTransportDiagnostics.instance
+            ..setWebSocketState('failed')
+            ..setConnectionError(error.message, code: 'stream_connect')
+            ..setFallbackReason('websocket_connect_failed');
           if (_isCurrentCall(generation)) {
             await _fallbackToCloudVoiceCapture(generation, error.message);
           }
           return;
-        } on Object {
+        } on Object catch (error) {
           debugPrint('rex_voice_stream connect_failed_unknown');
+          VoiceTransportDiagnostics.instance
+            ..setWebSocketState('failed')
+            ..setConnectionError(error, code: 'stream_connect_unknown')
+            ..setFallbackReason('websocket_connect_failed');
           if (_isCurrentCall(generation)) {
             await _fallbackToCloudVoiceCapture(
               generation,
@@ -243,6 +258,9 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     );
 
     try {
+      VoiceTransportDiagnostics.instance
+        ..setTransport('streaming_ws', reason: 'connect_attempt')
+        ..setWebSocketState('connecting');
       final connectedSession = await ref
           .read(streamingVoiceApiProvider)
           .connect(
@@ -262,14 +280,26 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       unawaited(_activeStreamingEventsTask);
       flushPendingChunks(connectedSession);
       notifyListeningReady();
+      VoiceTransportDiagnostics.instance
+        ..setTransport('streaming_ws', reason: 'websocket_connected')
+        ..setWebSocketState('connected')
+        ..setConnectionError(null);
     } on StreamingVoiceApiException catch (error) {
       await _streamingCaptureService.cancel();
+      VoiceTransportDiagnostics.instance
+        ..setWebSocketState('failed')
+        ..setConnectionError(error.message, code: 'stream_connect')
+        ..setFallbackReason('websocket_connect_failed');
       if (_isCurrentCall(generation)) {
         await _fallbackToCloudVoiceCapture(generation, error.message);
       }
       return;
-    } on Object {
+    } on Object catch (error) {
       await _streamingCaptureService.cancel();
+      VoiceTransportDiagnostics.instance
+        ..setWebSocketState('failed')
+        ..setConnectionError(error, code: 'stream_connect_unknown')
+        ..setFallbackReason('websocket_connect_failed');
       if (_isCurrentCall(generation)) {
         await _fallbackToCloudVoiceCapture(
           generation,

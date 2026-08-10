@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:clarity/core/release/clarity_build_provenance.dart';
+import 'package:clarity/rex/voice/data/voice_transport_diagnostics.dart';
 
 /// One ring-buffer row for owner-exportable voice session diagnostics.
 ///
@@ -101,6 +102,9 @@ class VoiceSessionTrace {
     }
     buffer.writeln('session_id=$_sessionId');
     buffer.writeln('entry_count=${_entries.length}');
+    for (final line in VoiceTransportDiagnostics.instance.ownerLines()) {
+      buffer.writeln(line);
+    }
     buffer.writeln(
       'columns=monotonic_ms|build_sha|session_id|turn_id|event|reason|transition',
     );

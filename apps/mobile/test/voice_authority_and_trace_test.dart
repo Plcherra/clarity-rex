@@ -1,6 +1,7 @@
 import 'package:clarity/core/release/clarity_build_provenance.dart';
 import 'package:clarity/rex/voice/application/voice_session_trace.dart';
 import 'package:clarity/rex/voice/data/voice_capture_config.dart';
+import 'package:clarity/rex/voice/data/voice_transport_diagnostics.dart';
 import 'package:clarity/rex/voice/data/voice_vad_telemetry.dart';
 import 'package:clarity/rex/voice/domain/streaming_capture_end_kind.dart';
 import 'package:clarity/rex/voice/domain/voice_turn_finalize_reason.dart';
@@ -38,6 +39,31 @@ void main() {
       VoiceTurnFinalizeReason.manualStop.requiresPriorVadSilence,
       isFalse,
     );
+  });
+
+  test('transport diagnostics sanitize secrets and expose flags', () {
+    final diagnostics = VoiceTransportDiagnostics();
+    diagnostics.resetForCall(
+      streamingEnabled: true,
+      cloudEnabled: true,
+      manualOnly: true,
+    );
+    diagnostics.setWebSocketState('failed');
+    diagnostics.setTicketResult('http_401');
+    diagnostics.setConnectionError(
+      'wss://api.example/voice/stream?ticket=super-secret',
+      code: 'stream_connect',
+    );
+    diagnostics.setTransport('local_stt', reason: 'manual_listen');
+    diagnostics.setFallbackReason('stream_unavailable_manual_listen');
+    diagnostics.setSubmitAuthority('red_stop');
+    final summary = diagnostics.summaryLine();
+    expect(summary, contains('manual=true'));
+    expect(summary, contains('transport=local_stt'));
+    expect(summary, contains('submit=red_stop'));
+    expect(summary, isNot(contains('super-secret')));
+    expect(diagnostics.connectionError, contains('[ws]'));
+    expect(diagnostics.ownerLines(), contains('websocket_state=failed'));
   });
 
   test('vad telemetry tracks last-speech refresh without storing audio', () {
