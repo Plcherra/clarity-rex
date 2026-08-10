@@ -41,17 +41,18 @@ CANDIDATES=()
 while IFS= read -r line; do
   [[ -n "${line}" ]] && CANDIDATES+=("${line}")
 done < <(
+  # Only active sites — never rewrite dated *.bak* copies under sites-available.
   sudo grep -RIlE 'proxy_pass[[:space:]].*127\.0\.0\.1:8011|server_name[[:space:]].*api\.goclarity\.app|server_name[[:space:]].*api\.rexpilot\.com' \
-    /etc/nginx/sites-enabled /etc/nginx/sites-available /etc/nginx/conf.d 2>/dev/null || true
+    /etc/nginx/sites-enabled 2>/dev/null || true
 )
 
-# Prefer the real site file over conf.d log snippets / duplicates.
 FILTERED=()
 for conf in "${CANDIDATES[@]}"; do
-  if [[ "${conf}" == "${LOG_FORMAT_DEST}" ]]; then
+  base="$(basename "${conf}")"
+  if [[ "${conf}" == "${LOG_FORMAT_DEST}" || "${base}" == *clarity-log-format* ]]; then
     continue
   fi
-  if [[ "${conf}" == *clarity-log-format* ]]; then
+  if [[ "${base}" == *.bak* || "${base}" == *~ ]]; then
     continue
   fi
   FILTERED+=("${conf}")

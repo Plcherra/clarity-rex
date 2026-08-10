@@ -920,6 +920,73 @@ void main() {
   );
 
   test(
+    'cloud-fallback soft-recover still chats on the second listen epoch',
+    () async {
+      // Mirrors prod when WS never hits uvicorn: connect fails → REST mic →
+      // empty capture with a known transcript → chat+TTS. Turn sequence stays
+      // unused; listen-epoch gating must allow the second utterance.
+      final captureService = _EmptyAfterReadyAudioCaptureService();
+      final chatApi = _RecordingChatApi();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final playbackService = _ControlledAudioPlaybackService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(captureService),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(
+            _FailingStreamingVoiceApi(),
+          ),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            const _NoopStreamingAudioCaptureService(),
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          chatApiProvider.overrideWithValue(chatApi),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+      controller.updateTranscript('First cloud turn');
+      captureService.finishEmptyAt(0);
+      await Future<void>.delayed(Duration.zero);
+      await playbackService.playStarted.future.timeout(
+        const Duration(seconds: 1),
+      );
+      expect(chatApi.sentMessages, ['First cloud turn']);
+
+      playbackService.armNextPlay();
+      playbackService.complete();
+      await Future<void>.delayed(Duration.zero);
+      await captureService.readyAt(1);
+      controller.updateTranscript('Second cloud turn');
+      captureService.finishEmptyAt(1);
+      await Future<void>.delayed(Duration.zero);
+      await playbackService.playStarted.future.timeout(
+        const Duration(seconds: 1),
+      );
+
+      expect(chatApi.sentMessages, ['First cloud turn', 'Second cloud turn']);
+      expect(cloudVoiceApi.synthesizedTexts.length, 2);
+    },
+  );
+
+  test(
     'second soft-recover after chat fallback still completes via chat',
     () async {
       final captureService = _ScriptedStreamingAudioCaptureService();

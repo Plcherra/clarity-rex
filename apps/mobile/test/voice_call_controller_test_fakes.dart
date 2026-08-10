@@ -523,14 +523,65 @@ class _RecordingAudioCaptureService implements AudioCaptureService {
 }
 
 class _FailingStreamingVoiceApi extends StreamingVoiceApi {
-  _FailingStreamingVoiceApi()
-    : super(
-        connector: (_, {headers}) async {
-          throw const StreamingVoiceApiException(
-            'Could not open Assistant voice stream. Check your connection and try again.',
-          );
-        },
-      );
+  _FailingStreamingVoiceApi() : super(baseUrl: 'http://localhost');
+
+  @override
+  Future<StreamingVoiceSession> connect({
+    String? conversationId,
+    String inputMimeType = 'audio/linear16',
+    int sampleRate = 16000,
+    String client = 'flutter_streaming',
+    Map<String, dynamic>? financialContext,
+  }) async {
+    throw const StreamingVoiceApiException(
+      'Could not open Assistant voice stream. Check your connection and try again.',
+    );
+  }
+}
+
+/// REST mic capture that can return empty after the test plants a transcript.
+class _EmptyAfterReadyAudioCaptureService implements AudioCaptureService {
+  final _ready = <Completer<void>>[];
+  final _finish = <Completer<RecordedVoiceAudio?>>[];
+
+  Future<void> readyAt(int index) async {
+    while (_ready.length <= index) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    await _ready[index].future;
+  }
+
+  void finishEmptyAt(int index) {
+    final completer = _finish[index];
+    if (!completer.isCompleted) {
+      completer.complete(null);
+    }
+  }
+
+  @override
+  Future<void> cancel() async {
+    for (final completer in _finish) {
+      if (!completer.isCompleted) {
+        completer.complete(null);
+      }
+    }
+  }
+
+  @override
+  Future<RecordedVoiceAudio?> captureUtterance({
+    required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
+    required SpeechStartCallback onSpeechStart,
+  }) async {
+    final ready = Completer<void>();
+    final finish = Completer<RecordedVoiceAudio?>();
+    _ready.add(ready);
+    _finish.add(finish);
+    onReady();
+    onSpeechStart();
+    ready.complete();
+    return finish.future;
+  }
 }
 
 class _FakeStreamingVoiceApi extends StreamingVoiceApi {

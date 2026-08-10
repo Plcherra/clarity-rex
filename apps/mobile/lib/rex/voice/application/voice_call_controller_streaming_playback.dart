@@ -148,14 +148,14 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     if (transcript.isEmpty || !state.isCallActive) {
       return false;
     }
-    // Gate on the *current* listen turn only. Preferring
-    // `_streamingTurnFinalizedSequence` blocked every later turn after the
-    // first finalize/fallback (transcript appeared, then soft-recover wiped).
-    final turnKey = _streamingTurnSequence;
-    if (_chatFallbackTurnSequence == turnKey) {
+    // One chat+TTS completion per listen cycle. Do not key on
+    // `_streamingTurnSequence` — REST/cloud fallback never increments it, so
+    // the second spoken utterance reused key 0 and soft-recovered instead.
+    final listenKey = _streamingListenEpoch;
+    if (_chatFallbackListenEpoch == listenKey) {
       return false;
     }
-    _chatFallbackTurnSequence = turnKey;
+    _chatFallbackListenEpoch = listenKey;
     // Streaming STT finished blank (common when only partials arrived). The
     // words are already on the client — complete via the same chat brain path
     // and Google TTS instead of wiping back to "Start talking".

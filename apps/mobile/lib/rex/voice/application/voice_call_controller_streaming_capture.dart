@@ -33,11 +33,13 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
           _activeStreamingEventsTask = _handleStreamingEvents(connectedSession);
           unawaited(_activeStreamingEventsTask);
         } on StreamingVoiceApiException catch (error) {
+          debugPrint('rex_voice_stream connect_failed ${error.message}');
           if (_isCurrentCall(generation)) {
             await _fallbackToCloudVoiceCapture(generation, error.message);
           }
           return;
         } on Object {
+          debugPrint('rex_voice_stream connect_failed_unknown');
           if (_isCurrentCall(generation)) {
             await _fallbackToCloudVoiceCapture(
               generation,
@@ -366,6 +368,10 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         state.isMuted) {
       return;
     }
+
+    final turnSequence = ++_streamingTurnSequence;
+    _streamingUtteranceEndSent = false;
+    _beginVoiceTurn(turnSequence);
 
     final RecordedVoiceAudio? recording;
     try {
