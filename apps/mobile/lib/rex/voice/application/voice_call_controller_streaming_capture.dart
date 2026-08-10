@@ -100,6 +100,13 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
               state = state.copyWith(isCapturingSpeech: false);
               _markVoiceTurnCaptureEnd(_streamingTurnSequence);
               _markVadSilenceReached(source: 'onSpeechEnded');
+              if (_manualEndpointOnly) {
+                debugPrint(
+                  'rex_voice_authority skip_auto_vad_submit '
+                  '${VoiceVadTelemetry.instance.summaryLine()}',
+                );
+                return;
+              }
               _endTurnFromLocalEndpoint(
                 generation,
                 reason: VoiceTurnFinalizeReason.vadSilence,
@@ -209,6 +216,13 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
           state = state.copyWith(isCapturingSpeech: false);
           _markVoiceTurnCaptureEnd(_streamingTurnSequence);
           _markVadSilenceReached(source: 'onSpeechEnded');
+          if (_manualEndpointOnly) {
+            debugPrint(
+              'rex_voice_authority skip_auto_vad_submit '
+              '${VoiceVadTelemetry.instance.summaryLine()}',
+            );
+            return;
+          }
           _endTurnFromLocalEndpoint(
             generation,
             reason: VoiceTurnFinalizeReason.vadSilence,

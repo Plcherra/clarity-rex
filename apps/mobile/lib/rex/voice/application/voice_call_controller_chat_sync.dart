@@ -149,6 +149,22 @@ extension VoiceCallControllerChatSync on VoiceCallController {
       );
       return;
     }
+    // Diagnostic release builds: only red stop (or chat fallback) may submit.
+    if (_manualEndpointOnly &&
+        reason != VoiceTurnFinalizeReason.manualStop &&
+        reason != VoiceTurnFinalizeReason.chatFallback) {
+      _voiceTrace.record(
+        event: 'finalize.rejected',
+        reason: 'manual_endpoint_only:${reason.code}',
+        turnId: '$_streamingTurnSequence',
+        fromPhase: state.phase.name,
+        toPhase: state.phase.name,
+      );
+      debugPrint(
+        'rex_voice_authority manual_endpoint_only reject reason=${reason.code}',
+      );
+      return;
+    }
     if (reason.requiresPriorVadSilence && !_vadSilenceReachedForTurn) {
       _voiceTrace.record(
         event: 'finalize.rejected',

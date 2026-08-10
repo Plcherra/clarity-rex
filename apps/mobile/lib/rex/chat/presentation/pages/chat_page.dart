@@ -540,7 +540,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
                 InlineVoiceCallPanel(
                   state: voiceCall,
                   onRetry: _startVoiceCall,
-                  onEnd: () async => voiceController.endCall(),
+                  onEnd: () async => voiceController.endTurnOrCall(),
                   onToggleMute: voiceController.toggleMuted,
                   onOpenSettings: _openVoiceMicSettings,
                 ),

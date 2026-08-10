@@ -19,6 +19,7 @@ import 'package:clarity/rex/voice/data/background_voice_service.dart';
 import 'package:clarity/rex/voice/data/cloud_voice_api.dart';
 import 'package:clarity/rex/voice/data/streaming_audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/streaming_voice_api.dart';
+import 'package:clarity/rex/voice/domain/streaming_capture_end_kind.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
 import 'package:flutter/material.dart';
@@ -3427,6 +3428,83 @@ void main() {
         isEmpty,
       );
       expect(streamingApi.connectCount, 1);
+    },
+  );
+
+  test(
+    'manual-endpoint-only suppresses VAD submit until red stop',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          voiceManualEndpointOnlyProvider.overrideWithValue(true),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      const spoken =
+          'I am speaking continuously for a long time about the road test '
+          'and whether I should wait for the full license before buying';
+      captureService.startCurrentSpeech();
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': spoken,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      // Local VAD would have fired — must not submit in manual-endpoint mode.
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      await captureService.readyAt(1);
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      expect(container.read(voiceCallProvider).currentTranscript, spoken);
+      expect(
+        streamingApi.socket.sentEvents.where((e) => e == 'utterance.end'),
+        isEmpty,
+      );
+
+      expect(await controller.submitManualEndTurn(), isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      expect(
+        streamingApi.socket.sentEvents.where((e) => e == 'utterance.end'),
+        hasLength(1),
+      );
+      final endPayload = streamingApi.socket.sentPayloads.lastWhere(
+        (p) => p['event'] == 'utterance.end',
+      );
+      expect(endPayload['transcript'], spoken);
     },
   );
 

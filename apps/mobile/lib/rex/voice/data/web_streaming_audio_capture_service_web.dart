@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:clarity/rex/voice/data/streaming_audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/voice_capture_config.dart';
 import 'package:clarity/rex/voice/data/voice_pcm16.dart';
+import 'package:clarity/rex/voice/data/voice_vad_telemetry.dart';
 import 'package:clarity/rex/voice/data/web_pcm_microphone_engine.dart';
 import 'package:clarity/rex/voice/domain/streaming_capture_end_kind.dart';
 
@@ -45,6 +46,11 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
     );
     _captureCompleter = Completer<StreamingUtteranceCaptureResult>();
     var speechEndedNotified = false;
+    VoiceVadTelemetry.instance.resetForCapture(
+      config: endpointConfig,
+      pcmFormat: 'pcm16le/16kHz/mono',
+      audioRoute: 'web-pcm',
+    );
 
     final session = await WebPcmMicrophoneEngine.instance.startCapture(
       sampleRate: 16000,
@@ -60,9 +66,20 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
     _streamSubscription = session.stream.listen(
       (chunk) {
         unawaited(onAudioChunk(chunk));
+        final now = _now();
+        final currentDb = pcm16Decibels(chunk);
         final update = detector.addAmplitude(
-          currentDb: pcm16Decibels(chunk),
-          now: _now(),
+          currentDb: currentDb,
+          now: now,
+        );
+        VoiceVadTelemetry.instance.observeChunk(
+          currentDb: currentDb,
+          byteCount: chunk.length,
+          now: now,
+          lastSpeechRefreshed: update.lastSpeechRefreshed,
+          wouldEndpoint: update.endpointReached,
+          silenceMs: update.silenceMs,
+          hasSpeech: detector.hasSpeech,
         );
         if (update.speechStarted) {
           onSpeechStart();

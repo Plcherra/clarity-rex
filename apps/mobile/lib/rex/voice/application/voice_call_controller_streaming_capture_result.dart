@@ -55,6 +55,22 @@ extension VoiceCallControllerStreamingCaptureResult on VoiceCallController {
     required int listenEpoch,
   }) async {
     _markVadSilenceReached(source: 'capture.vadSilence');
+    // Diagnostic: local amplitude endpoint must not submit — keep listening.
+    if (_manualEndpointOnly) {
+      debugPrint(
+        'rex_voice_authority vad_silence_roll_manual_only '
+        '${VoiceVadTelemetry.instance.summaryLine()}',
+      );
+      _voiceTrace.record(
+        event: 'vad.would_submit',
+        reason: 'suppressed_manual_endpoint_only',
+        turnId: '$_streamingTurnSequence',
+        fromPhase: state.phase.name,
+        toPhase: state.phase.name,
+      );
+      await _rollCaptureAfterMaxDuration(generation);
+      return;
+    }
     if (!captureResult.hasSpeech) {
       if (state.phase == VoiceCallPhase.thinking ||
           state.phase == VoiceCallPhase.speaking) {

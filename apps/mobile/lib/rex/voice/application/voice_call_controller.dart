@@ -28,6 +28,7 @@ import 'package:clarity/rex/voice/data/speech_to_text_service.dart';
 import 'package:clarity/rex/voice/data/streaming_audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/streaming_audio_playback_queue.dart';
 import 'package:clarity/rex/voice/data/streaming_voice_api.dart';
+import 'package:clarity/rex/voice/data/voice_vad_telemetry.dart';
 import 'package:clarity/rex/voice/application/voice_permission_service.dart';
 import 'package:clarity/rex/voice/application/voice_transcript_buffer.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
@@ -56,6 +57,7 @@ part 'voice_call_controller_l10n.dart';
 part 'voice_call_controller_dependencies.dart';
 part 'voice_call_controller_chat_sync.dart';
 part 'voice_call_controller_turn_timing.dart';
+part 'voice_call_controller_session_controls.dart';
 
 final voiceCallProvider = NotifierProvider<VoiceCallController, VoiceCallState>(
   VoiceCallController.new,
@@ -98,6 +100,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
   /// Set only by genuine local VAD silence for the active turn. STT idle /
   /// speech_final catch-up cannot submit without this flag.
   var _vadSilenceReachedForTurn = false;
+
+  bool get _manualEndpointOnly =>
+      ref.read(voiceManualEndpointOnlyProvider);
   var _isUsingNativeVoice = false;
   var _warnedLegacyNativeVoiceFlag = false;
   var _isAwaitingFollowUpSpeech = false;
@@ -527,91 +532,4 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _startListeningCycle(generation, initialAudioChunks: initialAudioChunks);
   }
 
-  void setMuted(bool isMuted) {
-    if (!state.isCallActive) {
-      return;
-    }
-
-    state = state.copyWith(isMuted: isMuted);
-    if (_isUsingNativeVoice) {
-      unawaited(_nativeVoiceSessionService.setMuted(isMuted));
-      return;
-    }
-    if (isMuted) {
-      _callGeneration++;
-      _cancelThinkingTimeout();
-      _cancelNoSpeechTimeout();
-      unawaited(_stopInterimTranscription());
-      unawaited(_captureService.cancel());
-      unawaited(_streamingCaptureService.cancel());
-      _stopBargeInMonitoring();
-      final streamingSession = _activeStreamingSession;
-      _activeStreamingSession = null;
-      _activeStreamingEventsTask = null;
-      streamingSession?.interrupt();
-      unawaited(_streamingPlaybackQueue.cancel());
-      unawaited(streamingSession?.endSession());
-    } else if (state.phase == VoiceCallPhase.listening) {
-      _startListeningCycle(++_callGeneration);
-    }
-  }
-
-  void toggleMuted() {
-    setMuted(!state.isMuted);
-  }
-
-  void fail(String message) {
-    _callGeneration++;
-    _isAwaitingFollowUpSpeech = false;
-    _emptyVoiceTurnRecoveryCount = 0;
-    _cancelThinkingTimeout();
-    _cancelNoSpeechTimeout();
-    unawaited(_stopInterimTranscription());
-    _stopNativeVoiceSession();
-    unawaited(_captureService.cancel());
-    unawaited(_streamingCaptureService.cancel());
-    _stopBargeInMonitoring();
-    final streamingSession = _activeStreamingSession;
-    _activeStreamingSession = null;
-    _activeStreamingEventsTask = null;
-    streamingSession?.interrupt();
-    unawaited(_streamingPlaybackQueue.cancel());
-    unawaited(streamingSession?.endSession());
-    unawaited(_playbackService.stop());
-    unawaited(_backgroundVoiceService.stop());
-    unawaited(_audioSessionService.setActive(false));
-    state = state.copyWith(
-      phase: VoiceCallPhase.failed,
-      isCapturingSpeech: false,
-      errorMessage: message,
-      callEndedAt: ref.read(voiceCallNowProvider)(),
-      clearCurrentTranscript: true,
-    );
-    _clearVisibleTranscript();
-  }
-
-  Future<void> endCall() async {
-    if (!state.canEndCall) {
-      return;
-    }
-
-    _callGeneration++;
-    _isAwaitingFollowUpSpeech = false;
-    _emptyVoiceTurnRecoveryCount = 0;
-    _cancelThinkingTimeout();
-    _cancelNoSpeechTimeout();
-    await _releaseVoiceHardware();
-    state = state.copyWith(
-      phase: VoiceCallPhase.idle,
-      isCapturingSpeech: false,
-      callEndedAt: ref.read(voiceCallNowProvider)(),
-      clearCurrentTranscript: true,
-      clearError: true,
-    );
-    _clearVisibleTranscript();
-  }
-
-  Future<void> openVoiceSettings() async {
-    await ref.read(microphonePermissionProvider).openSettings();
-  }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'package:clarity/core/release/clarity_build_provenance.dart';
 import 'package:clarity/rex/voice/application/voice_session_trace.dart';
+import 'package:clarity/rex/voice/data/voice_vad_telemetry.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_card.dart';
 
@@ -92,6 +93,21 @@ class _OwnerDebugPanelState extends State<OwnerDebugPanel> {
           ],
           const SizedBox(height: 14),
           Text(
+            'VAD telemetry (no audio)',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          SelectableText(
+            VoiceVadTelemetry.instance.summaryLine(),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontFamily: 'monospace',
+              color: colors.textMuted,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
             'Voice session trace',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w800,
@@ -111,6 +127,20 @@ class _OwnerDebugPanelState extends State<OwnerDebugPanel> {
               FilledButton.tonal(
                 onPressed: _copyTrace,
                 child: const Text('Copy voice trace'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await Clipboard.setData(
+                    ClipboardData(text: VoiceVadTelemetry.instance.summaryLine()),
+                  );
+                  if (!mounted) {
+                    return;
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Copied VAD telemetry')),
+                  );
+                },
+                child: const Text('Copy VAD telemetry'),
               ),
               TextButton(
                 onPressed: () {

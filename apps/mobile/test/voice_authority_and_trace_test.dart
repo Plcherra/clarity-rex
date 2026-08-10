@@ -1,5 +1,7 @@
 import 'package:clarity/core/release/clarity_build_provenance.dart';
 import 'package:clarity/rex/voice/application/voice_session_trace.dart';
+import 'package:clarity/rex/voice/data/voice_capture_config.dart';
+import 'package:clarity/rex/voice/data/voice_vad_telemetry.dart';
 import 'package:clarity/rex/voice/domain/streaming_capture_end_kind.dart';
 import 'package:clarity/rex/voice/domain/voice_turn_finalize_reason.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +30,49 @@ void main() {
       isTrue,
     );
     expect(VoiceTurnFinalizeReason.vadSilence.requiresPriorVadSilence, isFalse);
+  });
+
+  test('manualStop may submit without prior VAD', () {
+    expect(VoiceTurnFinalizeReason.manualStop.maySubmitTranscript, isTrue);
+    expect(
+      VoiceTurnFinalizeReason.manualStop.requiresPriorVadSilence,
+      isFalse,
+    );
+  });
+
+  test('vad telemetry tracks last-speech refresh without storing audio', () {
+    final telemetry = VoiceVadTelemetry();
+    const config = VoiceCaptureConfig(
+      speechStartThresholdDb: -50,
+      silenceThresholdDb: -58,
+      silenceAfterSpeech: Duration(milliseconds: 4000),
+    );
+    telemetry.resetForCapture(config: config, audioRoute: 'test');
+    final t0 = DateTime(2026, 8, 10, 12);
+    telemetry.observeChunk(
+      currentDb: -40,
+      byteCount: 640,
+      now: t0,
+      lastSpeechRefreshed: true,
+      wouldEndpoint: false,
+      silenceMs: 0,
+      hasSpeech: true,
+    );
+    telemetry.observeChunk(
+      currentDb: -70,
+      byteCount: 640,
+      now: t0.add(const Duration(milliseconds: 450)),
+      lastSpeechRefreshed: false,
+      wouldEndpoint: true,
+      silenceMs: 4100,
+      hasSpeech: true,
+    );
+    final summary = telemetry.summaryLine();
+    expect(summary, contains('last_speech_refresh=1'));
+    expect(summary, contains('would_endpoint=1'));
+    expect(summary, contains('silence_at_would=4100ms'));
+    expect(summary, isNot(contains('pcm_samples')));
+    expect(telemetry.toMap()['byte_count'], 1280);
   });
 
   test('voice session trace export omits secrets and stays bounded', () {

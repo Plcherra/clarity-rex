@@ -120,6 +120,22 @@ final voiceCallPlatformProvider = Provider<TargetPlatform>(
   (ref) => defaultTargetPlatform,
 );
 
+/// Diagnostic: release native builds submit only on red stop (not local VAD).
+/// Override with `--dart-define=REX_VOICE_MANUAL_ENDPOINT_ONLY=true|false`.
+final voiceManualEndpointOnlyProvider = Provider<bool>((ref) {
+  const forced = String.fromEnvironment('REX_VOICE_MANUAL_ENDPOINT_ONLY');
+  if (forced == 'true') {
+    return true;
+  }
+  if (forced == 'false') {
+    return false;
+  }
+  return !kIsWeb &&
+      kReleaseMode &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android);
+});
+
 final voiceCaptureConfigProvider = Provider<VoiceCaptureConfig>(
   (ref) => kIsWeb
       ? const VoiceCaptureConfig(

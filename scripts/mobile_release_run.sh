@@ -101,6 +101,11 @@ if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
   exit 1
 fi
 
+CLARITY_GIT_SHA="${CLARITY_GIT_SHA:-$(git -C "${ROOT_DIR}" rev-parse HEAD 2>/dev/null || echo local)}"
+CLARITY_GIT_BRANCH="${CLARITY_GIT_BRANCH:-$(git -C "${ROOT_DIR}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo local)}"
+CLARITY_BUILD_TIMESTAMP="${CLARITY_BUILD_TIMESTAMP:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}"
+REX_VOICE_MANUAL_ENDPOINT_ONLY="${REX_VOICE_MANUAL_ENDPOINT_ONLY:-true}"
+
 command=(
   flutter run
   -d "${DEVICE_ID}"
@@ -111,6 +116,10 @@ command=(
   "--dart-define=REX_CLOUD_VOICE_ENABLED=${REX_CLOUD_VOICE_ENABLED}"
   "--dart-define=REX_STREAMING_VOICE_ENABLED=${REX_STREAMING_VOICE_ENABLED}"
   "--dart-define=SUPABASE_AUTH_REDIRECT_URL=https://goclarity.app/auth/confirmed/"
+  "--dart-define=CLARITY_GIT_SHA=${CLARITY_GIT_SHA}"
+  "--dart-define=CLARITY_GIT_BRANCH=${CLARITY_GIT_BRANCH}"
+  "--dart-define=CLARITY_BUILD_TIMESTAMP=${CLARITY_BUILD_TIMESTAMP}"
+  "--dart-define=REX_VOICE_MANUAL_ENDPOINT_ONLY=${REX_VOICE_MANUAL_ENDPOINT_ONLY}"
 )
 
 if [ -n "${SENTRY_DSN:-}" ]; then
@@ -126,6 +135,12 @@ if [ "${1:-}" = "--print" ]; then
   printf '\n'
   exit 0
 fi
+
+echo "Release-run provenance:"
+echo "  CLARITY_GIT_SHA=${CLARITY_GIT_SHA}"
+echo "  CLARITY_GIT_BRANCH=${CLARITY_GIT_BRANCH}"
+echo "  CLARITY_BUILD_TIMESTAMP=${CLARITY_BUILD_TIMESTAMP}"
+echo "  REX_VOICE_MANUAL_ENDPOINT_ONLY=${REX_VOICE_MANUAL_ENDPOINT_ONLY}"
 
 cd "${MOBILE_DIR}"
 exec "${command[@]}"
