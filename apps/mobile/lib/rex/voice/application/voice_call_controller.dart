@@ -75,6 +75,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _isBargeInMonitoring = false;
   var _isHandlingLifecycleResume = false;
   var _isAppInForeground = true;
+  /// Tracks prior lifecycle so screenshot/Control Center (inactive→resumed)
+  /// preserves the voice session instead of tearing it down.
+  AppLifecycleState? _lastAppLifecycleState;
   var _isUsingNativeVoice = false;
   var _warnedLegacyNativeVoiceFlag = false;
   var _isAwaitingFollowUpSpeech = false;
@@ -179,44 +182,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
-      _isAppInForeground = false;
-      unawaited(endCall());
-      return;
-    }
-    if (state == AppLifecycleState.resumed) {
-      _isAppInForeground = true;
-    } else if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused ||
-        state == AppLifecycleState.hidden) {
-      _isAppInForeground = false;
-    }
-
-    if (!this.state.isCallActive) {
-      return;
-    }
-
-    if (_isUsingNativeVoice) {
-      unawaited(
-        _nativeVoiceSessionService.setForegroundState(
-          state == AppLifecycleState.resumed,
-        ),
-      );
-      return;
-    }
-
-    if (state == AppLifecycleState.resumed) {
-      unawaited(_handleLifecycleResume());
-      return;
-    }
-
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.hidden) {
-      if (AppCapabilities.instance.supportsBackgroundVoice) {
-        unawaited(_backgroundVoiceService.start());
-      }
-      return;
-    }
+    _onAppLifecycleStateChanged(state);
   }
 
   Future<bool> startCall({String? conversationId}) async {

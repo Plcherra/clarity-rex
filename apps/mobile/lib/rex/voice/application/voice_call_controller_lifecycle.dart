@@ -35,12 +35,83 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
       if (streamingSession != null) streamingSession.endSession(),
     ]);
   }
-  Future<void> _handleLifecycleResume() async {
+
+  /// Lifecycle contract for an active streaming voice call:
+  /// - [AppLifecycleState.inactive]: preserve completely (screenshot / CC)
+  /// - [AppLifecycleState.resumed]: soft restore; never recreate a healthy call
+  /// - [AppLifecycleState.paused] / [AppLifecycleState.hidden]: keep call;
+  ///   ensure background audio session stays armed on native mobile
+  /// - [AppLifecycleState.detached]: end the call
+  void _onAppLifecycleStateChanged(AppLifecycleState next) {
+    final previous = _lastAppLifecycleState;
+    _lastAppLifecycleState = next;
+
+    if (next == AppLifecycleState.detached) {
+      _isAppInForeground = false;
+      unawaited(endCall());
+      return;
+    }
+
+    if (next == AppLifecycleState.resumed) {
+      _isAppInForeground = true;
+    } else if (next == AppLifecycleState.inactive ||
+        next == AppLifecycleState.paused ||
+        next == AppLifecycleState.hidden) {
+      // Suppress no-speech fail while UI is obscured; do not tear down audio.
+      _isAppInForeground = false;
+    }
+
+    if (!state.isCallActive) {
+      return;
+    }
+
+    if (_isUsingNativeVoice) {
+      unawaited(
+        _nativeVoiceSessionService.setForegroundState(
+          next == AppLifecycleState.resumed,
+        ),
+      );
+      return;
+    }
+
+    // Screenshot, Control Center, notification shade, app-switch peek.
+    if (next == AppLifecycleState.inactive) {
+      debugPrint('rex_voice_lifecycle inactive_preserve_session');
+      return;
+    }
+
+    if (next == AppLifecycleState.paused || next == AppLifecycleState.hidden) {
+      if (AppCapabilities.instance.supportsBackgroundVoice) {
+        unawaited(_backgroundVoiceService.start());
+      }
+      debugPrint('rex_voice_lifecycle background_keep_session state=$next');
+      return;
+    }
+
+    if (next == AppLifecycleState.resumed) {
+      final fromTransientInactive = previous == AppLifecycleState.inactive;
+      final fromTrueBackground =
+          previous == AppLifecycleState.paused ||
+          previous == AppLifecycleState.hidden;
+      unawaited(
+        _handleLifecycleResume(
+          fromTransientInactive: fromTransientInactive,
+          returningFromTrueBackground: fromTrueBackground,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleLifecycleResume({
+    required bool fromTransientInactive,
+    required bool returningFromTrueBackground,
+  }) async {
     if (_isHandlingLifecycleResume) {
       return;
     }
     _isHandlingLifecycleResume = true;
     try {
+      // Reaffirm route / session after Control Center or lock-screen overlays.
       await _audioSessionService.configureForVoiceTurn();
       await _audioSessionService.preferLoudSpeaker();
       if (AppCapabilities.instance.supportsBackgroundVoice) {
@@ -51,9 +122,22 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
           !state.isMuted) {
         _armThinkingTimeout(_callGeneration);
       }
+
+      // inactive → resumed must never recreate mic, WS, timers, or turn state.
+      if (fromTransientInactive || !returningFromTrueBackground) {
+        debugPrint('rex_voice_lifecycle soft_resume preserve_session');
+        return;
+      }
+
       if (!state.isCallActive ||
           state.phase != VoiceCallPhase.listening ||
           state.isMuted) {
+        return;
+      }
+
+      // True background return with a healthy listen cycle: leave it alone.
+      if (_hasActiveStreamingListenCycle() && _streamingSessionIsConnected()) {
+        debugPrint('rex_voice_lifecycle background_resume keep_listen_cycle');
         return;
       }
 
@@ -61,23 +145,25 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
         return;
       }
 
+      // Capture/session died while away — recover listen without killing the call.
+      debugPrint('rex_voice_lifecycle background_resume recover_listen_cycle');
       final generation = ++_callGeneration;
       await _captureService.cancel();
       await _streamingCaptureService.cancel();
       _stopBargeInMonitoring();
-      final streamingSession = _activeStreamingSession;
-      _activeStreamingSession = null;
-      _activeStreamingEventsTask = null;
-      streamingSession?.interrupt();
-      unawaited(streamingSession?.endSession());
+      if (!_streamingSessionIsConnected()) {
+        final streamingSession = _activeStreamingSession;
+        _activeStreamingSession = null;
+        _activeStreamingEventsTask = null;
+        streamingSession?.interrupt();
+        unawaited(streamingSession?.endSession());
+      }
 
       state = state.copyWith(
         phase: VoiceCallPhase.listening,
         isCapturingSpeech: false,
-        clearCurrentTranscript: true,
         clearError: true,
       );
-      _clearVisibleTranscript();
       _startListeningCycle(generation);
     } finally {
       _isHandlingLifecycleResume = false;
@@ -142,6 +228,11 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
       }
 
       if (_finishPendingStreamingUtteranceOnResume()) {
+        return;
+      }
+
+      // Preserve a healthy web listen cycle across tab focus blips.
+      if (_hasActiveStreamingListenCycle() && _streamingSessionIsConnected()) {
         return;
       }
 

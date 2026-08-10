@@ -41,7 +41,9 @@ class PackageVoiceAudioSessionService implements VoiceAudioSessionService {
               AVAudioSessionCategoryOptions.allowBluetoothA2dp |
               AVAudioSessionCategoryOptions.allowAirPlay |
               AVAudioSessionCategoryOptions.defaultToSpeaker,
-          avAudioSessionMode: AVAudioSessionMode.spokenAudio,
+          // voiceChat enables system AEC — required once mic stays open while
+          // Rex speaks (barge-in / conversational duplex).
+          avAudioSessionMode: AVAudioSessionMode.voiceChat,
           androidAudioAttributes: const AndroidAudioAttributes(
             contentType: AndroidAudioContentType.speech,
             usage: AndroidAudioUsage.voiceCommunication,

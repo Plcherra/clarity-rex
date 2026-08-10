@@ -122,31 +122,37 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
                 eventTranscript,
                 bufferTranscript,
               ]).trim();
-              final alreadyFinalized =
+              final currentTurnFinalized =
                   _streamingTurnFinalizedSequence == _streamingTurnSequence ||
-                  _streamingUtteranceEndSent ||
-                  _suppressStaleSpeechFinal;
+                  _streamingUtteranceEndSent;
               // Late speech_final after VAD/utterance.end finalize: polish only.
-              // Merge with the tentative finalize text — do not strip against it
-              // as a "prior utterance" or upgrades become a short suffix.
-              if (alreadyFinalized ||
+              // Stay on the same utterance lineage as the sent authority — never
+              // preferFullest with lastCompleted (that re-stacks turn N).
+              // Note: _suppressStaleSpeechFinal is NOT a finalize gate — a new
+              // listen cycle must still accept strip-surviving speech_final.
+              if (currentTurnFinalized ||
                   state.phase != VoiceCallPhase.listening) {
                 if (mergedTranscript.isNotEmpty &&
                     (_streamingTurnFinalizedSequence ==
                             _streamingTurnSequence ||
                         state.phase == VoiceCallPhase.thinking ||
                         state.phase == VoiceCallPhase.speaking)) {
-                  final upgraded = VoiceTranscriptBuffer.preferFullest([
-                    mergedTranscript,
-                    _pendingUtteranceTranscript ?? '',
-                    _lastCompletedUtteranceTranscript ?? '',
-                  ]).trim();
-                  _finalizeVoiceTranscriptInChat(
-                    finalTranscript: upgraded,
-                    rememberCompleted: true,
-                    stripPriorUtterance: false,
-                  );
-                  _pendingUtteranceTranscript = upgraded;
+                  final authority = (_pendingUtteranceTranscript ?? '').trim();
+                  final upgraded = VoiceTranscriptBuffer.upgradeAuthority(
+                    authority: authority,
+                    candidate: VoiceTranscriptBuffer.preferFullest([
+                      mergedTranscript,
+                      authority,
+                    ]),
+                  ).trim();
+                  if (upgraded.isNotEmpty && upgraded != authority) {
+                    _finalizeVoiceTranscriptInChat(
+                      finalTranscript: upgraded,
+                      rememberCompleted: true,
+                      stripPriorUtterance: false,
+                    );
+                    _pendingUtteranceTranscript = upgraded;
+                  }
                 }
                 break;
               }
@@ -156,7 +162,13 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
                     priorUtterance: _lastCompletedUtteranceTranscript,
                   ).trim();
               if (preferredTranscript.isEmpty) {
+                // Pure replay of the prior completed utterance — ignore.
                 break;
+              }
+              // Cross-turn suppress: only accept STT that survived sticky strip.
+              // updateTranscript clears suppress once fresh evidence lands.
+              if (_suppressStaleSpeechFinal) {
+                _suppressStaleSpeechFinal = false;
               }
               // flutter_streaming must NOT close the turn on speech_final while
               // the mic is still open — Deepgram fires that on short pauses

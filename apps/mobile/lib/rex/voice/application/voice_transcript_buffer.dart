@@ -47,6 +47,54 @@ class VoiceTranscriptBuffer {
     return buffer.visible;
   }
 
+  /// Keep late STT polish on the same utterance lineage as [authority].
+  /// Rejects sticky prior-turn prefixes that would re-stack into the bubble
+  /// after finalize already chose the displayed/sent text.
+  static String upgradeAuthority({
+    required String authority,
+    required String candidate,
+  }) {
+    final current = _normalize(authority);
+    final next = _normalize(candidate);
+    if (current.isEmpty) {
+      return next;
+    }
+    if (next.isEmpty || _sameForComparison(current, next)) {
+      return current;
+    }
+
+    final authorityWords = _wordsForComparison(current);
+    final candidateWords = _wordsForComparison(next);
+    if (authorityWords.isEmpty || candidateWords.isEmpty) {
+      return current;
+    }
+
+    // Same turn, longer final (authority is a prefix of candidate).
+    final prefixMatch = _fuzzyPrefixWordCount(authorityWords, candidateWords);
+    if (_strongPrefixCoverage(prefixMatch, authorityWords.length) &&
+        candidateWords.length >= authorityWords.length) {
+      return next;
+    }
+
+    // Candidate is a weaker prefix of authority — keep authority.
+    final reverseMatch = _fuzzyPrefixWordCount(candidateWords, authorityWords);
+    if (_strongPrefixCoverage(reverseMatch, candidateWords.length) &&
+        authorityWords.length >= candidateWords.length) {
+      return current;
+    }
+
+    // Sticky prior + authority (+ optional extension): drop the leading junk.
+    final anchor = _findFuzzySubsequenceStart(candidateWords, authorityWords);
+    if (anchor > 0) {
+      final displayWords = next.split(' ');
+      if (displayWords.length > anchor) {
+        return displayWords.skip(anchor).join(' ').trim();
+      }
+    }
+
+    return current;
+  }
+
   /// Drop a prior completed utterance when STT/interim replays it as a prefix
   /// of the next turn. Tolerates small STT drift (mind/mine, permit/permits).
   static String stripLeadingUtterance(
@@ -69,17 +117,7 @@ class VoiceTranscriptBuffer {
     }
 
     final matched = _fuzzyPrefixWordCount(priorWords, currentWords);
-    if (matched <= 0) {
-      return current;
-    }
-
-    final coverage = matched / priorWords.length;
-    // Require a strong prefix match so unrelated turns are not mangled.
-    final strongMatch =
-        coverage >= 0.8 ||
-        (matched >= priorWords.length - 1 && priorWords.length >= 4) ||
-        (matched >= 8 && coverage >= 0.65);
-    if (!strongMatch) {
+    if (matched <= 0 || !_strongPrefixCoverage(matched, priorWords.length)) {
       return current;
     }
 
@@ -255,6 +293,37 @@ class VoiceTranscriptBuffer {
         .split(' ')
         .where((word) => word.isNotEmpty)
         .toList(growable: false);
+  }
+
+  static bool _strongPrefixCoverage(int matched, int priorLength) {
+    if (matched <= 0 || priorLength <= 0) {
+      return false;
+    }
+    final coverage = matched / priorLength;
+    // Require a strong prefix match so unrelated turns are not mangled.
+    return coverage >= 0.8 ||
+        (matched >= priorLength - 1 && priorLength >= 4) ||
+        (matched >= 8 && coverage >= 0.65);
+  }
+
+  static int _findFuzzySubsequenceStart(
+    List<String> haystack,
+    List<String> needle,
+  ) {
+    if (needle.isEmpty || haystack.length < needle.length) {
+      return -1;
+    }
+    final lastStart = haystack.length - needle.length;
+    for (var start = 0; start <= lastStart; start++) {
+      final matched = _fuzzyPrefixWordCount(
+        needle,
+        haystack.sublist(start),
+      );
+      if (_strongPrefixCoverage(matched, needle.length)) {
+        return start;
+      }
+    }
+    return -1;
   }
 
   static int _fuzzyPrefixWordCount(

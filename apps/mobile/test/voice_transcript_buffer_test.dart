@@ -114,6 +114,29 @@ void main() {
       );
     });
 
+    test('upgradeAuthority extends same-turn finals without stacking prior', () {
+      const authority =
+          'and I know it is possible with the CBR 600';
+      const stickyCandidate =
+          'OK so I am about to buy my first bike when I got my learning permit '
+          'and I know it is possible with the CBR 600RR';
+
+      expect(
+        VoiceTranscriptBuffer.upgradeAuthority(
+          authority: authority,
+          candidate: stickyCandidate,
+        ),
+        'and I know it is possible with the CBR 600RR',
+      );
+      expect(
+        VoiceTranscriptBuffer.upgradeAuthority(
+          authority: authority,
+          candidate: '$authority something more',
+        ),
+        '$authority something more',
+      );
+    });
+
     test('collapses adjacent repeated short phrases from overlapping finals', () {
       final buffer = VoiceTranscriptBuffer();
       buffer.appendFinal('I guess');

@@ -8,18 +8,18 @@ class SceneDelegate: FlutterSceneDelegate {
     options connectionOptions: UIScene.ConnectionOptions
   ) {
     super.scene(scene, willConnectTo: session, options: connectionOptions)
-    installPlaidLinkBridge()
+    installNativeBridges()
   }
 
   override func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
-    installPlaidLinkBridge()
+    installNativeBridges()
     if PlaidLinkBridge.shared.continueFrom(userActivity: userActivity) {
       return
     }
     super.scene(scene, continue: userActivity)
   }
 
-  private func installPlaidLinkBridge() {
+  private func installNativeBridges() {
     guard let controller = window?.rootViewController as? FlutterViewController else {
       return
     }
@@ -27,5 +27,6 @@ class SceneDelegate: FlutterSceneDelegate {
       binaryMessenger: controller.binaryMessenger,
       rootViewController: controller
     )
+    VoiceAudioBridge.shared.install(binaryMessenger: controller.binaryMessenger)
   }
 }

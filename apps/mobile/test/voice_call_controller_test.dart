@@ -3077,6 +3077,107 @@ void main() {
   );
 
   test(
+    'second turn strips sticky prior and bubble matches utterance.end',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      const prior =
+          'OK so I am about to buy my first bike when I got my learning permit';
+      const nextOnly = 'and I know it is possible with the CBR 600';
+      const sticky = '$prior $nextOnly';
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': prior,
+      });
+      await Future<void>.delayed(Duration.zero);
+      captureService.startCurrentSpeech();
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(Duration.zero);
+
+      final firstEnd = streamingApi.socket.sentPayloads.lastWhere(
+        (payload) => payload['event'] == 'utterance.end',
+      );
+      expect(firstEnd['transcript'], prior);
+      expect(container.read(chatProvider).messages.single.content, prior);
+
+      controller.resumeListening();
+      await captureService.readyAt(1);
+
+      captureService.startCurrentSpeech();
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': sticky,
+        'speech_final': true,
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(voiceCallProvider).currentTranscript, nextOnly);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(Duration.zero);
+
+      final secondEnd = streamingApi.socket.sentPayloads.lastWhere(
+        (payload) => payload['event'] == 'utterance.end',
+      );
+      final bubble = container.read(chatProvider).messages.last.content;
+      expect(secondEnd['transcript'], nextOnly);
+      expect(bubble, nextOnly);
+      expect(bubble.startsWith(prior), isFalse);
+
+      // Late sticky polish must not re-stack prior into the finalized bubble.
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': '$sticky RR',
+        'speech_final': true,
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(chatProvider).messages.last.content,
+        '$nextOnly RR',
+      );
+      expect(
+        streamingApi.socket.sentEvents.where((event) => event == 'utterance.end'),
+        hasLength(2),
+      );
+    },
+  );
+
+  test(
     'inactive lifecycle keeps audio route stable and suppresses no-speech fail',
     () async {
       final captureService = _ReusableSilentStreamingAudioCaptureService();
@@ -3129,6 +3230,175 @@ void main() {
       expect(state.errorMessage, isNull);
       expect(audioSessionService.configureCount, 1);
       expect(backgroundVoiceService.startCount, 1);
+      expect(state.isCallActive, isTrue);
+    },
+  );
+
+  test(
+    'inactive then resumed preserves streaming session and live transcript',
+    () async {
+      final captureService = _ReusableSilentStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final audioSessionService = _CountingVoiceAudioSessionService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            audioSessionService,
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'I want a motorcycle',
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(voiceCallProvider).currentTranscript,
+        'I want a motorcycle',
+      );
+      expect(streamingApi.connectCount, 1);
+      final configureBefore = audioSessionService.configureCount;
+
+      // Screenshot / Control Center path.
+      controller.didChangeAppLifecycleState(AppLifecycleState.inactive);
+      controller.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      final state = container.read(voiceCallProvider);
+      expect(state.isCallActive, isTrue);
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(state.currentTranscript, 'I want a motorcycle');
+      expect(streamingApi.connectCount, 1);
+      expect(streamingApi.socket.sentEvents, isNot(contains('session.end')));
+      expect(streamingApi.socket.sentEvents, isNot(contains('utterance.end')));
+      // Soft resume may reaffirm the audio session, but must not recreate the call.
+      expect(audioSessionService.configureCount, greaterThanOrEqualTo(configureBefore));
+      expect(captureService.startCount, 1);
+    },
+  );
+
+  test('detached lifecycle ends the active voice call', () async {
+    final captureService = _ReusableSilentStreamingAudioCaptureService();
+    final streamingApi = _FakeStreamingVoiceApi();
+    final container = ProviderContainer(
+      overrides: [
+        microphonePermissionProvider.overrideWithValue(
+          const _GrantedMicrophonePermissionService(),
+        ),
+        voiceAudioSessionServiceProvider.overrideWithValue(
+          const _NoopVoiceAudioSessionService(),
+        ),
+        backgroundVoiceServiceProvider.overrideWithValue(
+          const _NoopBackgroundVoiceService(),
+        ),
+        audioCaptureServiceProvider.overrideWithValue(
+          const _NoopAudioCaptureService(),
+        ),
+        audioPlaybackServiceProvider.overrideWithValue(
+          const _NoopAudioPlaybackService(),
+        ),
+        streamingVoiceEnabledProvider.overrideWithValue(true),
+        nativeIosVoiceEnabledProvider.overrideWithValue(false),
+        streamingVoiceApiProvider.overrideWithValue(streamingApi),
+        streamingAudioCaptureServiceProvider.overrideWithValue(captureService),
+        bargeInDetectionServiceProvider.overrideWithValue(
+          const _NoopBargeInDetectionService(),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(voiceCallProvider.notifier);
+    expect(await controller.startCall(), isTrue);
+    await captureService.readyAt(0);
+    expect(container.read(voiceCallProvider).isCallActive, isTrue);
+
+    controller.didChangeAppLifecycleState(AppLifecycleState.detached);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    expect(container.read(voiceCallProvider).isCallActive, isFalse);
+  });
+
+  test(
+    'paused then resumed keeps healthy listen cycle without new websocket',
+    () async {
+      final captureService = _ReusableSilentStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+      expect(streamingApi.connectCount, 1);
+      expect(captureService.startCount, 1);
+
+      controller.didChangeAppLifecycleState(AppLifecycleState.inactive);
+      controller.didChangeAppLifecycleState(AppLifecycleState.paused);
+      controller.didChangeAppLifecycleState(AppLifecycleState.hidden);
+      controller.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      final state = container.read(voiceCallProvider);
+      expect(state.isCallActive, isTrue);
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(streamingApi.connectCount, 1);
+      expect(captureService.startCount, 1);
+      expect(streamingApi.socket.sentEvents, isNot(contains('session.end')));
     },
   );
 

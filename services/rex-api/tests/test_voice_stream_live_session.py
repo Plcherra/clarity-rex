@@ -105,6 +105,37 @@ async def test_voice_stream_live_blank_finish_uses_client_transcript_fallback():
 
 
 @pytest.mark.asyncio
+async def test_voice_stream_live_prefers_client_transcript_over_deepgram_join():
+    """Display == brain: utterance.end.transcript wins over sticky Deepgram join."""
+
+    class StickyLiveTranscription:
+        async def finish(self):
+            return {
+                "transcript": (
+                    "I want a motorcycle cause I want a motorcycle cause "
+                    "but I've been thinking about the CBR"
+                ),
+                "confidence": 0.9,
+                "duration_seconds": 2.0,
+                "metadata": {"transport": "websocket-live"},
+            }
+
+    websocket = FakeWebSocket()
+    chat = FakeChatService()
+    tts = FakeGoogleTTSService()
+    session = _live_session(websocket, chat, tts)
+    session.client = "flutter_streaming"
+    session.conversation_id = "conversation-existing"
+    session._live_transcription = StickyLiveTranscription()
+    session.client_transcript = "but I've been thinking about the CBR"
+
+    await session._process_live_utterance()
+
+    assert chat.stream_calls[0]["message"] == "but I've been thinking about the CBR"
+    assert any(event["event"] == "assistant.done" for event in websocket.events)
+
+
+@pytest.mark.asyncio
 async def test_voice_stream_live_none_uses_streamed_transcript_fallback():
     websocket = FakeWebSocket()
     chat = FakeChatService()

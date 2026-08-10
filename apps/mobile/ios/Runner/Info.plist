@@ -51,6 +51,10 @@
 	<string>Clarity uses your photo library so you can choose a profile photo or attach images to Rex chats.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Clarity uses speech recognition to turn your voice into assistant messages.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

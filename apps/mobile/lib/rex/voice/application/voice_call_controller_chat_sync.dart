@@ -7,9 +7,9 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     _transcriptBuffer.clear();
     _activeVoiceMessageLocalId = 'local-voice-$turnSequence';
     _pendingUtteranceTranscript = null;
-    // Fresh listen cycle may accept speech_final; do not inherit suppress from
-    // a prior finalize → empty_audio → soft-recover path.
-    _suppressStaleSpeechFinal = false;
+    // Keep _suppressStaleSpeechFinal after a prior finalize so in-flight
+    // Deepgram speech_final from turn N cannot seed turn N+1. Cleared only by
+    // fresh STT evidence (updateTranscript) or empty-turn soft-recover.
     state = state.copyWith(clearCurrentTranscript: true);
     _beginVoiceTurnTiming(turnSequence);
   }
@@ -114,10 +114,16 @@ extension VoiceCallControllerChatSync on VoiceCallController {
       return;
     }
 
-    final transcript = VoiceTranscriptBuffer.preferFullest([
+    final merged = VoiceTranscriptBuffer.preferFullest([
       ?preferredTranscript,
       _transcriptBuffer.visible,
-    ]).trim();
+    ]);
+    // One authority string for bubble + utterance.end — strip sticky prior here
+    // so display and send cannot diverge.
+    final transcript = VoiceTranscriptBuffer.stripLeadingUtterance(
+      merged,
+      priorUtterance: _lastCompletedUtteranceTranscript,
+    ).trim();
     if (transcript.isEmpty) {
       if (recoverIfEmpty) {
         _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
@@ -141,7 +147,10 @@ extension VoiceCallControllerChatSync on VoiceCallController {
       return;
     }
 
-    final text = transcript.trim();
+    final text = VoiceTranscriptBuffer.stripLeadingUtterance(
+      transcript,
+      priorUtterance: _lastCompletedUtteranceTranscript,
+    ).trim();
     if (text.isEmpty || !state.isCallActive) {
       return;
     }

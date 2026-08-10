@@ -169,6 +169,9 @@ class VoiceStreamTurnProcessingMixin:
         self._turn_audio_chunks = self._audio_chunk_count()
         self._audio_bytes = 0
         self._audio_chunks_received = 0
+        # Capture explicit utterance.end.transcript before fallback consume —
+        # that string is display authority for flutter_streaming / ios_native.
+        explicit_client_transcript = str(self.client_transcript or "").strip()
         fallback_transcript = self._take_fallback_transcript()
 
         timings: dict[str, int] = {}
@@ -177,13 +180,15 @@ class VoiceStreamTurnProcessingMixin:
             timings["capture_ms"] = self._elapsed_ms(audio_started_at)
         LOGGER.info(
             "voice_turn_accepted session_id=%s conversation_id=%s mode=live "
-            "audio_bytes=%s audio_chunks=%s has_live_stt=%s has_fallback=%s",
+            "audio_bytes=%s audio_chunks=%s has_live_stt=%s has_fallback=%s "
+            "has_client_transcript=%s",
             self._session_id,
             self.conversation_id,
             self._turn_audio_bytes,
             self._turn_audio_chunks,
             live_transcription is not None,
             bool(fallback_transcript),
+            bool(explicit_client_transcript),
         )
 
         try:
@@ -230,9 +235,26 @@ class VoiceStreamTurnProcessingMixin:
                 transcription,
                 latency_ms=timings["stt_ms"],
             )
-            transcript = str(transcription.get("transcript") or "").strip()
-            if not transcript:
-                transcript = fallback_transcript
+            deepgram_transcript = str(transcription.get("transcript") or "").strip()
+            # Display == brain: when the client finalized a bubble and sent it on
+            # utterance.end, that text wins over Deepgram segment join (sticky /
+            # drift). Deepgram remains the fallback when the client sent none.
+            if explicit_client_transcript:
+                if (
+                    deepgram_transcript
+                    and deepgram_transcript != explicit_client_transcript
+                ):
+                    LOGGER.info(
+                        "voice_client_transcript_authority session_id=%s "
+                        "conversation_id=%s deepgram_chars=%s client_chars=%s",
+                        self._session_id,
+                        self.conversation_id,
+                        len(deepgram_transcript),
+                        len(explicit_client_transcript),
+                    )
+                transcript = explicit_client_transcript
+            else:
+                transcript = deepgram_transcript or fallback_transcript
             if not transcript:
                 LOGGER.info(
                     "voice_blank_transcript_recovered session_id=%s "

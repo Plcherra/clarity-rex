@@ -191,6 +191,8 @@ class _ReusableSilentStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
   final _ready = <Completer<void>>[];
   final _captures = <Completer<bool>>[];
+  var startCount = 0;
+  var cancelCount = 0;
 
   Future<void> readyAt(int index) {
     while (_ready.length <= index) {
@@ -201,6 +203,7 @@ class _ReusableSilentStreamingAudioCaptureService
 
   @override
   Future<void> cancel() async {
+    cancelCount++;
     for (final capture in _captures) {
       if (!capture.isCompleted) {
         capture.complete(false);
@@ -216,6 +219,7 @@ class _ReusableSilentStreamingAudioCaptureService
     required SpeechEndCallback onSpeechEnded,
     required AudioChunkCallback onAudioChunk,
   }) {
+    startCount++;
     final index = _captures.length;
     while (_ready.length <= index) {
       _ready.add(Completer<void>());
