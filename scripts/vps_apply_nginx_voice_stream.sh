@@ -4,6 +4,9 @@
 #
 # Usage on VPS (from /opt/clarity/current after git pull):
 #   bash scripts/vps_apply_nginx_voice_stream.sh
+#
+# Debug only (print live site file, no write):
+#   bash scripts/vps_apply_nginx_voice_stream.sh --dump
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -13,6 +16,11 @@ LOG_FORMAT_DEST="/etc/nginx/conf.d/clarity-log-format.conf"
 VOICE_MARKER='location /voice/stream'
 BACKUP_DIR="${BACKUP_DIR:-/tmp/clarity-nginx-backups}"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+DUMP_ONLY=0
+
+if [[ "${1:-}" == "--dump" ]]; then
+  DUMP_ONLY=1
+fi
 
 if [[ ! -f "${TEMPLATE}" ]]; then
   echo "Missing nginx template: ${TEMPLATE}" >&2
@@ -29,21 +37,21 @@ if ! command -v nginx >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "==> Installing log_format snippet (http context)"
-sudo cp "${HTTP_SNIPPET}" "${LOG_FORMAT_DEST}"
-
 CANDIDATES=()
 while IFS= read -r line; do
   [[ -n "${line}" ]] && CANDIDATES+=("${line}")
 done < <(
-  sudo grep -RIlE 'proxy_pass[[:space:]]+http://127\.0\.0\.1:8011|server_name[[:space:]].*api\.goclarity\.app' \
-    /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true
+  sudo grep -RIlE 'proxy_pass[[:space:]].*127\.0\.0\.1:8011|server_name[[:space:]].*api\.goclarity\.app|server_name[[:space:]].*api\.rexpilot\.com' \
+    /etc/nginx/sites-enabled /etc/nginx/sites-available /etc/nginx/conf.d 2>/dev/null || true
 )
 
-# Exclude the log-format snippet itself from patch targets.
+# Prefer the real site file over conf.d log snippets / duplicates.
 FILTERED=()
 for conf in "${CANDIDATES[@]}"; do
   if [[ "${conf}" == "${LOG_FORMAT_DEST}" ]]; then
+    continue
+  fi
+  if [[ "${conf}" == *clarity-log-format* ]]; then
     continue
   fi
   FILTERED+=("${conf}")
@@ -52,9 +60,22 @@ CANDIDATES=("${FILTERED[@]}")
 
 if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
   echo "No nginx site proxying :8011 or naming api.goclarity.app was found." >&2
-  echo "Install from ${TEMPLATE} (preserve TLS lines from the live site), then re-run." >&2
+  echo "Dump sites-enabled:" >&2
+  sudo ls -la /etc/nginx/sites-enabled /etc/nginx/sites-available 2>&1 || true
   exit 1
 fi
+
+if [[ "${DUMP_ONLY}" -eq 1 ]]; then
+  for conf in "${CANDIDATES[@]}"; do
+    echo "===== ${conf} ====="
+    sudo sed -n '1,240p' "${conf}"
+    echo
+  done
+  exit 0
+fi
+
+echo "==> Installing log_format snippet (http context)"
+sudo cp "${HTTP_SNIPPET}" "${LOG_FORMAT_DEST}"
 
 VOICE_BLOCK="$(
   TEMPLATE_PATH="${TEMPLATE}" python3 - <<'PY'
@@ -90,31 +111,120 @@ import sys
 
 path = Path(os.environ["CONF_PATH"])
 text = path.read_text(encoding="utf-8")
-block = os.environ["VOICE_BLOCK"].rstrip() + "\n\n"
+block = os.environ["VOICE_BLOCK"].rstrip() + "\n"
 
-pattern = re.compile(
-    r"(^[ \t]*location[ \t]+/[ \t]*\{[^\n]*\n"
-    r"(?:[ \t]+.*\n)*?"
-    r"[ \t]*proxy_pass[ \t]+http://127\.0\.0\.1:8011;[^\n]*\n"
-    r"(?:[ \t]+.*\n)*?"
-    r"[ \t]*\})",
-    flags=re.M,
-)
-match = pattern.search(text)
-if match:
-    start = match.start()
-    text = text[:start] + block + text[start:]
-else:
-    server_match = re.search(
-        r"server\s*\{(?:[^{}]|\{[^{}]*\})*8011(?:[^{}]|\{[^{}]*\})*\}",
-        text,
-        flags=re.S,
+if "location /voice/stream" in text:
+    sys.stdout.write(text)
+    sys.exit(0)
+
+
+def brace_blocks(source: str, keyword: str):
+    """Yield (start, end_inclusive) for top-level `keyword { ... }` blocks."""
+    i = 0
+    while True:
+        m = re.search(rf"(?m)^[ \t]*{keyword}\b[^{{]*\{{", source[i:])
+        if not m:
+            return
+        start = i + m.start()
+        brace_at = i + m.end() - 1
+        depth = 0
+        for j in range(brace_at, len(source)):
+            ch = source[j]
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    yield start, j
+                    i = j + 1
+                    break
+        else:
+            raise SystemExit(f"Unbalanced braces while scanning {keyword} in {path}")
+
+
+def looks_like_api_server(block: str) -> bool:
+    if "proxy_pass" not in block:
+        return False
+    if "127.0.0.1:8011" in block or "localhost:8011" in block:
+        return True
+    if re.search(r"server_name[^;]*(api\.goclarity\.app|api\.rexpilot\.com)", block):
+        return True
+    # Upstream alias (proxy_pass http://clarity;) in a file already selected
+    # because :8011 or api.* appeared somewhere in the candidate path.
+    return bool(re.search(r"proxy_pass\s+https?://", block))
+
+
+def indent_of(line: str) -> str:
+    return re.match(r"[ \t]*", line).group(0)
+
+
+inserted = False
+for start, end in brace_blocks(text, "server"):
+    server = text[start : end + 1]
+    if not looks_like_api_server(server):
+        continue
+
+    # Prefer inserting immediately before the catch-all location / { ... }
+    # that proxies the API (any proxy_pass style / upstream name).
+    loc_matches = list(
+        re.finditer(
+            r"(?m)^([ \t]*)location[ \t]+/[ \t]*\{",
+            server,
+        )
     )
-    if not server_match:
-        raise SystemExit(f"Could not find a safe insert point in {path}")
-    end = server_match.end() - 1
-    indented = "    " + block.replace("\n", "\n    ").rstrip() + "\n"
-    text = text[:end] + "\n" + indented + text[end:]
+    insert_at = None
+    server_indent = "    "
+    for loc in loc_matches:
+        loc_start = loc.start()
+        # Find end of this location block inside server.
+        depth = 0
+        rel = server[loc_start:]
+        brace_rel = rel.find("{")
+        for j in range(brace_rel, len(rel)):
+            if rel[j] == "{":
+                depth += 1
+            elif rel[j] == "}":
+                depth -= 1
+                if depth == 0:
+                    loc_body = rel[: j + 1]
+                    break
+        else:
+            continue
+        if "proxy_pass" in loc_body:
+            insert_at = start + loc_start
+            server_indent = loc.group(1)
+            break
+
+    if insert_at is None:
+        # Fallback: before the closing brace of this server block.
+        insert_at = end
+        # Infer indent from prior non-empty line.
+        prior = text[:end].rstrip().splitlines()
+        server_indent = indent_of(prior[-1]) if prior else "    "
+        if server_indent == "":
+            server_indent = "    "
+
+    indented_block = "\n".join(
+        (server_indent + line if line else line) for line in block.splitlines()
+    )
+    if not indented_block.endswith("\n"):
+        indented_block += "\n"
+    # Keep a blank line after the inserted location.
+    indented_block += "\n"
+
+    text = text[:insert_at] + indented_block + text[insert_at:]
+    inserted = True
+    break
+
+if not inserted:
+    # Last-resort: append a dedicated server snippet is too dangerous.
+    # Dump a short fingerprint so ops can see why matching failed.
+    preview = "\n".join(text.splitlines()[:80])
+    raise SystemExit(
+        "Could not find a safe insert point in "
+        f"{path}. First 80 lines:\n{preview}\n"
+        "Re-run with: bash scripts/vps_apply_nginx_voice_stream.sh --dump"
+    )
 
 sys.stdout.write(text)
 PY
@@ -146,26 +256,18 @@ done
 echo "==> nginx -t"
 sudo nginx -t
 
-if [[ "${patched_any}" -eq 1 ]]; then
-  echo "==> Reloading nginx"
-  sudo systemctl reload nginx
-else
-  # log_format snippet may still be new
-  echo "==> Reloading nginx (log format / verify)"
-  sudo systemctl reload nginx
-fi
+echo "==> Reloading nginx"
+sudo systemctl reload nginx
 
 echo "==> Verify"
 if sudo nginx -T 2>&1 | grep -qF "${VOICE_MARKER}"; then
-  sudo nginx -T 2>&1 | grep -n 'voice/stream' | head -n 20
+  sudo nginx -T 2>&1 | grep -n 'voice/stream\|Upgrade\|Connection' | head -n 40
   echo "==> voice/stream location is live"
 else
   echo "voice/stream still missing after apply." >&2
   exit 1
 fi
 
-# Ensure the dedicated access log path exists (nginx creates it on first hit,
-# but missing file after a speak attempt means the location was never used).
 sudo touch /var/log/nginx/clarity-rex-voice.access.log
 sudo chmod 644 /var/log/nginx/clarity-rex-voice.access.log || true
 echo "==> Log file ready: /var/log/nginx/clarity-rex-voice.access.log"

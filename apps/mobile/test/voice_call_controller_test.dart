@@ -1413,7 +1413,32 @@ void main() {
 
     expect(find.text(userText), findsNothing);
     expect(find.text(l10n.voicePanelProcessing), findsNothing);
+    expect(find.text(l10n.voicePanelThinking), findsOneWidget);
   });
+
+  testWidgets(
+    'voice live transcript does not duplicate assistant reply while speaking',
+    (tester) async {
+      const reply = 'Haha it is late af over here';
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.pumpWidget(
+        wrapWithL10n(
+          Scaffold(
+            body: VoiceLiveTranscript(
+              state: VoiceCallState(
+                phase: VoiceCallPhase.speaking,
+                lastAssistantResponse: reply,
+                callStartedAt: DateTime(2026),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(reply), findsNothing);
+      expect(find.text(l10n.voicePanelSpeaking), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'voice live transcript keeps Start talking while listening (no duplicate)',

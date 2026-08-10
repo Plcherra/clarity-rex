@@ -45,7 +45,8 @@ class VoiceLiveTranscript extends StatelessWidget {
 
     if (state.phase == VoiceCallPhase.speaking ||
         state.phase == VoiceCallPhase.thinking) {
-      final draft = state.lastAssistantResponse.trim();
+      // Reply text already lives in the chat bubble. Showing
+      // lastAssistantResponse here duplicated the whole answer under Speaking.
       final statusLabel = state.phase == VoiceCallPhase.speaking
           ? l10n.voicePanelSpeaking
           : l10n.voicePanelThinking;
@@ -54,35 +55,20 @@ class VoiceLiveTranscript extends StatelessWidget {
           top: RexUiTokens.space4,
           bottom: RexUiTokens.messageGap,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                _VoiceWaveIndicator(
-                  phase: state.phase,
-                  color: colors.textMuted,
-                  compact: true,
-                ),
-                const SizedBox(width: RexUiTokens.space8),
-                Text(
-                  statusLabel,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colors.textMuted,
-                  ),
-                ),
-              ],
+            _VoiceWaveIndicator(
+              phase: state.phase,
+              color: colors.textMuted,
+              compact: true,
             ),
-            if (draft.isNotEmpty) ...[
-              const SizedBox(height: RexUiTokens.space8),
-              Text(
-                draft,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.textPrimary,
-                  height: 1.35,
-                ),
+            const SizedBox(width: RexUiTokens.space8),
+            Text(
+              statusLabel,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colors.textMuted,
               ),
-            ],
+            ),
           ],
         ),
       );
