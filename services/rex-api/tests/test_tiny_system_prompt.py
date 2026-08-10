@@ -25,6 +25,9 @@ def test_tiny_system_has_truth_and_gate_no_reply_length() -> None:
     assert "anything outside Clarity" not in prompt
     assert "public topics" in prompt.lower()
     assert "send/call/book outside the app" in prompt
+    assert "learner's permits" in prompt.lower()
+    assert "crime asks" in prompt.lower()
+    assert "invented legal certainty" in prompt.lower()
 
 
 def test_the_prompt_no_longer_repeats_what_the_tool_schema_already_says() -> None:
@@ -99,7 +102,7 @@ def test_grok_turn_brain_builds_thin_messages() -> None:
     assert "Truth Rule" in messages[0]["content"]
     assert "Wake up early" in messages[0]["content"]
     assert messages[-1] == {"role": "user", "content": "hey"}
-    # Rough base size under ~1k tokens (~4 chars/token) for empty-ish thread.
+    # Rough base size under ~1.1k tokens (~4 chars/token) for empty-ish thread.
     # The tool schema is billed as input too, so it counts against the budget.
     base_chars = sum(len(item["content"]) for item in messages)
-    assert base_chars + len(tool_schema_json()) < 4400
+    assert base_chars + len(tool_schema_json()) < 4600
