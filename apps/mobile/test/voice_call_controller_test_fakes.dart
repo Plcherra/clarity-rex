@@ -256,6 +256,18 @@ class _ScriptedStreamingAudioCaptureService
     }
   }
 
+  /// Ends capture as empty (e.g. audio-session interrupt) without speech_end.
+  void finishCurrentWithoutSpeech() {
+    if (_captures.isEmpty) {
+      return;
+    }
+    final capture = _captures.last;
+    if (capture.isCompleted) {
+      return;
+    }
+    capture.complete(false);
+  }
+
   @override
   Future<void> cancel() async {
     for (final capture in _captures) {

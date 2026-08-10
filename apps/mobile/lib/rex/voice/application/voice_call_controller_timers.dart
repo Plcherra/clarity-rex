@@ -82,6 +82,14 @@ extension VoiceCallControllerTimers on VoiceCallController {
     if (!state.isCallActive) {
       return;
     }
+    // Known speech must never be wiped into the music/mic soft-recover loop.
+    // Typed voice already uses REST chat+TTS; use that when streaming failed
+    // after the client already has the transcript (common when WS never lands
+    // on the API but local/interim STT still shows words).
+    if (_completeStreamingTurnViaChatFallback()) {
+      debugPrint('rex_voice_stream recover_diverted_to_chat_fallback');
+      return;
+    }
     _emptyVoiceTurnRecoveryCount++;
     if (_emptyVoiceTurnRecoveryCount > _maxEmptyVoiceTurnRecoveries) {
       failL10n((l10n) => l10n.voiceErrorStillDidNotHear);

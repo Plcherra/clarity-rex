@@ -16,4 +16,15 @@ curl -fsS "$BASE_URL/" | python3 -m json.tool
 echo "==> Readiness"
 curl -fsS "$BASE_URL/ready" | python3 -m json.tool
 
+if command -v nginx >/dev/null 2>&1; then
+  echo "==> Nginx voice WebSocket location"
+  if sudo nginx -T 2>&1 | grep -qF 'location /voice/stream'; then
+    echo "OK: location /voice/stream is configured"
+  else
+    echo "MISSING: location /voice/stream — spoken STT will fail." >&2
+    echo "Run: bash scripts/vps_apply_nginx_voice_stream.sh" >&2
+    exit 1
+  fi
+fi
+
 echo "==> Smoke checks completed"

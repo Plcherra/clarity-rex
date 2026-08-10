@@ -844,6 +844,74 @@ void main() {
   );
 
   test(
+    'soft recover with known transcript completes via chat instead of wiping',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final chatApi = _RecordingChatApi();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final playbackService = _ControlledAudioPlaybackService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          chatApiProvider.overrideWithValue(chatApi),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Buy milk tomorrow',
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(voiceCallProvider).currentTranscript,
+        'Buy milk tomorrow',
+      );
+
+      // Capture ends without finalize (e.g. music/audio-session interrupt) —
+      // must not clear the transcript and restart listening.
+      captureService.finishCurrentWithoutSpeech();
+      await Future<void>.delayed(Duration.zero);
+      await playbackService.playStarted.future.timeout(
+        const Duration(seconds: 1),
+      );
+
+      expect(chatApi.sentMessages, ['Buy milk tomorrow']);
+      expect(cloudVoiceApi.synthesizedTexts, ['Chat fallback reply.']);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+      expect(container.read(chatProvider).messages, isNotEmpty);
+    },
+  );
+
+  test(
     'empty_audio chat fallback still works after a prior soft-recover in the call',
     () async {
       final captureService = _ScriptedStreamingAudioCaptureService();
