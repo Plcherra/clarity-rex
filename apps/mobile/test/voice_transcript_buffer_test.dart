@@ -96,5 +96,22 @@ void main() {
         'and I know it is possible',
       );
     });
+
+    test('stripLeadingUtterance tolerates small STT drift in the prefix', () {
+      const prior =
+          'Oh once I got my permit and that is the one that I am looking for '
+          'and I am already have a biking mind';
+      const next =
+          'Oh once I got my permit and that is the one that I am looking for '
+          'and I am already have a biking mine on a dealership yeah';
+
+      expect(
+        VoiceTranscriptBuffer.stripLeadingUtterance(
+          next,
+          priorUtterance: prior,
+        ),
+        'on a dealership yeah',
+      );
+    });
   });
 }

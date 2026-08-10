@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:clarity/rex/voice/data/voice_websocket.dart';
@@ -27,9 +28,11 @@ Future<String> fetchVoiceStreamTicket(
       path: '${wsUri.path}/ticket',
       query: '',
     );
+    debugPrint('rex_voice_stream ticket_request $ticketUri');
     final response = await client
         .post(ticketUri, headers: headers ?? const {})
         .timeout(timeout);
+    debugPrint('rex_voice_stream ticket_status ${response.statusCode}');
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw const StreamingVoiceApiException(
         'Could not open Assistant voice stream. Check your connection and try again.',

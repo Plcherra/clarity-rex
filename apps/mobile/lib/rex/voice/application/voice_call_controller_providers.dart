@@ -128,7 +128,12 @@ final voiceCaptureConfigProvider = Provider<VoiceCaptureConfig>(
           silenceAfterSpeech: Duration(milliseconds: 4000),
           noSpeechTimeout: Duration(seconds: 18),
         )
-      : const VoiceCaptureConfig(),
+      // Walking / conversational pauses: end after ~6s true silence, not mid
+      // thought. Cap stays high so long turns are not hard-cut early.
+      : const VoiceCaptureConfig(
+          silenceAfterSpeech: Duration(milliseconds: 6000),
+          maxUtteranceDuration: Duration(seconds: 180),
+        ),
 );
 
 typedef VoiceCallNow = DateTime Function();
@@ -143,10 +148,9 @@ final voiceCallThinkingTimeoutProvider = Provider<Duration>(
 
 final voiceCallTranscriptIdleTimeoutProvider = Provider<Duration>(
   // STT transcript-stability endpoint for flutter_streaming (re-armed on each
-  // transcript update). Align with Deepgram endpointing (~4000) + local
-  // streaming silence (~4000): mid-phrase breaths keep listening; finished
-  // speech still finalizes in a few seconds. Not a race patch.
-  (ref) => const Duration(milliseconds: 4000),
+  // transcript update). Match mobile VAD silence (~6000) so a quiet STT gap
+  // mid-sentence does not cut the turn while the mic is still open.
+  (ref) => const Duration(milliseconds: 6000),
 );
 
 final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(

@@ -123,9 +123,9 @@ extension VoiceCallControllerTimers on VoiceCallController {
 
   void _armSpeechFinalGraceAfterCapture(int generation, int listenEpoch) {
     _speechFinalGraceTimer?.cancel();
-    // Match local VAD post-speech silence (~4s) so walking pauses and slow
+    // Match local VAD post-speech silence (~6s) so walking pauses and slow
     // Deepgram finals can still finalize before we soft-recover listen.
-    _speechFinalGraceTimer = Timer(const Duration(milliseconds: 4500), () {
+    _speechFinalGraceTimer = Timer(const Duration(milliseconds: 6500), () {
       if (!_isCurrentCall(generation) ||
           listenEpoch != _streamingListenEpoch ||
           !state.isCallActive ||
@@ -212,6 +212,12 @@ extension VoiceCallControllerTimers on VoiceCallController {
       return;
     }
     _listeningEndpointTimer = Timer(timeout, () {
+      // Mic still in active speech (breaths / STT lag) — do not cut the turn
+      // on transcript-idle alone. Wait for VAD speech_end or a quiet window.
+      if (state.isCapturingSpeech) {
+        _armListeningEndpointTimeout(generation, timeout);
+        return;
+      }
       _forceEndStreamingUtterance(generation);
     });
   }
@@ -230,6 +236,9 @@ extension VoiceCallControllerTimers on VoiceCallController {
       return;
     }
     if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
+      return;
+    }
+    if (state.isCapturingSpeech) {
       return;
     }
     // Finalize first so a racing capture.cancel() completion cannot treat this

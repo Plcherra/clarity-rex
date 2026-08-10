@@ -13,7 +13,7 @@ StreamingAudioCaptureService createPlatformStreamingAudioCaptureService() {
 
 class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
   static const _maximumStreamingSilenceAfterSpeech = Duration(
-    milliseconds: 4000,
+    milliseconds: 6000,
   );
   static const _minimumStreamingSpeechDuration = Duration(milliseconds: 260);
   static const _streamingSpeechStartThresholdDb = -68.0;

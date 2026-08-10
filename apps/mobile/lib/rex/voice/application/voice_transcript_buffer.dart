@@ -48,7 +48,7 @@ class VoiceTranscriptBuffer {
   }
 
   /// Drop a prior completed utterance when STT/interim replays it as a prefix
-  /// of the next turn (common with sticky on-device STT and preferFullest merges).
+  /// of the next turn. Tolerates small STT drift (mind/mine, permit/permits).
   static String stripLeadingUtterance(
     String transcript, {
     String? priorUtterance,
@@ -61,25 +61,33 @@ class VoiceTranscriptBuffer {
     if (_sameForComparison(current, prior)) {
       return '';
     }
-    final currentCmp = _normalizeForComparison(current);
-    final priorCmp = _normalizeForComparison(prior);
-    if (!currentCmp.startsWith(priorCmp)) {
+
+    final priorWords = _wordsForComparison(prior);
+    final currentWords = _wordsForComparison(current);
+    if (priorWords.isEmpty || currentWords.isEmpty) {
       return current;
     }
-    // Map the comparison-prefix length back onto the display string by walking
-    // words so punctuation/casing differences do not leave a sticky stump.
-    final priorWords = priorCmp
-        .split(' ')
-        .where((word) => word.isNotEmpty)
-        .toList(growable: false);
-    if (priorWords.isEmpty) {
+
+    final matched = _fuzzyPrefixWordCount(priorWords, currentWords);
+    if (matched <= 0) {
       return current;
     }
+
+    final coverage = matched / priorWords.length;
+    // Require a strong prefix match so unrelated turns are not mangled.
+    final strongMatch =
+        coverage >= 0.8 ||
+        (matched >= priorWords.length - 1 && priorWords.length >= 4) ||
+        (matched >= 8 && coverage >= 0.65);
+    if (!strongMatch) {
+      return current;
+    }
+
     final displayWords = current.split(' ');
-    if (displayWords.length <= priorWords.length) {
+    if (displayWords.length <= matched) {
       return '';
     }
-    return displayWords.skip(priorWords.length).join(' ').trim();
+    return displayWords.skip(matched).join(' ').trim();
   }
 
   void _appendSegment(String transcript) {
@@ -157,5 +165,80 @@ class VoiceTranscriptBuffer {
     return _normalize(
       transcript,
     ).toLowerCase().replaceAll(RegExp(r"[^a-z0-9']+"), ' ').trim();
+  }
+
+  static List<String> _wordsForComparison(String text) {
+    return _normalizeForComparison(text)
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  static int _fuzzyPrefixWordCount(
+    List<String> priorWords,
+    List<String> currentWords,
+  ) {
+    final limit = priorWords.length < currentWords.length
+        ? priorWords.length
+        : currentWords.length;
+    var matched = 0;
+    var misses = 0;
+    for (var index = 0; index < limit; index++) {
+      if (_wordsSimilar(priorWords[index], currentWords[index])) {
+        matched++;
+        continue;
+      }
+      misses++;
+      // Allow a couple of drifted words inside a long sticky prefix.
+      if (misses > 2 || matched < 3) {
+        break;
+      }
+    }
+    return matched;
+  }
+
+  static bool _wordsSimilar(String left, String right) {
+    if (left == right) {
+      return true;
+    }
+    if (left.length <= 2 || right.length <= 2) {
+      return false;
+    }
+    final distance = _levenshtein(left, right);
+    if (distance <= 1) {
+      return true;
+    }
+    final maxLen = left.length > right.length ? left.length : right.length;
+    return distance / maxLen <= 0.34;
+  }
+
+  static int _levenshtein(String left, String right) {
+    if (left == right) {
+      return 0;
+    }
+    if (left.isEmpty) {
+      return right.length;
+    }
+    if (right.isEmpty) {
+      return left.length;
+    }
+    final prev = List<int>.generate(right.length + 1, (index) => index);
+    final curr = List<int>.filled(right.length + 1, 0);
+    for (var i = 1; i <= left.length; i++) {
+      curr[0] = i;
+      for (var j = 1; j <= right.length; j++) {
+        final cost = left.codeUnitAt(i - 1) == right.codeUnitAt(j - 1) ? 0 : 1;
+        final deletion = prev[j] + 1;
+        final insertion = curr[j - 1] + 1;
+        final substitution = prev[j - 1] + cost;
+        curr[j] = deletion < insertion
+            ? (deletion < substitution ? deletion : substitution)
+            : (insertion < substitution ? insertion : substitution);
+      }
+      for (var j = 0; j <= right.length; j++) {
+        prev[j] = curr[j];
+      }
+    }
+    return prev[right.length];
   }
 }
