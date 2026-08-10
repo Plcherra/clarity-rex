@@ -154,7 +154,9 @@ class PackageStreamingAudioCaptureService
   );
   static const _minimumStreamingSpeechDuration = Duration(milliseconds: 260);
   static const _streamingSpeechStartThresholdDb = -50.0;
-  static const _streamingSilenceThresholdDb = -58.0;
+  // Quieter floor so soft walking speech / trailing syllables do not look like
+  // silence and end the turn in ~1s.
+  static const _streamingSilenceThresholdDb = -66.0;
 
   PackageStreamingAudioCaptureService({
     AudioRecorder? recorder,

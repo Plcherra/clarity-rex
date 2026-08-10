@@ -50,15 +50,19 @@ extension VoiceCallControllerChatSync on VoiceCallController {
   void _finalizeVoiceTranscriptInChat({
     String? finalTranscript,
     bool rememberCompleted = false,
+    bool stripPriorUtterance = true,
   }) {
     final merged = VoiceTranscriptBuffer.preferFullest([
       ?finalTranscript,
       _transcriptBuffer.visible,
     ]);
-    final text = VoiceTranscriptBuffer.stripLeadingUtterance(
-      merged,
-      priorUtterance: _lastCompletedUtteranceTranscript,
-    ).trim();
+    final text = (stripPriorUtterance
+            ? VoiceTranscriptBuffer.stripLeadingUtterance(
+                merged,
+                priorUtterance: _lastCompletedUtteranceTranscript,
+              )
+            : merged)
+        .trim();
     if (text.isEmpty) {
       _removeActiveVoiceUserMessage();
       return;

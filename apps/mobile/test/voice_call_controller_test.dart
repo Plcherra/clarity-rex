@@ -692,7 +692,7 @@ void main() {
     expect(container.read(voiceCallBargeInEnabledProvider), isFalse);
     expect(
       container.read(voiceCallTranscriptIdleTimeoutProvider),
-      const Duration(milliseconds: 4000),
+      const Duration(milliseconds: 6000),
     );
     expect(
       container.read(voiceCallNoSpeechTimeoutProvider),
@@ -1224,13 +1224,15 @@ void main() {
       // Finalized local bubble must not survive an abandoned turn.
       expect(container.read(chatProvider).messages, isEmpty);
 
-      // Next speech_final must finalize (suppress cleared on soft recover /
-      // beginVoiceTurn) — previously stuck on Start talking.
+      // Next turn: speech_final alone must not cut mid-speech; VAD end closes.
       streamingApi.socket.emit({
         'event': 'transcript.final',
         'transcript': 'Try this again',
         'speech_final': true,
       });
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      captureService.finishCurrentWithSpeech();
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
@@ -1290,6 +1292,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       const transcript = 'Plan my launch week';
+      captureService.startCurrentSpeech();
       streamingApi.socket.emit({
         'event': 'transcript.final',
         'transcript': transcript,
@@ -1300,6 +1303,10 @@ void main() {
         'transcript': transcript,
         'speech_final': true,
       });
+      await Future<void>.delayed(Duration.zero);
+      // Mid-utterance speech_final must not close while mic speech is open.
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      captureService.finishCurrentWithSpeech();
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
@@ -2183,13 +2190,24 @@ void main() {
       expect(await controller.startCall(), isTrue);
       await captureService.readyAt(0);
 
+      captureService.startCurrentSpeech();
       streamingApi.socket.emit({
         'event': 'transcript.final',
         'transcript': 'Hey. How are you doing?',
         'speech_final': true,
       });
       await Future<void>.delayed(Duration.zero);
+      // speech_final while capturing must keep listening (no ~1s cut-off).
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      expect(
+        streamingApi.socket.sentEvents.where(
+          (event) => event == 'utterance.end',
+        ),
+        isEmpty,
+      );
 
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(Duration.zero);
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
       expect(
         streamingApi.socket.sentEvents.where(
@@ -2208,9 +2226,6 @@ void main() {
       });
       await Future<void>.delayed(Duration.zero);
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
-
-      captureService.finishCurrentWithSpeech();
-      await Future<void>.delayed(Duration.zero);
       expect(
         streamingApi.socket.sentEvents.where(
           (event) => event == 'utterance.end',
@@ -2704,6 +2719,7 @@ void main() {
         "It's next week, but on the eighteenth, it's my mom's birthday",
       );
 
+      captureService.startCurrentSpeech();
       streamingApi.socket.emit({
         'event': 'transcript.final',
         'transcript':
@@ -2711,6 +2727,9 @@ void main() {
             "It's next week, but on the eighteenth, it's my mom's birthday.",
         'speech_final': true,
       });
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      captureService.finishCurrentWithSpeech();
       await Future<void>.delayed(Duration.zero);
 
       final state = container.read(voiceCallProvider);
@@ -2820,12 +2839,16 @@ void main() {
       });
       await Future<void>.delayed(Duration.zero);
 
+      captureService.startCurrentSpeech();
       streamingApi.socket.emit({
         'event': 'transcript.final',
         'transcript':
             'Everything good? I also want some weights so I can exercise at home.',
         'speech_final': true,
       });
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      captureService.finishCurrentWithSpeech();
       await Future<void>.delayed(Duration.zero);
 
       final messages = container.read(chatProvider).messages;
@@ -2900,11 +2923,16 @@ void main() {
       expect(interim.first.content, fullTranscript);
       expect(interim.first.isVoiceInterim, isTrue);
 
+      captureService.startCurrentSpeech();
       streamingApi.socket.emit({
         'event': 'transcript.final',
         'transcript': 'so I can exercise at home.',
         'speech_final': true,
       });
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(chatProvider).messages.first.content, fullTranscript);
+      expect(container.read(chatProvider).messages.first.isVoiceInterim, isTrue);
+      captureService.finishCurrentWithSpeech();
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);

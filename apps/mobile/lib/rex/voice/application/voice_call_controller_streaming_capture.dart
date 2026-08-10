@@ -90,6 +90,8 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
           if (_isCurrentCall(generation) &&
               listenEpoch == _streamingListenEpoch &&
               state.phase == VoiceCallPhase.listening) {
+            // VAD silence window closed — mic speech is over even if STT lags.
+            state = state.copyWith(isCapturingSpeech: false);
             _markVoiceTurnCaptureEnd(_streamingTurnSequence);
             _endTurnFromLocalEndpoint(generation);
           }
@@ -144,6 +146,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         listenEpoch == _streamingListenEpoch) {
       // Audio was captured: wait for late speech_final. Recovering immediately
       // interrupts STT and drops the utterance (stuck listening loop).
+      state = state.copyWith(isCapturingSpeech: false);
       _endTurnFromLocalEndpoint(generation, recoverIfEmpty: false);
       if (_streamingTurnFinalizedSequence != _streamingTurnSequence) {
         _armSpeechFinalGraceAfterCapture(generation, listenEpoch);
@@ -217,6 +220,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         if (_isCurrentCall(generation) &&
             listenEpoch == _streamingListenEpoch &&
             state.phase == VoiceCallPhase.listening) {
+          state = state.copyWith(isCapturingSpeech: false);
           _markVoiceTurnCaptureEnd(_streamingTurnSequence);
           _endTurnFromLocalEndpoint(generation);
         }
@@ -312,6 +316,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         listenEpoch == _streamingListenEpoch) {
       // Audio was captured: wait for late speech_final. Recovering immediately
       // interrupts STT and drops the utterance (stuck listening loop).
+      state = state.copyWith(isCapturingSpeech: false);
       _endTurnFromLocalEndpoint(generation, recoverIfEmpty: false);
       if (_streamingTurnFinalizedSequence != _streamingTurnSequence) {
         _armSpeechFinalGraceAfterCapture(generation, listenEpoch);

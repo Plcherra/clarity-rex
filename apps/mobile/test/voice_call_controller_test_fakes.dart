@@ -177,8 +177,9 @@ class _HangingStreamingAudioCaptureService
     required SpeechEndCallback onSpeechEnded,
     required AudioChunkCallback onAudioChunk,
   }) {
+    // Do not auto-start VAD speech — idle-endpoint tests need STT-only turns
+    // while the capture future stays open.
     onReady();
-    onSpeechStart();
     if (!started.isCompleted) {
       started.complete();
     }
@@ -233,6 +234,7 @@ class _ScriptedStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
   final _ready = <Completer<void>>[];
   final _captures = <Completer<bool>>[];
+  SpeechStartCallback? _lastOnSpeechStart;
   SpeechEndCallback? _lastOnSpeechEnded;
 
   Future<void> readyAt(int index) {
@@ -240,6 +242,10 @@ class _ScriptedStreamingAudioCaptureService
       _ready.add(Completer<void>());
     }
     return _ready[index].future;
+  }
+
+  void startCurrentSpeech() {
+    _lastOnSpeechStart?.call();
   }
 
   void finishCurrentWithSpeech() {
@@ -250,6 +256,7 @@ class _ScriptedStreamingAudioCaptureService
     if (capture.isCompleted) {
       return;
     }
+    _lastOnSpeechStart?.call();
     _lastOnSpeechEnded?.call();
     if (!capture.isCompleted) {
       capture.complete(true);
@@ -292,6 +299,7 @@ class _ScriptedStreamingAudioCaptureService
     final capture = Completer<bool>();
     _captures.add(capture);
     onReady();
+    _lastOnSpeechStart = onSpeechStart;
     _lastOnSpeechEnded = onSpeechEnded;
     if (!_ready[index].isCompleted) {
       _ready[index].complete();

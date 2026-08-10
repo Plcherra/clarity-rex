@@ -118,52 +118,58 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             if (event.speechFinal) {
               final eventTranscript = (event.transcript ?? '').trim();
               final bufferTranscript = _transcriptBuffer.visible.trim();
-              final preferredTranscript =
-                  VoiceTranscriptBuffer.stripLeadingUtterance(
-                    VoiceTranscriptBuffer.preferFullest([
-                      eventTranscript,
-                      bufferTranscript,
-                    ]),
-                    priorUtterance: _lastCompletedUtteranceTranscript,
-                  ).trim();
+              final mergedTranscript = VoiceTranscriptBuffer.preferFullest([
+                eventTranscript,
+                bufferTranscript,
+              ]).trim();
               final alreadyFinalized =
                   _streamingTurnFinalizedSequence == _streamingTurnSequence ||
                   _streamingUtteranceEndSent ||
                   _suppressStaleSpeechFinal;
-              // Late speech_final after transcript-idle/VAD finalize must not
-              // reset playback or start a second utterance.end (double talk).
+              // Late speech_final after VAD/utterance.end finalize: polish only.
+              // Merge with the tentative finalize text — do not strip against it
+              // as a "prior utterance" or upgrades become a short suffix.
               if (alreadyFinalized ||
                   state.phase != VoiceCallPhase.listening) {
-                // Polish the committed bubble only — never remember again or
-                // the next turn will strip this turn's own words.
-                if (preferredTranscript.isNotEmpty &&
+                if (mergedTranscript.isNotEmpty &&
                     (_streamingTurnFinalizedSequence ==
                             _streamingTurnSequence ||
                         state.phase == VoiceCallPhase.thinking ||
                         state.phase == VoiceCallPhase.speaking)) {
+                  final upgraded = VoiceTranscriptBuffer.preferFullest([
+                    mergedTranscript,
+                    _pendingUtteranceTranscript ?? '',
+                    _lastCompletedUtteranceTranscript ?? '',
+                  ]).trim();
                   _finalizeVoiceTranscriptInChat(
-                    finalTranscript: preferredTranscript,
+                    finalTranscript: upgraded,
+                    rememberCompleted: true,
+                    stripPriorUtterance: false,
                   );
+                  _pendingUtteranceTranscript = upgraded;
                 }
                 break;
               }
-              // Empty speech_final is noise / premature endpoint. Cancelling
-              // capture here completes the mic as "no audio" and soft-recovers
-              // to Start talking without ever sending the turn.
+              final preferredTranscript =
+                  VoiceTranscriptBuffer.stripLeadingUtterance(
+                    mergedTranscript,
+                    priorUtterance: _lastCompletedUtteranceTranscript,
+                  ).trim();
               if (preferredTranscript.isEmpty) {
                 break;
               }
-              assistantText = '';
-              responseAudioStarted = false;
-              if (preferredTranscript != bufferTranscript) {
-                updateTranscript(preferredTranscript, isFinal: true);
-              }
-              _endTurnFromLocalEndpoint(
-                _callGeneration,
-                preferredTranscript: preferredTranscript,
-              );
-              if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
-                unawaited(_activeStreamingCaptureService?.cancel());
+              // flutter_streaming must NOT close the turn on speech_final while
+              // the mic is still open — Deepgram fires that on short pauses
+              // (~1s). Keep listening; VAD / transcript-idle / utterance.end
+              // close the turn. After local capture ends (grace armed), a late
+              // speech_final is the missing STT and should finalize.
+              updateTranscript(preferredTranscript, isFinal: true);
+              if (_speechFinalGraceTimer != null) {
+                _cancelSpeechFinalGrace();
+                _endTurnFromLocalEndpoint(
+                  _callGeneration,
+                  preferredTranscript: preferredTranscript,
+                );
               }
             } else if (state.phase == VoiceCallPhase.listening) {
               updateTranscript(

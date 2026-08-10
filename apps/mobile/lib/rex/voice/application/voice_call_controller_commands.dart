@@ -45,6 +45,9 @@ extension VoiceCallControllerCommands on VoiceCallController {
 
     _isAwaitingFollowUpSpeech = false;
     _cancelNoSpeechTimeout();
+    // Keep Deepgram segment accumulation (finals append, partials replace).
+    // Cross-turn sticky prefixes are removed by stripLeadingUtterance above —
+    // do not clear the in-turn buffer here or last-segment finals wipe history.
     if (isFinal) {
       _transcriptBuffer.appendFinal(cleaned);
     } else {
@@ -59,10 +62,12 @@ extension VoiceCallControllerCommands on VoiceCallController {
       _emptyVoiceTurnRecoveryCount = 0;
     }
 
+    // Do not force isCapturingSpeech here — that flag is VAD-owned. STT-only
+    // updates must still allow transcript-idle endpointing, and mid-utterance
+    // speech_final must not look like a fresh mic open.
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       currentTranscript: _transcriptBuffer.visible,
-      isCapturingSpeech: true,
       clearError: true,
     );
     _syncInterimVoiceTranscriptToChat(_transcriptBuffer.visible);
