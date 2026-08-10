@@ -301,7 +301,7 @@ class _ScriptedStreamingAudioCaptureService
 }
 
 class _ControlledAudioPlaybackService implements AudioPlaybackService {
-  final playStarted = Completer<void>();
+  Completer<void> playStarted = Completer<void>();
   AudioPlaybackCompleteCallback? _onComplete;
   var stopCount = 0;
   var playCount = 0;
@@ -322,6 +322,10 @@ class _ControlledAudioPlaybackService implements AudioPlaybackService {
     if (!playStarted.isCompleted) {
       playStarted.complete();
     }
+  }
+
+  void armNextPlay() {
+    playStarted = Completer<void>();
   }
 
   void complete() {

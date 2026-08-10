@@ -908,6 +908,106 @@ void main() {
       expect(cloudVoiceApi.synthesizedTexts, ['Chat fallback reply.']);
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
       expect(container.read(chatProvider).messages, isNotEmpty);
+      expect(
+        container
+            .read(chatProvider)
+            .messages
+            .where((m) => m.role == ChatMessageRole.user)
+            .length,
+        1,
+      );
+    },
+  );
+
+  test(
+    'second soft-recover after chat fallback still completes via chat',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final chatApi = _RecordingChatApi();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final playbackService = _ControlledAudioPlaybackService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          chatApiProvider.overrideWithValue(chatApi),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'First turn',
+      });
+      await Future<void>.delayed(Duration.zero);
+      // Finalize path sets `_streamingTurnFinalizedSequence`; old chat-fallback
+      // gating reused that id and blocked the next turn.
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      streamingApi.socket.emit({
+        'event': 'error',
+        'code': 'empty_audio',
+        'detail': 'I did not catch any audio.',
+      });
+      await Future<void>.delayed(Duration.zero);
+      await playbackService.playStarted.future.timeout(
+        const Duration(seconds: 1),
+      );
+      expect(chatApi.sentMessages, ['First turn']);
+      playbackService.armNextPlay();
+      playbackService.complete();
+      await Future<void>.delayed(Duration.zero);
+      await captureService.readyAt(1);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Second turn',
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(voiceCallProvider).currentTranscript,
+        'Second turn',
+      );
+      captureService.finishCurrentWithoutSpeech();
+      await Future<void>.delayed(Duration.zero);
+      await playbackService.playStarted.future.timeout(
+        const Duration(seconds: 1),
+      );
+
+      expect(chatApi.sentMessages, ['First turn', 'Second turn']);
+      expect(cloudVoiceApi.synthesizedTexts.length, 2);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+      expect(
+        container.read(voiceCallProvider).currentTranscript,
+        isNot(equals('Second turn')),
+      );
     },
   );
 

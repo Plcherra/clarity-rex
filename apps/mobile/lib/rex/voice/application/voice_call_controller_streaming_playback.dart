@@ -148,9 +148,10 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     if (transcript.isEmpty || !state.isCallActive) {
       return false;
     }
-    // One chat+TTS completion per streaming turn — do not share the soft-recover
-    // counter (startThinking resets that counter and blocked retries incorrectly).
-    final turnKey = _streamingTurnFinalizedSequence ?? _streamingTurnSequence;
+    // Gate on the *current* listen turn only. Preferring
+    // `_streamingTurnFinalizedSequence` blocked every later turn after the
+    // first finalize/fallback (transcript appeared, then soft-recover wiped).
+    final turnKey = _streamingTurnSequence;
     if (_chatFallbackTurnSequence == turnKey) {
       return false;
     }
@@ -190,6 +191,11 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
 
       final assistantText =
           (assistantTextFromApiResponse(result) ?? result.response).trim();
+      // Backend messages are authoritative for this completed turn. Drop the
+      // local-voice bubble first so a slightly different STT vs saved user
+      // text cannot leave a duplicate row that then vanishes.
+      chatNotifier.removeAllLocalVoiceUserMessages();
+      _resetActiveVoiceMessageLocalId();
       chatNotifier.applyBackendMessages(
         conversationId: result.conversationId,
         messages: result.messages,

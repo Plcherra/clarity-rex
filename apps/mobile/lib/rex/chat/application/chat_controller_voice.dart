@@ -210,6 +210,19 @@ extension ChatControllerVoice on ChatController {
     );
   }
 
+  void removeAllLocalVoiceUserMessages() {
+    final filtered = state.messages
+        .where((message) => !_isLocalVoiceMessageId(message.id))
+        .toList(growable: false);
+    if (filtered.length == state.messages.length) {
+      return;
+    }
+    state = state.copyWith(
+      messages: List.unmodifiable(filtered),
+      clearError: true,
+    );
+  }
+
   bool hasUserMessageWithContent(String content) {
     final normalized = _normalizeVoiceMessageContent(content);
     if (normalized.isEmpty) {

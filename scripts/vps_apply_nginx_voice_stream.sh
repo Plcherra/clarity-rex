@@ -163,3 +163,10 @@ else
   echo "voice/stream still missing after apply." >&2
   exit 1
 fi
+
+# Ensure the dedicated access log path exists (nginx creates it on first hit,
+# but missing file after a speak attempt means the location was never used).
+sudo touch /var/log/nginx/clarity-rex-voice.access.log
+sudo chmod 644 /var/log/nginx/clarity-rex-voice.access.log || true
+echo "==> Log file ready: /var/log/nginx/clarity-rex-voice.access.log"
+echo "==> After a spoken turn, expect WebSocket lines in journalctl and rows in that log."
