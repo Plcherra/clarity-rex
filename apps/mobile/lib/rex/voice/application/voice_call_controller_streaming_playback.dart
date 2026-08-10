@@ -161,6 +161,13 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     // and Google TTS instead of wiping back to "Start talking".
     // Works without the backend client-transcript deploy.
     if (state.phase != VoiceCallPhase.thinking) {
+      _voiceTrace.record(
+        event: 'chat_fallback',
+        reason: VoiceTurnFinalizeReason.chatFallback.code,
+        turnId: '$_streamingTurnSequence',
+        fromPhase: state.phase.name,
+        toPhase: VoiceCallPhase.thinking.name,
+      );
       startThinking(finalTranscript: transcript);
     }
     unawaited(_runChatFallbackAfterEmptyAudio(transcript));

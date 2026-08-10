@@ -161,7 +161,12 @@ class _HangingStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
   final started = Completer<void>();
   final _capture = Completer<StreamingUtteranceCaptureResult>();
+  SpeechEndCallback? _onSpeechEnded;
   var cancelled = false;
+
+  void notifyVadSilence() {
+    _onSpeechEnded?.call();
+  }
 
   @override
   Future<void> cancel() async {
@@ -179,8 +184,8 @@ class _HangingStreamingAudioCaptureService
     required SpeechEndCallback onSpeechEnded,
     required AudioChunkCallback onAudioChunk,
   }) {
-    // Do not auto-start VAD speech — idle-endpoint tests need STT-only turns
-    // while the capture future stays open.
+    // Keep capture open; tests drive VAD / STT independently.
+    _onSpeechEnded = onSpeechEnded;
     onReady();
     if (!started.isCompleted) {
       started.complete();
@@ -254,6 +259,10 @@ class _ScriptedStreamingAudioCaptureService
     _lastOnSpeechStart?.call();
   }
 
+  void notifyVadSilence() {
+    _lastOnSpeechEnded?.call();
+  }
+
   void finishCurrentWithSpeech() {
     if (_captures.isEmpty) {
       return;
@@ -268,7 +277,7 @@ class _ScriptedStreamingAudioCaptureService
       capture.complete(
         const StreamingUtteranceCaptureResult(
           hasSpeech: true,
-          endedByVoiceEndpoint: true,
+          endKind: StreamingCaptureEndKind.vadSilence,
         ),
       );
     }
@@ -287,7 +296,25 @@ class _ScriptedStreamingAudioCaptureService
     capture.complete(
       const StreamingUtteranceCaptureResult(
         hasSpeech: true,
-        endedByVoiceEndpoint: false,
+        endKind: StreamingCaptureEndKind.aborted,
+      ),
+    );
+  }
+
+  /// Hits max utterance duration — must roll, not submit.
+  void finishCurrentWithMaxDuration() {
+    if (_captures.isEmpty) {
+      return;
+    }
+    final capture = _captures.last;
+    if (capture.isCompleted) {
+      return;
+    }
+    _lastOnSpeechStart?.call();
+    capture.complete(
+      const StreamingUtteranceCaptureResult(
+        hasSpeech: true,
+        endKind: StreamingCaptureEndKind.maxDuration,
       ),
     );
   }

@@ -15,6 +15,7 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
 
   void _bindAudioInterruptionHold() {
     unawaited(_audioInterruptionSubscription?.cancel());
+    unawaited(_noisyAudioSubscription?.cancel());
     _audioInterruptionSubscription = _audioSessionService.listenForInterruptions(
       onBegin: () {
         if (!state.isCallActive || _isUsingNativeVoice) {
@@ -29,6 +30,12 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
         unawaited(_handleAudioInterruptionEnded());
       },
     );
+    _noisyAudioSubscription = _audioSessionService.listenForNoisyAudio((_) {
+      if (!state.isCallActive || _isUsingNativeVoice) {
+        return;
+      }
+      _beginLifecycleUtteranceHold(reason: 'route_noisy');
+    });
   }
 
   Future<void> _handleAudioInterruptionEnded() async {
@@ -46,7 +53,9 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
     _stopNativeVoiceSession();
     _stopBargeInMonitoring();
     final interruptionSubscription = _audioInterruptionSubscription;
+    final noisySubscription = _noisyAudioSubscription;
     _audioInterruptionSubscription = null;
+    _noisyAudioSubscription = null;
     final streamingSession = _activeStreamingSession;
     _activeStreamingSession = null;
     _activeStreamingEventsTask = null;
@@ -60,6 +69,7 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
 
     await Future.wait([
       if (interruptionSubscription != null) interruptionSubscription.cancel(),
+      if (noisySubscription != null) noisySubscription.cancel(),
       _streamingPlaybackQueue.cancel(),
       _playbackService.stop(),
       _backgroundVoiceService.stop(),
@@ -142,6 +152,13 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
     // Do not let transcript-idle / speech-final grace fire mid-screenshot.
     _cancelListeningEndpointTimeout();
     _cancelSpeechFinalGrace();
+    _voiceTrace.record(
+      event: 'lifecycle.hold',
+      reason: reason,
+      turnId: '$_streamingTurnSequence',
+      fromPhase: state.phase.name,
+      toPhase: state.phase.name,
+    );
     debugPrint('rex_voice_lifecycle hold_utterance_end reason=$reason');
   }
 

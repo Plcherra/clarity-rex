@@ -180,6 +180,7 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
                 _cancelSpeechFinalGrace();
                 _endTurnFromLocalEndpoint(
                   _callGeneration,
+                  reason: VoiceTurnFinalizeReason.speechFinalAfterVad,
                   preferredTranscript: preferredTranscript,
                 );
               }

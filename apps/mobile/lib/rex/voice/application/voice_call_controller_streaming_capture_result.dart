@@ -18,37 +18,43 @@ extension VoiceCallControllerStreamingCaptureResult on VoiceCallController {
       return;
     }
 
-    // Screenshot / route blip: mic dies before AppLifecycle inactive. Never
-    // treat stream death as a conversational endpoint.
-    if (!captureResult.endedByVoiceEndpoint) {
-      if (state.phase == VoiceCallPhase.thinking ||
-          state.phase == VoiceCallPhase.speaking) {
-        return;
-      }
-      if (listenEpoch != _streamingListenEpoch) {
-        return;
-      }
-      if (_streamingTurnFinalizedSequence == _streamingTurnSequence ||
-          _speechFinalGraceTimer != null) {
-        return;
-      }
-      if (_holdUtteranceEndForLifecycle) {
-        _restartListenAfterLifecycleHold = true;
-        return;
-      }
-      // Mic heard speech then stream died — keep bubble, restart listen.
-      // Empty cancel with a stuck transcript still uses chat-fallback recover.
-      if (captureResult.hasSpeech) {
-        _restartListenAfterLifecycleHold = true;
-        _cancelListeningEndpointTimeout();
-        _cancelSpeechFinalGrace();
-        await _recoverListenCycleAfterLifecycleHold();
-        return;
-      }
-      _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
-      return;
-    }
+    _voiceTrace.record(
+      event: 'capture.end',
+      reason: captureResult.endKind.name,
+      turnId: '$_streamingTurnSequence',
+      fromPhase: state.phase.name,
+      toPhase: state.phase.name,
+    );
 
+    switch (captureResult.endKind) {
+      case StreamingCaptureEndKind.vadSilence:
+        await _handleVadSilenceCaptureEnd(
+          captureResult,
+          generation: generation,
+          listenEpoch: listenEpoch,
+        );
+        return;
+      case StreamingCaptureEndKind.maxDuration:
+        await _rollCaptureAfterMaxDuration(generation);
+        return;
+      case StreamingCaptureEndKind.aborted:
+      case StreamingCaptureEndKind.cancelled:
+      case StreamingCaptureEndKind.noSpeech:
+        await _handleNonVadCaptureEnd(
+          captureResult,
+          generation: generation,
+          listenEpoch: listenEpoch,
+        );
+        return;
+    }
+  }
+
+  Future<void> _handleVadSilenceCaptureEnd(
+    StreamingUtteranceCaptureResult captureResult, {
+    required int generation,
+    required int listenEpoch,
+  }) async {
+    _markVadSilenceReached(source: 'capture.vadSilence');
     if (!captureResult.hasSpeech) {
       if (state.phase == VoiceCallPhase.thinking ||
           state.phase == VoiceCallPhase.speaking) {
@@ -76,10 +82,65 @@ extension VoiceCallControllerStreamingCaptureResult on VoiceCallController {
         _restartListenAfterLifecycleHold = true;
         return;
       }
-      _endTurnFromLocalEndpoint(generation, recoverIfEmpty: false);
+      _endTurnFromLocalEndpoint(
+        generation,
+        reason: VoiceTurnFinalizeReason.vadSilence,
+        recoverIfEmpty: false,
+      );
       if (_streamingTurnFinalizedSequence != _streamingTurnSequence) {
         _armSpeechFinalGraceAfterCapture(generation, listenEpoch);
       }
     }
+  }
+
+  Future<void> _rollCaptureAfterMaxDuration(int generation) async {
+    // Max-duration is not conversational silence — keep the same logical turn.
+    if (state.phase != VoiceCallPhase.listening || state.isMuted) {
+      return;
+    }
+    _voiceTrace.record(
+      event: 'capture.max_duration_roll',
+      reason: VoiceTurnFinalizeReason.maxDurationRollover.code,
+      turnId: '$_streamingTurnSequence',
+      fromPhase: state.phase.name,
+      toPhase: state.phase.name,
+    );
+    debugPrint('rex_voice_authority max_duration_roll_same_turn');
+    _cancelListeningEndpointTimeout();
+    _cancelSpeechFinalGrace();
+    state = state.copyWith(isCapturingSpeech: false, clearError: true);
+    _startListeningCyclePreservingTranscript(generation);
+  }
+
+  Future<void> _handleNonVadCaptureEnd(
+    StreamingUtteranceCaptureResult captureResult, {
+    required int generation,
+    required int listenEpoch,
+  }) async {
+    if (state.phase == VoiceCallPhase.thinking ||
+        state.phase == VoiceCallPhase.speaking) {
+      return;
+    }
+    if (listenEpoch != _streamingListenEpoch) {
+      return;
+    }
+    if (_streamingTurnFinalizedSequence == _streamingTurnSequence ||
+        _speechFinalGraceTimer != null) {
+      return;
+    }
+    if (_holdUtteranceEndForLifecycle) {
+      _restartListenAfterLifecycleHold = true;
+      return;
+    }
+    // Mic heard speech then stream died — keep bubble, restart listen.
+    // Empty cancel with a stuck transcript still uses chat-fallback recover.
+    if (captureResult.hasSpeech) {
+      _restartListenAfterLifecycleHold = true;
+      _cancelListeningEndpointTimeout();
+      _cancelSpeechFinalGrace();
+      await _recoverListenCycleAfterLifecycleHold();
+      return;
+    }
+    _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
   }
 }

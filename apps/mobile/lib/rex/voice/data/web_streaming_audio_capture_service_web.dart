@@ -6,6 +6,7 @@ import 'package:clarity/rex/voice/data/streaming_audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/voice_capture_config.dart';
 import 'package:clarity/rex/voice/data/voice_pcm16.dart';
 import 'package:clarity/rex/voice/data/web_pcm_microphone_engine.dart';
+import 'package:clarity/rex/voice/domain/streaming_capture_end_kind.dart';
 
 StreamingAudioCaptureService createPlatformStreamingAudioCaptureService() {
   return WebStreamingAudioCaptureService();
@@ -70,16 +71,26 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
           speechEndedNotified = true;
           onSpeechEnded();
         }
-        if (update.endpointReached || update.maxDurationReached) {
+        if (update.endpointReached) {
           unawaited(
             _complete(
               hasSpeech: detector.hasSpeech,
-              endedByVoiceEndpoint: true,
+              endKind: StreamingCaptureEndKind.vadSilence,
+            ),
+          );
+        } else if (update.maxDurationReached) {
+          unawaited(
+            _complete(
+              hasSpeech: detector.hasSpeech,
+              endKind: StreamingCaptureEndKind.maxDuration,
             ),
           );
         } else if (update.noSpeechTimedOut) {
           unawaited(
-            _complete(hasSpeech: false, endedByVoiceEndpoint: false),
+            _complete(
+              hasSpeech: false,
+              endKind: StreamingCaptureEndKind.noSpeech,
+            ),
           );
         }
       },
@@ -87,7 +98,7 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
         unawaited(
           _complete(
             hasSpeech: detector.hasSpeech,
-            endedByVoiceEndpoint: false,
+            endKind: StreamingCaptureEndKind.aborted,
           ),
         );
       },
@@ -98,7 +109,7 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
         unawaited(
           _complete(
             hasSpeech: detector.hasSpeech,
-            endedByVoiceEndpoint: false,
+            endKind: StreamingCaptureEndKind.aborted,
           ),
         );
       },
@@ -108,7 +119,10 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
     _noSpeechTimer = Timer(endpointConfig.noSpeechTimeout, () {
       if (!detector.hasSpeech) {
         unawaited(
-          _complete(hasSpeech: false, endedByVoiceEndpoint: false),
+          _complete(
+            hasSpeech: false,
+            endKind: StreamingCaptureEndKind.noSpeech,
+          ),
         );
       }
     });
@@ -116,7 +130,7 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
       unawaited(
         _complete(
           hasSpeech: detector.hasSpeech,
-          endedByVoiceEndpoint: true,
+          endKind: StreamingCaptureEndKind.maxDuration,
         ),
       );
     });
@@ -141,7 +155,7 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
 
   Future<void> _complete({
     required bool hasSpeech,
-    required bool endedByVoiceEndpoint,
+    required StreamingCaptureEndKind endKind,
   }) async {
     final completer = _captureCompleter;
     if (completer == null || completer.isCompleted) {
@@ -157,7 +171,7 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
     completer.complete(
       StreamingUtteranceCaptureResult(
         hasSpeech: hasSpeech,
-        endedByVoiceEndpoint: endedByVoiceEndpoint,
+        endKind: endKind,
       ),
     );
   }

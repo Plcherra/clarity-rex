@@ -99,7 +99,11 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
               // VAD silence window closed — mic speech is over even if STT lags.
               state = state.copyWith(isCapturingSpeech: false);
               _markVoiceTurnCaptureEnd(_streamingTurnSequence);
-              _endTurnFromLocalEndpoint(generation);
+              _markVadSilenceReached(source: 'onSpeechEnded');
+              _endTurnFromLocalEndpoint(
+                generation,
+                reason: VoiceTurnFinalizeReason.vadSilence,
+              );
             }
           },
           onAudioChunk: (chunk) async {
@@ -204,7 +208,11 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
             state.phase == VoiceCallPhase.listening) {
           state = state.copyWith(isCapturingSpeech: false);
           _markVoiceTurnCaptureEnd(_streamingTurnSequence);
-          _endTurnFromLocalEndpoint(generation);
+          _markVadSilenceReached(source: 'onSpeechEnded');
+          _endTurnFromLocalEndpoint(
+            generation,
+            reason: VoiceTurnFinalizeReason.vadSilence,
+          );
         }
       },
       onAudioChunk: (chunk) async {

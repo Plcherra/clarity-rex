@@ -290,7 +290,7 @@ void main() {
   );
 
   test(
-    'streaming voice finalizes after transcript idle without local endpoint',
+    'transcript idle without prior VAD must not finalize',
     () async {
       final captureService = _HangingStreamingAudioCaptureService();
       final streamingApi = _FakeStreamingVoiceApi();
@@ -337,31 +337,21 @@ void main() {
         'transcript': 'Hello Rex how are you',
       });
       await Future<void>.delayed(Duration.zero);
-
-      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
-      expect(
-        container.read(voiceCallProvider).currentTranscript,
-        'Hello Rex how are you',
-      );
-
       await Future<void>.delayed(const Duration(milliseconds: 80));
 
-      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      // STT idle is not VAD silence — must not masquerade as submit authority.
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
       expect(
         streamingApi.socket.sentEvents.where(
           (event) => event == 'utterance.end',
         ),
-        hasLength(1),
+        isEmpty,
       );
-      final messages = container.read(chatProvider).messages;
-      expect(messages, isNotEmpty);
-      expect(messages.first.content, 'Hello Rex how are you');
-      expect(messages.first.isVoiceInterim, isFalse);
     },
   );
 
   test(
-    'late speech_final after transcript idle does not send a second utterance.end',
+    'transcript idle after VAD silence finalizes once',
     () async {
       final captureService = _HangingStreamingAudioCaptureService();
       final streamingApi = _FakeStreamingVoiceApi();
@@ -404,6 +394,9 @@ void main() {
       );
       await captureService.started.future;
 
+      // VAD first (empty transcript), then STT arrives and idle completes.
+      captureService.notifyVadSilence();
+      await Future<void>.delayed(Duration.zero);
       streamingApi.socket.emit({
         'event': 'transcript.partial',
         'transcript': 'Save my morning routine',
@@ -419,8 +412,6 @@ void main() {
         hasLength(1),
       );
 
-      // Belated Deepgram speech_final after idle finalize must not restart
-      // playback or enqueue a second turn.
       streamingApi.socket.emit({
         'event': 'transcript.final',
         'transcript': 'Save my morning routine',
@@ -429,7 +420,6 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
       expect(
         streamingApi.socket.sentEvents.where(
           (event) => event == 'utterance.end',
@@ -3430,6 +3420,67 @@ void main() {
       await captureService.readyAt(1);
 
       expect(container.read(voiceCallProvider).isCallActive, isTrue);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      expect(container.read(voiceCallProvider).currentTranscript, partial);
+      expect(
+        streamingApi.socket.sentEvents.where((e) => e == 'utterance.end'),
+        isEmpty,
+      );
+      expect(streamingApi.connectCount, 1);
+    },
+  );
+
+  test(
+    'max-duration capture rolls same turn without utterance.end',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      const partial = 'I am still talking through the max duration limit';
+      captureService.startCurrentSpeech();
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': partial,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      captureService.finishCurrentWithMaxDuration();
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      await captureService.readyAt(1);
+
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
       expect(container.read(voiceCallProvider).currentTranscript, partial);
       expect(

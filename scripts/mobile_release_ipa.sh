@@ -132,6 +132,10 @@ for line in text.splitlines(keepends=True):
 path.write_text("".join(lines))
 PY
 
+CLARITY_GIT_SHA="${CLARITY_GIT_SHA:-$(git -C "${ROOT_DIR}" rev-parse HEAD 2>/dev/null || echo local)}"
+CLARITY_GIT_BRANCH="${CLARITY_GIT_BRANCH:-$(git -C "${ROOT_DIR}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo local)}"
+CLARITY_BUILD_TIMESTAMP="${CLARITY_BUILD_TIMESTAMP:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}"
+
 command=(
   flutter build ipa
   "--build-name=${BUILD_NAME}"
@@ -142,6 +146,9 @@ command=(
   "--dart-define=REX_CLOUD_VOICE_ENABLED=${REX_CLOUD_VOICE_ENABLED}"
   "--dart-define=REX_STREAMING_VOICE_ENABLED=${REX_STREAMING_VOICE_ENABLED}"
   "--dart-define=SUPABASE_AUTH_REDIRECT_URL=https://goclarity.app/auth/confirmed/"
+  "--dart-define=CLARITY_GIT_SHA=${CLARITY_GIT_SHA}"
+  "--dart-define=CLARITY_GIT_BRANCH=${CLARITY_GIT_BRANCH}"
+  "--dart-define=CLARITY_BUILD_TIMESTAMP=${CLARITY_BUILD_TIMESTAMP}"
 )
 
 if [ -n "${SENTRY_DSN:-}" ]; then
@@ -155,6 +162,9 @@ echo "Building IPA ${BUILD_NAME} (${BUILD_NUMBER}) with production dart-defines.
 echo "  SUPABASE_URL=${SUPABASE_URL}"
 echo "  REX_BACKEND_URL=${REX_BACKEND_URL}"
 echo "  SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}"
+echo "  CLARITY_GIT_SHA=${CLARITY_GIT_SHA}"
+echo "  CLARITY_GIT_BRANCH=${CLARITY_GIT_BRANCH}"
+echo "  CLARITY_BUILD_TIMESTAMP=${CLARITY_BUILD_TIMESTAMP}"
 
 cd "${MOBILE_DIR}"
 "${command[@]}"

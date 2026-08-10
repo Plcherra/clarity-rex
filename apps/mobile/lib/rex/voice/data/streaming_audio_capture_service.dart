@@ -7,6 +7,7 @@ import 'package:record/record.dart';
 
 import 'package:clarity/rex/voice/data/voice_capture_config.dart';
 import 'package:clarity/rex/voice/data/voice_pcm16.dart';
+import 'package:clarity/rex/voice/domain/streaming_capture_end_kind.dart';
 
 typedef AudioChunkCallback = Future<void> Function(Uint8List chunk);
 typedef SpeechEndCallback = void Function();
@@ -14,24 +15,24 @@ typedef BargeInCallback = void Function(List<Uint8List> audioChunks);
 
 /// Result of one streaming mic capture cycle.
 ///
-/// Only [endedByVoiceEndpoint] may finalize a turn. Screenshot / audio-session
-/// blips often kill the recorder before [AppLifecycleState.inactive] arrives;
-/// those must not send a partial utterance.end.
+/// Only [StreamingCaptureEndKind.vadSilence] may authorize transcript submit.
+/// Screenshot / audio-session blips and max-duration must not masquerade as VAD.
 class StreamingUtteranceCaptureResult {
   const StreamingUtteranceCaptureResult({
     required this.hasSpeech,
-    required this.endedByVoiceEndpoint,
+    required this.endKind,
   });
 
   static const cancelled = StreamingUtteranceCaptureResult(
     hasSpeech: false,
-    endedByVoiceEndpoint: false,
+    endKind: StreamingCaptureEndKind.cancelled,
   );
 
   final bool hasSpeech;
+  final StreamingCaptureEndKind endKind;
 
-  /// True only after local VAD silence (or max-duration) closed the utterance.
-  final bool endedByVoiceEndpoint;
+  /// True only after local VAD silence closed speech (never max-duration/abort).
+  bool get endedByVoiceEndpoint => endKind.mayAuthorizeSubmit;
 }
 
 abstract class StreamingAudioCaptureService {
@@ -242,25 +243,35 @@ class PackageStreamingAudioCaptureService
           speechEndedNotified = true;
           onSpeechEnded();
         }
-        if (update.endpointReached || update.maxDurationReached) {
+        if (update.endpointReached) {
           unawaited(
             _complete(
               hasSpeech: detector.hasSpeech,
-              endedByVoiceEndpoint: true,
+              endKind: StreamingCaptureEndKind.vadSilence,
+            ),
+          );
+        } else if (update.maxDurationReached) {
+          unawaited(
+            _complete(
+              hasSpeech: detector.hasSpeech,
+              endKind: StreamingCaptureEndKind.maxDuration,
             ),
           );
         } else if (update.noSpeechTimedOut) {
           unawaited(
-            _complete(hasSpeech: false, endedByVoiceEndpoint: false),
+            _complete(
+              hasSpeech: false,
+              endKind: StreamingCaptureEndKind.noSpeech,
+            ),
           );
         }
       },
       onError: (_) {
-        // Screenshot / route blip — not a conversational endpoint.
+        // Screenshot / route blip — never vadSilence.
         unawaited(
           _complete(
             hasSpeech: detector.hasSpeech,
-            endedByVoiceEndpoint: false,
+            endKind: StreamingCaptureEndKind.aborted,
           ),
         );
       },
@@ -271,7 +282,7 @@ class PackageStreamingAudioCaptureService
         unawaited(
           _complete(
             hasSpeech: detector.hasSpeech,
-            endedByVoiceEndpoint: false,
+            endKind: StreamingCaptureEndKind.aborted,
           ),
         );
       },
@@ -281,7 +292,10 @@ class PackageStreamingAudioCaptureService
     _noSpeechTimer = Timer(endpointConfig.noSpeechTimeout, () {
       if (!detector.hasSpeech) {
         unawaited(
-          _complete(hasSpeech: false, endedByVoiceEndpoint: false),
+          _complete(
+            hasSpeech: false,
+            endKind: StreamingCaptureEndKind.noSpeech,
+          ),
         );
       }
     });
@@ -289,7 +303,7 @@ class PackageStreamingAudioCaptureService
       unawaited(
         _complete(
           hasSpeech: detector.hasSpeech,
-          endedByVoiceEndpoint: true,
+          endKind: StreamingCaptureEndKind.maxDuration,
         ),
       );
     });
@@ -318,7 +332,7 @@ class PackageStreamingAudioCaptureService
 
   Future<void> _complete({
     required bool hasSpeech,
-    required bool endedByVoiceEndpoint,
+    required StreamingCaptureEndKind endKind,
   }) async {
     final completer = _captureCompleter;
     if (completer == null || completer.isCompleted) {
@@ -338,7 +352,7 @@ class PackageStreamingAudioCaptureService
     completer.complete(
       StreamingUtteranceCaptureResult(
         hasSpeech: hasSpeech,
-        endedByVoiceEndpoint: endedByVoiceEndpoint,
+        endKind: endKind,
       ),
     );
   }

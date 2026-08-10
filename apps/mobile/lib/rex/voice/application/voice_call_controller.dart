@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clarity/core/release/clarity_build_provenance.dart';
 import 'package:clarity/core/l10n/app_locale.dart';
 import 'package:clarity/core/l10n/friendly_service_error.dart';
 import 'package:clarity/core/network/device_connectivity.dart';
@@ -33,6 +34,9 @@ import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/rex/voice/data/web_pcm_microphone_engine_stub.dart'
     if (dart.library.html) 'package:clarity/rex/voice/data/web_pcm_microphone_engine_web.dart';
 import 'package:clarity/rex/voice/data/web_page_visibility.dart';
+import 'package:clarity/rex/voice/application/voice_session_trace.dart';
+import 'package:clarity/rex/voice/domain/streaming_capture_end_kind.dart';
+import 'package:clarity/rex/voice/domain/voice_turn_finalize_reason.dart';
 
 import 'voice_call_controller_providers.dart';
 export 'package:clarity/rex/voice/application/voice_permission_service.dart';
@@ -73,7 +77,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
   NativeVoiceSessionService? _activeNativeVoiceSessionService;
   StreamSubscription<NativeVoiceEvent>? _nativeVoiceSubscription;
   StreamSubscription<AudioInterruptionEvent>? _audioInterruptionSubscription;
+  StreamSubscription<void>? _noisyAudioSubscription;
   final _transcriptBuffer = VoiceTranscriptBuffer();
+  final VoiceSessionTrace _voiceTrace = VoiceSessionTrace.instance;
   var _nativeAssistantText = '';
   var _isStartingCall = false;
   var _isBargeInMonitoring = false;
@@ -89,6 +95,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
   /// Capture died during a lifecycle hold; restart listen on resume without
   /// finalizing the partial transcript.
   var _restartListenAfterLifecycleHold = false;
+  /// Set only by genuine local VAD silence for the active turn. STT idle /
+  /// speech_final catch-up cannot submit without this flag.
+  var _vadSilenceReachedForTurn = false;
   var _isUsingNativeVoice = false;
   var _warnedLegacyNativeVoiceFlag = false;
   var _isAwaitingFollowUpSpeech = false;
@@ -150,12 +159,17 @@ class VoiceCallController extends Notifier<VoiceCallState>
       final streamingSession = _activeStreamingSession;
       final nativeVoiceSubscription = _nativeVoiceSubscription;
       final audioInterruptionSubscription = _audioInterruptionSubscription;
+      final noisyAudioSubscription = _noisyAudioSubscription;
       final nativeVoiceSession = _activeNativeVoiceSessionService;
       final audioSessionService = _activeAudioSessionService;
       final backgroundVoiceService = _activeBackgroundVoiceService;
       _audioInterruptionSubscription = null;
+      _noisyAudioSubscription = null;
       if (audioInterruptionSubscription != null) {
         unawaited(audioInterruptionSubscription.cancel());
+      }
+      if (noisyAudioSubscription != null) {
+        unawaited(noisyAudioSubscription.cancel());
       }
       if (captureService != null) {
         unawaited(captureService.cancel());
@@ -247,6 +261,18 @@ class VoiceCallController extends Notifier<VoiceCallState>
       phase: VoiceCallPhase.listening,
       conversationId: activeConversationId,
       callStartedAt: startedAt,
+    );
+    _vadSilenceReachedForTurn = false;
+    _voiceTrace.bindSession(
+      sessionId: 'voice-$generation-${startedAt.millisecondsSinceEpoch}',
+      buildSha: ClarityBuildProvenance.gitShaDefine,
+    );
+    _voiceTrace.record(
+      event: 'call.start',
+      reason: 'user',
+      turnId: '0',
+      fromPhase: VoiceCallPhase.idle.name,
+      toPhase: VoiceCallPhase.listening.name,
     );
 
     if (_shouldUseNativeVoice) {

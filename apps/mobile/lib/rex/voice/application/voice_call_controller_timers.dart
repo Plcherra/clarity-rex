@@ -144,6 +144,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
       if (transcript.isNotEmpty) {
         _endTurnFromLocalEndpoint(
           generation,
+          reason: VoiceTurnFinalizeReason.speechFinalAfterVad,
           preferredTranscript: transcript,
         );
         return;
@@ -249,9 +250,22 @@ extension VoiceCallControllerTimers on VoiceCallController {
     if (state.isCapturingSpeech) {
       return;
     }
-    // Finalize first so a racing capture.cancel() completion cannot treat this
-    // as an empty turn and restart listening.
-    _endTurnFromLocalEndpoint(generation);
+    // STT idle must never masquerade as VAD — leave capture running.
+    if (!_vadSilenceReachedForTurn) {
+      _voiceTrace.record(
+        event: 'finalize.rejected',
+        reason: 'idle_without_vad',
+        turnId: '$_streamingTurnSequence',
+        fromPhase: state.phase.name,
+        toPhase: state.phase.name,
+      );
+      debugPrint('rex_voice_authority reject_idle_without_vad');
+      return;
+    }
+    _endTurnFromLocalEndpoint(
+      generation,
+      reason: VoiceTurnFinalizeReason.transcriptIdleAfterVad,
+    );
     unawaited(_streamingCaptureService.cancel());
     unawaited(_stopInterimTranscription());
   }
