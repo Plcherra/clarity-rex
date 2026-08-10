@@ -133,6 +133,10 @@ extension VoiceCallControllerTimers on VoiceCallController {
           state.isMuted) {
         return;
       }
+      if (_holdUtteranceEndForLifecycle) {
+        _restartListenAfterLifecycleHold = true;
+        return;
+      }
       if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
         return;
       }
@@ -233,6 +237,10 @@ extension VoiceCallControllerTimers on VoiceCallController {
         !state.isCallActive ||
         state.phase != VoiceCallPhase.listening ||
         state.isMuted) {
+      return;
+    }
+    if (_holdUtteranceEndForLifecycle) {
+      _restartListenAfterLifecycleHold = true;
       return;
     }
     if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {

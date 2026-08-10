@@ -78,6 +78,13 @@ class VoiceCallController extends Notifier<VoiceCallState>
   /// Tracks prior lifecycle so screenshot/Control Center (inactive→resumed)
   /// preserves the voice session instead of tearing it down.
   AppLifecycleState? _lastAppLifecycleState;
+  /// While true, VAD / transcript-idle / capture-complete must not send
+  /// utterance.end — screenshot and Control Center briefly go inactive and
+  /// can look like silence or kill the recorder mid-phrase.
+  var _holdUtteranceEndForLifecycle = false;
+  /// Capture died during a lifecycle hold; restart listen on resume without
+  /// finalizing the partial transcript.
+  var _restartListenAfterLifecycleHold = false;
   var _isUsingNativeVoice = false;
   var _warnedLegacyNativeVoiceFlag = false;
   var _isAwaitingFollowUpSpeech = false;

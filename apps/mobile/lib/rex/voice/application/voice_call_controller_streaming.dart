@@ -7,6 +7,26 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     int generation, {
     List<Uint8List> initialAudioChunks = const [],
   }) {
+    _startListeningCycleInternal(
+      generation,
+      initialAudioChunks: initialAudioChunks,
+      preserveTranscript: false,
+    );
+  }
+
+  /// Restart mic after screenshot/background without wiping the live bubble.
+  void _startListeningCyclePreservingTranscript(int generation) {
+    _startListeningCycleInternal(
+      generation,
+      preserveTranscript: true,
+    );
+  }
+
+  void _startListeningCycleInternal(
+    int generation, {
+    List<Uint8List> initialAudioChunks = const [],
+    required bool preserveTranscript,
+  }) {
     if (_isUsingNativeVoice) {
       return;
     }
@@ -36,6 +56,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
           generation,
           listenEpoch: listenEpoch,
           initialAudioChunks: initialAudioChunks,
+          preserveTranscript: preserveTranscript,
         ),
       );
     } else {
@@ -47,6 +68,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     int generation, {
     required int listenEpoch,
     List<Uint8List> initialAudioChunks = const [],
+    bool preserveTranscript = false,
   }) async {
     if (!_isCurrentCall(generation) ||
         listenEpoch != _streamingListenEpoch ||
@@ -63,6 +85,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         generation,
         listenEpoch: listenEpoch,
         initialAudioChunks: initialAudioChunks,
+        preserveTranscript: preserveTranscript,
       );
       return;
     }
@@ -71,6 +94,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
       generation,
       listenEpoch: listenEpoch,
       initialAudioChunks: initialAudioChunks,
+      preserveTranscript: preserveTranscript,
     );
   }
 }

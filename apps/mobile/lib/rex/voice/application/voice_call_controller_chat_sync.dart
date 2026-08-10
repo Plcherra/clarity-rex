@@ -106,6 +106,12 @@ extension VoiceCallControllerChatSync on VoiceCallController {
         state.isMuted) {
       return;
     }
+    if (_holdUtteranceEndForLifecycle) {
+      // Screenshot / Control Center — keep listening; do not send partials.
+      _restartListenAfterLifecycleHold = true;
+      debugPrint('rex_voice_lifecycle skip_utterance_end_while_held');
+      return;
+    }
     if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
       return;
     }
@@ -144,6 +150,11 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     required int turnSequence,
   }) {
     if (_streamingTurnFinalizedSequence == turnSequence) {
+      return;
+    }
+    if (_holdUtteranceEndForLifecycle) {
+      _restartListenAfterLifecycleHold = true;
+      debugPrint('rex_voice_lifecycle skip_finalize_while_held');
       return;
     }
 

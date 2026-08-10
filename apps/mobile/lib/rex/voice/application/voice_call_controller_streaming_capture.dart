@@ -7,6 +7,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     int generation, {
     required int listenEpoch,
     List<Uint8List> initialAudioChunks = const [],
+    bool preserveTranscript = false,
   }) async {
     if (listenEpoch != _streamingListenEpoch) {
       return;
@@ -56,10 +57,15 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         return;
       }
 
-      final turnSequence = ++_streamingTurnSequence;
-      _streamingUtteranceEndSent = false;
-      _beginVoiceTurn(turnSequence);
-      _resetPrefetchedFinancialContext();
+      if (preserveTranscript) {
+        // Same turn after screenshot/background — keep bubble + buffer.
+        _streamingUtteranceEndSent = false;
+      } else {
+        final turnSequence = ++_streamingTurnSequence;
+        _streamingUtteranceEndSent = false;
+        _beginVoiceTurn(turnSequence);
+        _resetPrefetchedFinancialContext();
+      }
       for (final chunk in initialAudioChunks) {
         session.sendAudioChunk(chunk);
       }
@@ -132,6 +138,10 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       if (listenEpoch != _streamingListenEpoch) {
         return;
       }
+      if (_holdUtteranceEndForLifecycle) {
+        _restartListenAfterLifecycleHold = true;
+        return;
+      }
       // Capture cancel after a real finalize, or while waiting on STT after
       // speech, must not restart the listen loop.
       if (_streamingTurnFinalizedSequence == _streamingTurnSequence ||
@@ -147,6 +157,10 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       // Audio was captured: wait for late speech_final. Recovering immediately
       // interrupts STT and drops the utterance (stuck listening loop).
       state = state.copyWith(isCapturingSpeech: false);
+      if (_holdUtteranceEndForLifecycle) {
+        _restartListenAfterLifecycleHold = true;
+        return;
+      }
       _endTurnFromLocalEndpoint(generation, recoverIfEmpty: false);
       if (_streamingTurnFinalizedSequence != _streamingTurnSequence) {
         _armSpeechFinalGraceAfterCapture(generation, listenEpoch);
@@ -163,6 +177,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     int generation, {
     required int listenEpoch,
     List<Uint8List> initialAudioChunks = const [],
+    bool preserveTranscript = false,
   }) async {
     if (listenEpoch != _streamingListenEpoch) {
       return;
@@ -171,10 +186,14 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     try {
     StreamingVoiceSession? session;
     final pendingChunks = <Uint8List>[...initialAudioChunks];
-    final turnSequence = ++_streamingTurnSequence;
-    _streamingUtteranceEndSent = false;
-    _beginVoiceTurn(turnSequence);
-    _resetPrefetchedFinancialContext();
+    if (preserveTranscript) {
+      _streamingUtteranceEndSent = false;
+    } else {
+      final turnSequence = ++_streamingTurnSequence;
+      _streamingUtteranceEndSent = false;
+      _beginVoiceTurn(turnSequence);
+      _resetPrefetchedFinancialContext();
+    }
 
     if (initialAudioChunks.isNotEmpty) {
       startCapturingSpeech();
@@ -304,6 +323,10 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       if (listenEpoch != _streamingListenEpoch) {
         return;
       }
+      if (_holdUtteranceEndForLifecycle) {
+        _restartListenAfterLifecycleHold = true;
+        return;
+      }
       if (_streamingTurnFinalizedSequence == _streamingTurnSequence ||
           _speechFinalGraceTimer != null) {
         return;
@@ -317,6 +340,10 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       // Audio was captured: wait for late speech_final. Recovering immediately
       // interrupts STT and drops the utterance (stuck listening loop).
       state = state.copyWith(isCapturingSpeech: false);
+      if (_holdUtteranceEndForLifecycle) {
+        _restartListenAfterLifecycleHold = true;
+        return;
+      }
       _endTurnFromLocalEndpoint(generation, recoverIfEmpty: false);
       if (_streamingTurnFinalizedSequence != _streamingTurnSequence) {
         _armSpeechFinalGraceAfterCapture(generation, listenEpoch);

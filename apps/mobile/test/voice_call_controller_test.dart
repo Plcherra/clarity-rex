@@ -3298,9 +3298,82 @@ void main() {
       expect(streamingApi.connectCount, 1);
       expect(streamingApi.socket.sentEvents, isNot(contains('session.end')));
       expect(streamingApi.socket.sentEvents, isNot(contains('utterance.end')));
-      // Soft resume may reaffirm the audio session, but must not recreate the call.
-      expect(audioSessionService.configureCount, greaterThanOrEqualTo(configureBefore));
-      expect(captureService.startCount, 1);
+      // Soft resume must not reconfigure AVAudioSession (that kills the mic).
+      expect(audioSessionService.configureCount, configureBefore);
+    },
+  );
+
+  test(
+    'screenshot inactive must not finalize partial transcript as utterance.end',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      const partial = 'Yeah I guess my question is only';
+      captureService.startCurrentSpeech();
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': partial,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      // User takes a screenshot mid-sentence: inactive + capture looks ended.
+      controller.didChangeAppLifecycleState(AppLifecycleState.inactive);
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      expect(
+        streamingApi.socket.sentEvents.where((e) => e == 'utterance.end'),
+        isEmpty,
+      );
+      expect(container.read(voiceCallProvider).currentTranscript, partial);
+
+      controller.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      await captureService.readyAt(1);
+
+      expect(container.read(voiceCallProvider).isCallActive, isTrue);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      expect(container.read(voiceCallProvider).currentTranscript, partial);
+      expect(
+        streamingApi.socket.sentEvents.where((e) => e == 'utterance.end'),
+        isEmpty,
+      );
+      expect(streamingApi.connectCount, 1);
     },
   );
 

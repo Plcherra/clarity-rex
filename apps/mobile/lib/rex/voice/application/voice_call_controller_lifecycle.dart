@@ -48,6 +48,8 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
 
     if (next == AppLifecycleState.detached) {
       _isAppInForeground = false;
+      _holdUtteranceEndForLifecycle = false;
+      _restartListenAfterLifecycleHold = false;
       unawaited(endCall());
       return;
     }
@@ -76,11 +78,12 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
 
     // Screenshot, Control Center, notification shade, app-switch peek.
     if (next == AppLifecycleState.inactive) {
-      debugPrint('rex_voice_lifecycle inactive_preserve_session');
+      _beginLifecycleUtteranceHold(reason: 'inactive');
       return;
     }
 
     if (next == AppLifecycleState.paused || next == AppLifecycleState.hidden) {
+      _beginLifecycleUtteranceHold(reason: '$next');
       if (AppCapabilities.instance.supportsBackgroundVoice) {
         unawaited(_backgroundVoiceService.start());
       }
@@ -102,6 +105,18 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
     }
   }
 
+  void _beginLifecycleUtteranceHold({required String reason}) {
+    _holdUtteranceEndForLifecycle = true;
+    // Do not let transcript-idle / speech-final grace fire mid-screenshot.
+    _cancelListeningEndpointTimeout();
+    _cancelSpeechFinalGrace();
+    debugPrint('rex_voice_lifecycle hold_utterance_end reason=$reason');
+  }
+
+  void _endLifecycleUtteranceHold() {
+    _holdUtteranceEndForLifecycle = false;
+  }
+
   Future<void> _handleLifecycleResume({
     required bool fromTransientInactive,
     required bool returningFromTrueBackground,
@@ -111,22 +126,28 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
     }
     _isHandlingLifecycleResume = true;
     try {
-      // Reaffirm route / session after Control Center or lock-screen overlays.
+      // Screenshot / Control Center: absolute no-op for audio session.
+      // Reconfigure/setActive here kills the recorder and used to finalize the
+      // partial transcript as if the user had stopped talking.
+      if (fromTransientInactive || !returningFromTrueBackground) {
+        _endLifecycleUtteranceHold();
+        await _recoverListenCycleAfterLifecycleHold();
+        debugPrint('rex_voice_lifecycle soft_resume preserve_session');
+        return;
+      }
+
+      // True background return: reaffirm session, then keep or recover listen.
       await _audioSessionService.configureForVoiceTurn();
       await _audioSessionService.preferLoudSpeaker();
       if (AppCapabilities.instance.supportsBackgroundVoice) {
         await _backgroundVoiceService.start();
       }
+      _endLifecycleUtteranceHold();
+
       if (state.isCallActive &&
           state.phase == VoiceCallPhase.thinking &&
           !state.isMuted) {
         _armThinkingTimeout(_callGeneration);
-      }
-
-      // inactive → resumed must never recreate mic, WS, timers, or turn state.
-      if (fromTransientInactive || !returningFromTrueBackground) {
-        debugPrint('rex_voice_lifecycle soft_resume preserve_session');
-        return;
       }
 
       if (!state.isCallActive ||
@@ -135,57 +156,43 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
         return;
       }
 
-      // True background return with a healthy listen cycle: leave it alone.
       if (_hasActiveStreamingListenCycle() && _streamingSessionIsConnected()) {
         debugPrint('rex_voice_lifecycle background_resume keep_listen_cycle');
         return;
       }
 
-      if (_finishPendingStreamingUtteranceOnResume()) {
-        return;
-      }
-
-      // Capture/session died while away — recover listen without killing the call.
-      debugPrint('rex_voice_lifecycle background_resume recover_listen_cycle');
-      final generation = ++_callGeneration;
-      await _captureService.cancel();
-      await _streamingCaptureService.cancel();
-      _stopBargeInMonitoring();
-      if (!_streamingSessionIsConnected()) {
-        final streamingSession = _activeStreamingSession;
-        _activeStreamingSession = null;
-        _activeStreamingEventsTask = null;
-        streamingSession?.interrupt();
-        unawaited(streamingSession?.endSession());
-      }
-
-      state = state.copyWith(
-        phase: VoiceCallPhase.listening,
-        isCapturingSpeech: false,
-        clearError: true,
-      );
-      _startListeningCycle(generation);
+      await _recoverListenCycleAfterLifecycleHold();
     } finally {
       _isHandlingLifecycleResume = false;
     }
   }
 
-  bool _finishPendingStreamingUtteranceOnResume() {
-    if (!ref.read(streamingVoiceEnabledProvider)) {
-      return false;
-    }
-    final streamingSession = _activeStreamingSession;
-    if (streamingSession == null || state.currentTranscript.trim().isEmpty) {
-      return false;
+  /// Restart mic capture after a lifecycle blip without finalizing or clearing
+  /// the in-progress transcript (never auto-send on resume).
+  Future<void> _recoverListenCycleAfterLifecycleHold() async {
+    if (!state.isCallActive ||
+        state.phase != VoiceCallPhase.listening ||
+        state.isMuted) {
+      _restartListenAfterLifecycleHold = false;
+      return;
     }
 
-    unawaited(_streamingCaptureService.cancel());
-    _finalizeStreamingTurn(
-      transcript: _transcriptBuffer.visible,
-      session: streamingSession,
-      turnSequence: _streamingTurnSequence,
-    );
-    return true;
+    final needsRestart =
+        _restartListenAfterLifecycleHold ||
+        !_hasActiveStreamingListenCycle() ||
+        !_streamingSessionIsConnected();
+    _restartListenAfterLifecycleHold = false;
+    if (!needsRestart) {
+      return;
+    }
+
+    debugPrint('rex_voice_lifecycle resume_restart_listen_preserving_transcript');
+    final generation = _callGeneration;
+    await _captureService.cancel();
+    await _streamingCaptureService.cancel();
+    _stopBargeInMonitoring();
+    state = state.copyWith(isCapturingSpeech: false, clearError: true);
+    _startListeningCyclePreservingTranscript(generation);
   }
 
   void _handleWebPageVisibilityChanged(bool isVisible) {
@@ -197,6 +204,9 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
       return;
     }
     _isAppInForeground = false;
+    if (state.isCallActive && !_isUsingNativeVoice) {
+      _beginLifecycleUtteranceHold(reason: 'web_hidden');
+    }
   }
 
   Future<void> _handleWebForegroundResume() async {
@@ -206,6 +216,7 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
     _isHandlingLifecycleResume = true;
     try {
       await WebPcmMicrophoneEngine.instance.resumeIfSuspended();
+      _endLifecycleUtteranceHold();
 
       if (state.isCallActive &&
           (state.phase == VoiceCallPhase.speaking ||
@@ -227,20 +238,7 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
         return;
       }
 
-      if (_finishPendingStreamingUtteranceOnResume()) {
-        return;
-      }
-
-      // Preserve a healthy web listen cycle across tab focus blips.
-      if (_hasActiveStreamingListenCycle() && _streamingSessionIsConnected()) {
-        return;
-      }
-
-      final generation = ++_callGeneration;
-      await _streamingCaptureService.cancel();
-      _stopBargeInMonitoring();
-      state = state.copyWith(isCapturingSpeech: false, clearError: true);
-      _startListeningCycle(generation);
+      await _recoverListenCycleAfterLifecycleHold();
     } finally {
       _isHandlingLifecycleResume = false;
     }
