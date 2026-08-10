@@ -11,6 +11,11 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     // Keep _suppressStaleSpeechFinal after a prior finalize so in-flight
     // Deepgram speech_final from turn N cannot seed turn N+1. Cleared only by
     // fresh STT evidence (updateTranscript) or empty-turn soft-recover.
+    // Drop orphan interim bubbles from earlier listen epochs so red-stop and
+    // the UI share one in-flight transcript.
+    ref.read(chatProvider.notifier).discardInterimLocalVoiceUserMessages(
+      keepLocalId: _activeVoiceMessageLocalId,
+    );
     state = state.copyWith(clearCurrentTranscript: true);
     _beginVoiceTurnTiming(turnSequence);
     _voiceTrace.record(

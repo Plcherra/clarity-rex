@@ -78,6 +78,7 @@ class VoiceLiveTranscript extends StatelessWidget {
     if (state.phase == VoiceCallPhase.listening && !state.isMuted) {
       // Live speech belongs in the interim chat bubble only — showing the same
       // string here duplicated the transcript (bubble + bottom status).
+      final hasTranscript = state.currentTranscript.trim().isNotEmpty;
       return Padding(
         padding: const EdgeInsets.only(
           top: RexUiTokens.space4,
@@ -92,7 +93,11 @@ class VoiceLiveTranscript extends StatelessWidget {
             ),
             const SizedBox(width: RexUiTokens.space8),
             Text(
-              l10n.voicePanelStartTalking,
+              // Diagnostic manual-endpoint builds: avoid "Start talking" after
+              // speech is already on screen — that hid the red-stop affordance.
+              hasTranscript
+                  ? l10n.voicePanelListening
+                  : l10n.voicePanelStartTalking,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colors.textMuted,
               ),

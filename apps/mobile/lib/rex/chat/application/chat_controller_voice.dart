@@ -223,6 +223,47 @@ extension ChatControllerVoice on ChatController {
     );
   }
 
+  /// Drop only in-flight interim local-voice bubbles (keep finalized ones).
+  void discardInterimLocalVoiceUserMessages({String? keepLocalId}) {
+    final filtered = state.messages.where((message) {
+      if (!_isLocalVoiceMessageId(message.id) || !message.isVoiceInterim) {
+        return true;
+      }
+      if (keepLocalId != null && message.id == keepLocalId) {
+        return true;
+      }
+      return false;
+    }).toList(growable: false);
+    if (filtered.length == state.messages.length) {
+      return;
+    }
+    state = state.copyWith(
+      messages: List.unmodifiable(filtered),
+      clearError: true,
+    );
+  }
+
+  /// Longest interim local-voice user text — recovery when the voice buffer
+  /// was cleared but the bubble is still on screen.
+  String? latestInterimVoiceUserContent() {
+    String? best;
+    for (final message in state.messages) {
+      if (!_isLocalVoiceMessageId(message.id) ||
+          message.role != ChatMessageRole.user ||
+          !message.isVoiceInterim) {
+        continue;
+      }
+      final text = message.content.trim();
+      if (text.isEmpty) {
+        continue;
+      }
+      if (best == null || text.length >= best.length) {
+        best = text;
+      }
+    }
+    return best;
+  }
+
   bool hasUserMessageWithContent(String content) {
     final normalized = _normalizeVoiceMessageContent(content);
     if (normalized.isEmpty) {

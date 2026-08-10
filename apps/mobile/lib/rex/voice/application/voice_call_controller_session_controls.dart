@@ -78,8 +78,39 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
       if (submitted) {
         return;
       }
+      // Never hang up when speech is still on screen / in the buffer — that
+      // looked like "stop does nothing" / wiped the turn without sending.
+      final leftover = _manualStopTranscriptCandidate();
+      if (leftover.isNotEmpty) {
+        debugPrint(
+          'rex_voice_authority red_stop_kept_listening '
+          'chars=${leftover.length}',
+        );
+        _voiceTrace.record(
+          event: 'manual_stop.kept_listening',
+          reason: 'submit_failed_with_transcript',
+          turnId: '$_streamingTurnSequence',
+          fromPhase: state.phase.name,
+          toPhase: state.phase.name,
+        );
+        return;
+      }
     }
     await endCall();
+  }
+
+  String _manualStopTranscriptCandidate() {
+    final chatInterim =
+        ref.read(chatProvider.notifier).latestInterimVoiceUserContent();
+    return VoiceTranscriptBuffer.stripLeadingUtterance(
+      VoiceTranscriptBuffer.preferFullest([
+        _transcriptBuffer.visible,
+        state.currentTranscript,
+        ?_pendingUtteranceTranscript,
+        ?chatInterim,
+      ]),
+      priorUtterance: _lastCompletedUtteranceTranscript,
+    ).trim();
   }
 
   /// Submit the in-progress transcript via the single finalize authority.
@@ -91,17 +122,27 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
       return false;
     }
     final generation = _callGeneration;
-    final transcript = VoiceTranscriptBuffer.stripLeadingUtterance(
-      VoiceTranscriptBuffer.preferFullest([
-        _transcriptBuffer.visible,
-        state.currentTranscript,
-        ?_pendingUtteranceTranscript,
-      ]),
-      priorUtterance: _lastCompletedUtteranceTranscript,
-    ).trim();
+    final transcript = _manualStopTranscriptCandidate();
     if (transcript.isEmpty) {
+      debugPrint('rex_voice_authority red_stop_empty_transcript');
+      _voiceTrace.record(
+        event: 'manual_stop.rejected',
+        reason: 'empty_transcript',
+        turnId: '$_streamingTurnSequence',
+        fromPhase: state.phase.name,
+        toPhase: state.phase.name,
+      );
       return false;
     }
+
+    // Rehydrate buffer from the authority string so chat-interim recovery
+    // still finalizes one coherent bubble.
+    _transcriptBuffer.clear();
+    _transcriptBuffer.appendFinal(transcript);
+    state = state.copyWith(
+      currentTranscript: transcript,
+      isCapturingSpeech: false,
+    );
 
     _voiceTrace.record(
       event: 'manual_stop',
@@ -111,6 +152,10 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
       toPhase: VoiceCallPhase.thinking.name,
     );
     debugPrint(VoiceVadTelemetry.instance.summaryLine());
+    debugPrint(
+      'rex_voice_authority red_stop_submit chars=${transcript.length} '
+      'ws=${_activeStreamingSession != null}',
+    );
     _voiceTrace.record(
       event: 'vad_telemetry',
       reason: VoiceVadTelemetry.instance.summaryLine(),
@@ -121,7 +166,6 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
 
     _cancelListeningEndpointTimeout();
     _cancelSpeechFinalGrace();
-    state = state.copyWith(isCapturingSpeech: false);
     _pendingUtteranceTranscript = transcript;
 
     // No live WS (common physical failure): red stop must still submit via

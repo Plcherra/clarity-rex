@@ -164,8 +164,10 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     // One chat+TTS completion per listen cycle. Do not key on
     // `_streamingTurnSequence` — REST/cloud fallback never increments it, so
     // the second spoken utterance reused key 0 and soft-recovered instead.
+    // Red stop (force) must always be allowed — soft-resume bumps listen epoch
+    // and a prior suppressed/auto attempt must not block manual submit.
     final listenKey = _streamingListenEpoch;
-    if (_chatFallbackListenEpoch == listenKey) {
+    if (!force && _chatFallbackListenEpoch == listenKey) {
       return false;
     }
     _chatFallbackListenEpoch = listenKey;

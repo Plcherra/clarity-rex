@@ -3433,6 +3433,69 @@ void main() {
   );
 
   test(
+    'manual red stop recovers transcript from chat interim after buffer clear',
+    () async {
+      final captureService = _RecordingAudioCaptureService();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final chatApi = _RecordingChatApi();
+      final playbackService = _ControlledAudioPlaybackService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(captureService),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          cloudVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          voiceManualEndpointOnlyProvider.overrideWithValue(true),
+          streamingVoiceApiProvider.overrideWithValue(
+            _FailingStreamingVoiceApi(),
+          ),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            const _NoopStreamingAudioCaptureService(),
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+          chatApiProvider.overrideWithValue(chatApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+
+      const spoken =
+          'Yeah I was not talking about any illegal thing you misunderstood';
+      // Buffer empty (listen-cycle wipe) but interim bubble still on screen.
+      container.read(chatProvider.notifier).upsertVoiceUserMessage(
+        localId: 'local-voice-orphan',
+        content: spoken,
+      );
+
+      expect(await controller.submitManualEndTurn(), isTrue);
+      await playbackService.playStarted.future.timeout(
+        const Duration(seconds: 1),
+      );
+      expect(chatApi.sentMessages, [spoken]);
+      expect(
+        VoiceTransportDiagnostics.instance.lastSubmitAuthority,
+        'red_stop',
+      );
+    },
+  );
+
+  test(
     'manual fallback: WS fail keeps Listening, red stop sends one chat turn, no sticky next turn',
     () async {
       final captureService = _RecordingAudioCaptureService();

@@ -55,7 +55,13 @@ extension VoiceCallControllerTimers on VoiceCallController {
         onFinalTranscript: (transcript) {
           if (_isCurrentCall(generation) &&
               state.phase == VoiceCallPhase.listening) {
-            updateTranscript(transcript, isFinal: true);
+            // iOS on-device finals are often cumulative. Under manual cloud
+            // listen, treat them as partials so appendFinal cannot stack the
+            // same phrase into multiple gray bubbles.
+            updateTranscript(
+              transcript,
+              isFinal: !_awaitingManualEndpointSubmit,
+            );
           }
         },
         onError: (_) {},
