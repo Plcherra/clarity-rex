@@ -229,17 +229,26 @@ extension VoiceCallControllerTimers on VoiceCallController {
   /// Re-arm when STT transcript updates. After [voiceCallTranscriptIdleTimeoutProvider]
   /// of stability with a non-empty transcript, finalize the turn (utterance.end).
   /// This is Deepgram/STT endpointing parity — not an artificial race timeout.
+  ///
+  /// Manual cloud listen (no WS): also arm — STT idle is the silence signal
+  /// when local amplitude VAD is intentionally disabled.
   void _armTranscriptIdleEndpointTimeout(int generation) {
-    if (_activeStreamingSession == null ||
-        _transcriptBuffer.visible.trim().isEmpty ||
+    final hasTranscript = _manualStopTranscriptCandidate().isNotEmpty;
+    if (!hasTranscript ||
         state.phase != VoiceCallPhase.listening ||
         state.isMuted) {
       return;
     }
-    _armListeningEndpointTimeout(
-      generation,
-      ref.read(voiceCallTranscriptIdleTimeoutProvider),
-    );
+    if (_activeStreamingSession == null &&
+        !_awaitingManualEndpointSubmit &&
+        !_manualEndpointOnly) {
+      return;
+    }
+    final timeout = _awaitingManualEndpointSubmit ||
+            (_manualEndpointOnly && _activeStreamingSession == null)
+        ? ref.read(voiceCallManualTranscriptIdleTimeoutProvider)
+        : ref.read(voiceCallTranscriptIdleTimeoutProvider);
+    _armListeningEndpointTimeout(generation, timeout);
   }
 
   void _armListeningEndpointTimeout(int generation, Duration timeout) {
@@ -250,7 +259,8 @@ extension VoiceCallControllerTimers on VoiceCallController {
     _listeningEndpointTimer = Timer(timeout, () {
       // Mic still in active speech (breaths / STT lag) — do not cut the turn
       // on transcript-idle alone. Wait for VAD speech_end or a quiet window.
-      if (state.isCapturingSpeech) {
+      // Manual cloud listen keeps isCapturingSpeech false — STT idle is enough.
+      if (state.isCapturingSpeech && !_awaitingManualEndpointSubmit) {
         _armListeningEndpointTimeout(generation, timeout);
         return;
       }
@@ -278,7 +288,17 @@ extension VoiceCallControllerTimers on VoiceCallController {
     if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
       return;
     }
-    if (state.isCapturingSpeech) {
+    if (state.isCapturingSpeech && !_awaitingManualEndpointSubmit) {
+      return;
+    }
+    // Manual cloud listen: STT idle after silence submits via red-stop path
+    // (chat+TTS). This is not amplitude VAD.
+    if (_awaitingManualEndpointSubmit ||
+        (_manualEndpointOnly && _activeStreamingSession == null)) {
+      debugPrint('rex_voice_authority stt_idle_manual_submit');
+      unawaited(
+        submitManualEndTurn(submitAuthority: 'automatic:stt_idle_manual'),
+      );
       return;
     }
     // STT idle must never masquerade as VAD — leave capture running.

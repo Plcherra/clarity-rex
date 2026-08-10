@@ -171,6 +171,12 @@ final voiceCallTranscriptIdleTimeoutProvider = Provider<Duration>(
   (ref) => const Duration(milliseconds: 8000),
 );
 
+final voiceCallManualTranscriptIdleTimeoutProvider = Provider<Duration>(
+  // Manual cloud listen (no WS / amplitude VAD off): submit after STT stops
+  // updating. Not an amplitude silence constant — transcript stability only.
+  (ref) => const Duration(seconds: 10),
+);
+
 final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(
   (ref) => const Duration(seconds: 90),
 );

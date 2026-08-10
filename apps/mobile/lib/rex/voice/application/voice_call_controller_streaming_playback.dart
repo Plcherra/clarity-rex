@@ -142,7 +142,10 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     }
   }
 
-  bool _completeStreamingTurnViaChatFallback({bool force = false}) {
+  bool _completeStreamingTurnViaChatFallback({
+    bool force = false,
+    String? submitAuthority,
+  }) {
     final transcript =
         (_pendingUtteranceTranscript ?? _transcriptBuffer.visible).trim();
     if (transcript.isEmpty || !state.isCallActive) {
@@ -171,6 +174,8 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
       return false;
     }
     _chatFallbackListenEpoch = listenKey;
+    final authority =
+        submitAuthority ?? (force ? 'red_stop' : 'automatic:chat_fallback');
     VoiceTransportDiagnostics.instance
       ..setTransport(
         'chat_synthesize_fallback',
@@ -179,7 +184,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
       ..setFallbackReason(
         force ? 'manual_red_stop_no_stream' : 'auto_chat_fallback',
       )
-      ..setSubmitAuthority(force ? 'red_stop' : 'automatic:chat_fallback');
+      ..setSubmitAuthority(authority);
     // Streaming STT finished blank (common when only partials arrived). The
     // words are already on the client — complete via the same chat brain path
     // and Google TTS instead of wiping back to "Start talking".

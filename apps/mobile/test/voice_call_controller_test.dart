@@ -3565,6 +3565,15 @@ void main() {
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
 
       const spoken = 'I want to wait for the full license before buying';
+      // Soft-resume must keep the gray interim bubble (not beginVoiceTurn wipe).
+      expect(container.read(voiceCallProvider).currentTranscript, spoken);
+      final interimAfterScreenshot = container
+          .read(chatProvider)
+          .messages
+          .where((m) => m.role == ChatMessageRole.user)
+          .last;
+      expect(interimAfterScreenshot.content, spoken);
+
       expect(await controller.submitManualEndTurn(), isTrue);
       await playbackService.playStarted.future.timeout(
         const Duration(seconds: 1),
@@ -3595,6 +3604,69 @@ void main() {
           .last;
       expect(interim.content, 'and also the road test');
       expect(chatApi.sentMessages, hasLength(1));
+    },
+  );
+
+  test(
+    'manual cloud listen: STT idle after silence submits one chat turn',
+    () async {
+      final captureService = _RecordingAudioCaptureService();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final chatApi = _RecordingChatApi();
+      final playbackService = _ControlledAudioPlaybackService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(captureService),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          cloudVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          voiceManualEndpointOnlyProvider.overrideWithValue(true),
+          voiceCallManualTranscriptIdleTimeoutProvider.overrideWithValue(
+            const Duration(milliseconds: 40),
+          ),
+          streamingVoiceApiProvider.overrideWithValue(
+            _FailingStreamingVoiceApi(),
+          ),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            const _NoopStreamingAudioCaptureService(),
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+          chatApiProvider.overrideWithValue(chatApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+
+      const spoken =
+          'Yeah I was not talking about any illegal thing just the permit';
+      controller.updateTranscript(spoken);
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await playbackService.playStarted.future.timeout(
+        const Duration(seconds: 2),
+      );
+
+      expect(chatApi.sentMessages, [spoken]);
+      expect(
+        VoiceTransportDiagnostics.instance.lastSubmitAuthority,
+        'automatic:stt_idle_manual',
+      );
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
     },
   );
 

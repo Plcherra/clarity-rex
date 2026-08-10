@@ -180,6 +180,21 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
       // partial transcript as if the user had stopped talking.
       if (fromTransientInactive || !returningFromTrueBackground) {
         _endLifecycleUtteranceHold();
+        // Manual cloud listen: do not bounce through a full listen-cycle restart
+        // (that re-entered beginVoiceTurn and wiped the interim bubble).
+        if (state.isCallActive &&
+            state.phase == VoiceCallPhase.listening &&
+            !state.isMuted &&
+            (_awaitingManualEndpointSubmit ||
+                (_manualEndpointOnly && !_streamingSessionIsConnected()))) {
+          await _resumeManualCloudListen(
+            _callGeneration,
+            streamError: 'lifecycle_soft_resume',
+            preservedTranscript: _manualStopTranscriptCandidate(),
+          );
+          debugPrint('rex_voice_lifecycle soft_resume_manual_preserve');
+          return;
+        }
         await _recoverListenCycleAfterLifecycleHold();
         debugPrint('rex_voice_lifecycle soft_resume preserve_session');
         return;

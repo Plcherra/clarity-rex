@@ -37,7 +37,15 @@ extension VoiceCallControllerCloudFallback on VoiceCallController {
         state.isMuted) {
       return;
     }
-    if (_awaitingManualEndpointSubmit) {
+    final existingTranscript = _manualStopTranscriptCandidate();
+    // Screenshot / soft-resume re-entry: never beginVoiceTurn — that minted a
+    // new local-voice id and discarded the interim bubble with the speech.
+    if (_awaitingManualEndpointSubmit || existingTranscript.isNotEmpty) {
+      await _resumeManualCloudListen(
+        generation,
+        streamError: streamError,
+        preservedTranscript: existingTranscript,
+      );
       return;
     }
     _awaitingManualEndpointSubmit = true;
@@ -67,6 +75,53 @@ extension VoiceCallControllerCloudFallback on VoiceCallController {
     _markListeningReady();
     // No no-speech wipe loop — empty recover is suppressed under manual mode.
     unawaited(_startInterimTranscription(generation));
+  }
+
+  /// Keep the in-flight utterance across screenshot / stream reconnect blips.
+  Future<void> _resumeManualCloudListen(
+    int generation, {
+    required String streamError,
+    required String preservedTranscript,
+  }) async {
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.listening ||
+        state.isMuted) {
+      return;
+    }
+    _awaitingManualEndpointSubmit = true;
+    VoiceTransportDiagnostics.instance
+      ..setTransport('local_stt', reason: 'manual_listen_resume_preserve')
+      ..setFallbackReason('stream_unavailable_manual_listen')
+      ..setConnectionError(streamError, code: 'stream_unavailable');
+    if (preservedTranscript.isNotEmpty) {
+      _transcriptBuffer.clear();
+      _transcriptBuffer.appendFinal(preservedTranscript);
+      _syncInterimVoiceTranscriptToChat(preservedTranscript);
+    }
+    state = state.copyWith(
+      phase: VoiceCallPhase.listening,
+      currentTranscript: preservedTranscript,
+      isCapturingSpeech: false,
+      clearError: true,
+    );
+    _markListeningReady();
+    _voiceTrace.record(
+      event: 'manual_cloud_listen.resume',
+      reason: 'preserve_transcript',
+      turnId: '$_streamingTurnSequence',
+      fromPhase: state.phase.name,
+      toPhase: state.phase.name,
+    );
+    debugPrint(
+      'rex_voice_authority manual_cloud_listen_resume '
+      'chars=${preservedTranscript.length}',
+    );
+    await _stopInterimTranscription();
+    unawaited(_startInterimTranscription(generation));
+    if (preservedTranscript.isNotEmpty) {
+      _armTranscriptIdleEndpointTimeout(generation);
+    }
   }
 
   void _deferBackgroundStreamingRestart(StreamingVoiceSession session) {

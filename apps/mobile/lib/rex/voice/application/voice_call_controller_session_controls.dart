@@ -115,7 +115,9 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
 
   /// Submit the in-progress transcript via the single finalize authority.
   /// Returns true when a turn was finalized.
-  Future<bool> submitManualEndTurn() async {
+  Future<bool> submitManualEndTurn({
+    String submitAuthority = 'red_stop',
+  }) async {
     if (!state.isCallActive ||
         state.phase != VoiceCallPhase.listening ||
         state.isMuted) {
@@ -171,8 +173,15 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
     // No live WS (common physical failure): red stop must still submit via
     // chat+TTS. `_endTurnFromLocalEndpoint` no-ops when session is null.
     if (_activeStreamingSession == null) {
-      final submitted = _completeStreamingTurnViaChatFallback(force: true);
-      _awaitingManualEndpointSubmit = false;
+      final submitted = _completeStreamingTurnViaChatFallback(
+        force: true,
+        submitAuthority: submitAuthority,
+      );
+      // Keep awaiting until a successful submit so screenshot soft-resume
+      // cannot beginVoiceTurn and wipe the in-flight bubble.
+      if (submitted) {
+        _awaitingManualEndpointSubmit = false;
+      }
       await _streamingCaptureService.cancel();
       await _captureService.cancel();
       unawaited(_stopInterimTranscription());
@@ -188,7 +197,9 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
     );
     final finalized =
         _streamingTurnFinalizedSequence == _streamingTurnSequence;
-    _awaitingManualEndpointSubmit = false;
+    if (finalized) {
+      _awaitingManualEndpointSubmit = false;
+    }
     await _streamingCaptureService.cancel();
     await _captureService.cancel();
     return finalized;
