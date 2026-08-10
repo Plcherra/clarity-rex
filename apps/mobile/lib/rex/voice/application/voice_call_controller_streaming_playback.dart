@@ -142,10 +142,23 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     }
   }
 
-  bool _completeStreamingTurnViaChatFallback() {
+  bool _completeStreamingTurnViaChatFallback({bool force = false}) {
     final transcript =
         (_pendingUtteranceTranscript ?? _transcriptBuffer.visible).trim();
     if (transcript.isEmpty || !state.isCallActive) {
+      return false;
+    }
+    // Auto chat+TTS was bypassing manual-endpoint gating (synthesize-only
+    // VPS logs with mid-speech cuts). Only red stop may force it.
+    if (_manualEndpointOnly && !force) {
+      _voiceTrace.record(
+        event: 'chat_fallback.suppressed',
+        reason: 'manual_endpoint_only',
+        turnId: '$_streamingTurnSequence',
+        fromPhase: state.phase.name,
+        toPhase: state.phase.name,
+      );
+      debugPrint('rex_voice_authority suppress_auto_chat_fallback');
       return false;
     }
     // One chat+TTS completion per listen cycle. Do not key on

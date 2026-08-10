@@ -3432,6 +3432,71 @@ void main() {
   );
 
   test(
+    'manual-endpoint-only blocks REST VAD when stream connect fails',
+    () async {
+      final captureService = _RecordingAudioCaptureService();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final chatApi = _RecordingChatApi();
+      final playbackService = _ControlledAudioPlaybackService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(captureService),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          cloudVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          voiceManualEndpointOnlyProvider.overrideWithValue(true),
+          streamingVoiceApiProvider.overrideWithValue(
+            _FailingStreamingVoiceApi(),
+          ),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            const _NoopStreamingAudioCaptureService(),
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+          chatApiProvider.overrideWithValue(chatApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+
+      // Must not fall into REST amplitude auto-submit.
+      expect(captureService.captureCount, 0);
+      expect(cloudVoiceApi.voiceTurnCount, 0);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+
+      controller.updateTranscript(
+        'I want to wait for the full license before buying',
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(await controller.submitManualEndTurn(), isTrue);
+      await playbackService.playStarted.future.timeout(
+        const Duration(seconds: 1),
+      );
+
+      expect(cloudVoiceApi.voiceTurnCount, 0);
+      expect(chatApi.sentMessages, [
+        'I want to wait for the full license before buying',
+      ]);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+    },
+  );
+
+  test(
     'manual-endpoint-only suppresses VAD submit until red stop',
     () async {
       final captureService = _ScriptedStreamingAudioCaptureService();

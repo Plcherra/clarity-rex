@@ -103,6 +103,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
   bool get _manualEndpointOnly =>
       ref.read(voiceManualEndpointOnlyProvider);
+  /// True while WS is down and release builds wait for red stop (no REST VAD).
+  var _awaitingManualEndpointSubmit = false;
   var _isUsingNativeVoice = false;
   var _warnedLegacyNativeVoiceFlag = false;
   var _isAwaitingFollowUpSpeech = false;

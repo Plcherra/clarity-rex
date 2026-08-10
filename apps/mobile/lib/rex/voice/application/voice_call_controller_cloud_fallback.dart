@@ -13,11 +13,56 @@ extension VoiceCallControllerCloudFallback on VoiceCallController {
         state.isMuted) {
       return;
     }
+    // Diagnostic release builds: REST local-VAD auto-submit is the path that
+    // still cut speech when /voice/stream never reached the VPS. Keep listening
+    // with interim STT and submit only on red stop (chat+TTS).
+    if (_manualEndpointOnly) {
+      await _listenUntilManualStop(generation, streamError);
+      return;
+    }
     if (!ref.read(cloudVoiceEnabledProvider)) {
       failVoiceApi(StreamingVoiceApiException(streamError));
       return;
     }
     await _captureNextUtterance(generation);
+  }
+
+  Future<void> _listenUntilManualStop(
+    int generation,
+    String streamError,
+  ) async {
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.listening ||
+        state.isMuted) {
+      return;
+    }
+    if (_awaitingManualEndpointSubmit) {
+      return;
+    }
+    _awaitingManualEndpointSubmit = true;
+    final turnSequence = ++_streamingTurnSequence;
+    _streamingUtteranceEndSent = false;
+    _beginVoiceTurn(turnSequence);
+    _voiceTrace.record(
+      event: 'manual_cloud_listen',
+      reason: 'stream_unavailable',
+      turnId: '$turnSequence',
+      fromPhase: state.phase.name,
+      toPhase: state.phase.name,
+    );
+    debugPrint(
+      'rex_voice_authority manual_cloud_listen stream_unavailable '
+      'detail=$streamError',
+    );
+    state = state.copyWith(
+      phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
+      clearError: true,
+    );
+    _markListeningReady();
+    // No no-speech wipe loop — empty recover is suppressed under manual mode.
+    unawaited(_startInterimTranscription(generation));
   }
 
   void _deferBackgroundStreamingRestart(StreamingVoiceSession session) {

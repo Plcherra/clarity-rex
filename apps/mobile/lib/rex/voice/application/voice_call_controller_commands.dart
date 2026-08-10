@@ -83,7 +83,8 @@ extension VoiceCallControllerCommands on VoiceCallController {
     _cancelNoSpeechTimeout();
     _cancelListeningEndpointTimeout();
     _isAwaitingFollowUpSpeech = false;
-    _finalizeVoiceTranscriptInChat();
+    // Remember completed text so the next turn can strip sticky STT prefixes.
+    _finalizeVoiceTranscriptInChat(rememberCompleted: true);
     _clearVisibleTranscript();
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,

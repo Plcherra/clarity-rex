@@ -82,6 +82,31 @@ extension VoiceCallControllerTimers on VoiceCallController {
     if (!state.isCallActive) {
       return;
     }
+    // Diagnostic: never auto-submit or wipe a live bubble while waiting for
+    // red stop (WS-down manual listen or streaming VAD roll).
+    if (_manualEndpointOnly) {
+      _voiceTrace.record(
+        event: 'empty_recover.suppressed',
+        reason: 'manual_endpoint_only',
+        turnId: '$_streamingTurnSequence',
+        fromPhase: state.phase.name,
+        toPhase: state.phase.name,
+      );
+      debugPrint(
+        'rex_voice_authority suppress_empty_recover_manual detail=$message',
+      );
+      if (state.phase == VoiceCallPhase.listening &&
+          !_awaitingManualEndpointSubmit &&
+          !_streamingSessionIsConnected()) {
+        unawaited(
+          _listenUntilManualStop(
+            _callGeneration,
+            'empty_recover_rearm',
+          ),
+        );
+      }
+      return;
+    }
     // Known speech must never be wiped into the music/mic soft-recover loop.
     // Typed voice already uses REST chat+TTS; use that when streaming failed
     // after the client already has the transcript (common when WS never lands

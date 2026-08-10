@@ -40,6 +40,7 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
     _callGeneration++;
     _isAwaitingFollowUpSpeech = false;
     _emptyVoiceTurnRecoveryCount = 0;
+    _awaitingManualEndpointSubmit = false;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
@@ -94,6 +95,7 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
       VoiceTranscriptBuffer.preferFullest([
         _transcriptBuffer.visible,
         state.currentTranscript,
+        ?_pendingUtteranceTranscript,
       ]),
       priorUtterance: _lastCompletedUtteranceTranscript,
     ).trim();
@@ -117,11 +119,24 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
       toPhase: state.phase.name,
     );
 
-    // Finalize first so a cancelled capture end cannot divert to empty-turn
-    // recovery. Then stop the mic cycle — do not wait for VAD silence.
     _cancelListeningEndpointTimeout();
     _cancelSpeechFinalGrace();
     state = state.copyWith(isCapturingSpeech: false);
+    _pendingUtteranceTranscript = transcript;
+
+    // No live WS (common physical failure): red stop must still submit via
+    // chat+TTS. `_endTurnFromLocalEndpoint` no-ops when session is null.
+    if (_activeStreamingSession == null) {
+      final submitted = _completeStreamingTurnViaChatFallback(force: true);
+      _awaitingManualEndpointSubmit = false;
+      await _streamingCaptureService.cancel();
+      await _captureService.cancel();
+      unawaited(_stopInterimTranscription());
+      return submitted;
+    }
+
+    // Finalize first so a cancelled capture end cannot divert to empty-turn
+    // recovery. Then stop the mic cycle — do not wait for VAD silence.
     _endTurnFromLocalEndpoint(
       generation,
       reason: VoiceTurnFinalizeReason.manualStop,
@@ -129,6 +144,7 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
     );
     final finalized =
         _streamingTurnFinalizedSequence == _streamingTurnSequence;
+    _awaitingManualEndpointSubmit = false;
     await _streamingCaptureService.cancel();
     await _captureService.cancel();
     return finalized;
@@ -142,6 +158,7 @@ extension VoiceCallControllerSessionControls on VoiceCallController {
     _callGeneration++;
     _isAwaitingFollowUpSpeech = false;
     _emptyVoiceTurnRecoveryCount = 0;
+    _awaitingManualEndpointSubmit = false;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();
     await _releaseVoiceHardware();
