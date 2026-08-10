@@ -4,6 +4,8 @@ import 'package:audio_session/audio_session.dart';
 import 'package:flutter/services.dart';
 
 typedef VoiceAudioInterruptionCallback = void Function(String message);
+typedef VoiceAudioInterruptionBeginCallback = void Function();
+typedef VoiceAudioInterruptionEndCallback = void Function();
 
 abstract class VoiceAudioSessionService {
   Future<void> configureForVoiceTurn();
@@ -16,9 +18,12 @@ abstract class VoiceAudioSessionService {
     VoiceAudioInterruptionCallback onInterrupted,
   );
 
-  StreamSubscription<AudioInterruptionEvent> listenForInterruptions(
-    VoiceAudioInterruptionCallback onInterrupted,
-  );
+  /// AVAudioSession / Android focus interruptions (screenshot, calls, Siri).
+  /// Begin must hold utterance.end; end recovers listen without sending.
+  StreamSubscription<AudioInterruptionEvent> listenForInterruptions({
+    required VoiceAudioInterruptionBeginCallback onBegin,
+    VoiceAudioInterruptionEndCallback? onEnd,
+  });
 }
 
 class PackageVoiceAudioSessionService implements VoiceAudioSessionService {
@@ -104,19 +109,23 @@ class PackageVoiceAudioSessionService implements VoiceAudioSessionService {
   }
 
   @override
-  StreamSubscription<AudioInterruptionEvent> listenForInterruptions(
-    VoiceAudioInterruptionCallback onInterrupted,
-  ) {
+  StreamSubscription<AudioInterruptionEvent> listenForInterruptions({
+    required VoiceAudioInterruptionBeginCallback onBegin,
+    VoiceAudioInterruptionEndCallback? onEnd,
+  }) {
     final session = _session;
     if (session == null) {
       return const Stream<AudioInterruptionEvent>.empty().listen((_) {});
     }
     try {
       return session.interruptionEventStream.listen((event) {
-        if (event.begin && event.type != AudioInterruptionType.duck) {
-          onInterrupted(
-            'Audio was interrupted. Restart the voice turn when you are ready.',
-          );
+        if (event.type == AudioInterruptionType.duck) {
+          return;
+        }
+        if (event.begin) {
+          onBegin();
+        } else {
+          onEnd?.call();
         }
       });
     } on Object {

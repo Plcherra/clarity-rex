@@ -25,9 +25,10 @@ class _NoopVoiceAudioSessionService implements VoiceAudioSessionService {
   Future<void> preferLoudSpeaker() async {}
 
   @override
-  StreamSubscription<AudioInterruptionEvent> listenForInterruptions(
-    VoiceAudioInterruptionCallback onInterrupted,
-  ) {
+  StreamSubscription<AudioInterruptionEvent> listenForInterruptions({
+    required VoiceAudioInterruptionBeginCallback onBegin,
+    VoiceAudioInterruptionEndCallback? onEnd,
+  }) {
     return const Stream<AudioInterruptionEvent>.empty().listen((_) {});
   }
 
@@ -67,9 +68,10 @@ class _CountingVoiceAudioSessionService implements VoiceAudioSessionService {
   }
 
   @override
-  StreamSubscription<AudioInterruptionEvent> listenForInterruptions(
-    VoiceAudioInterruptionCallback onInterrupted,
-  ) {
+  StreamSubscription<AudioInterruptionEvent> listenForInterruptions({
+    required VoiceAudioInterruptionBeginCallback onBegin,
+    VoiceAudioInterruptionEndCallback? onEnd,
+  }) {
     return const Stream<AudioInterruptionEvent>.empty().listen((_) {});
   }
 
@@ -144,33 +146,33 @@ class _NoopStreamingAudioCaptureService implements StreamingAudioCaptureService 
   Future<void> cancel() async {}
 
   @override
-  Future<bool> streamUtterance({
+  Future<StreamingUtteranceCaptureResult> streamUtterance({
     required VoiceCaptureConfig config,
     required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
     required SpeechEndCallback onSpeechEnded,
     required AudioChunkCallback onAudioChunk,
   }) async {
-    return false;
+    return StreamingUtteranceCaptureResult.cancelled;
   }
 }
 
 class _HangingStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
   final started = Completer<void>();
-  final _capture = Completer<bool>();
+  final _capture = Completer<StreamingUtteranceCaptureResult>();
   var cancelled = false;
 
   @override
   Future<void> cancel() async {
     cancelled = true;
     if (!_capture.isCompleted) {
-      _capture.complete(false);
+      _capture.complete(StreamingUtteranceCaptureResult.cancelled);
     }
   }
 
   @override
-  Future<bool> streamUtterance({
+  Future<StreamingUtteranceCaptureResult> streamUtterance({
     required VoiceCaptureConfig config,
     required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
@@ -190,7 +192,7 @@ class _HangingStreamingAudioCaptureService
 class _ReusableSilentStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
   final _ready = <Completer<void>>[];
-  final _captures = <Completer<bool>>[];
+  final _captures = <Completer<StreamingUtteranceCaptureResult>>[];
   var startCount = 0;
   var cancelCount = 0;
 
@@ -206,13 +208,13 @@ class _ReusableSilentStreamingAudioCaptureService
     cancelCount++;
     for (final capture in _captures) {
       if (!capture.isCompleted) {
-        capture.complete(false);
+        capture.complete(StreamingUtteranceCaptureResult.cancelled);
       }
     }
   }
 
   @override
-  Future<bool> streamUtterance({
+  Future<StreamingUtteranceCaptureResult> streamUtterance({
     required VoiceCaptureConfig config,
     required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
@@ -224,7 +226,7 @@ class _ReusableSilentStreamingAudioCaptureService
     while (_ready.length <= index) {
       _ready.add(Completer<void>());
     }
-    final capture = Completer<bool>();
+    final capture = Completer<StreamingUtteranceCaptureResult>();
     _captures.add(capture);
     onReady();
     if (!_ready[index].isCompleted) {
@@ -237,7 +239,7 @@ class _ReusableSilentStreamingAudioCaptureService
 class _ScriptedStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
   final _ready = <Completer<void>>[];
-  final _captures = <Completer<bool>>[];
+  final _captures = <Completer<StreamingUtteranceCaptureResult>>[];
   SpeechStartCallback? _lastOnSpeechStart;
   SpeechEndCallback? _lastOnSpeechEnded;
 
@@ -263,8 +265,31 @@ class _ScriptedStreamingAudioCaptureService
     _lastOnSpeechStart?.call();
     _lastOnSpeechEnded?.call();
     if (!capture.isCompleted) {
-      capture.complete(true);
+      capture.complete(
+        const StreamingUtteranceCaptureResult(
+          hasSpeech: true,
+          endedByVoiceEndpoint: true,
+        ),
+      );
     }
+  }
+
+  /// Mic stream dies mid-phrase (screenshot race) without a VAD endpoint.
+  void abortCurrentWithSpeechWithoutEndpoint() {
+    if (_captures.isEmpty) {
+      return;
+    }
+    final capture = _captures.last;
+    if (capture.isCompleted) {
+      return;
+    }
+    _lastOnSpeechStart?.call();
+    capture.complete(
+      const StreamingUtteranceCaptureResult(
+        hasSpeech: true,
+        endedByVoiceEndpoint: false,
+      ),
+    );
   }
 
   /// Ends capture as empty (e.g. audio-session interrupt) without speech_end.
@@ -276,20 +301,20 @@ class _ScriptedStreamingAudioCaptureService
     if (capture.isCompleted) {
       return;
     }
-    capture.complete(false);
+    capture.complete(StreamingUtteranceCaptureResult.cancelled);
   }
 
   @override
   Future<void> cancel() async {
     for (final capture in _captures) {
       if (!capture.isCompleted) {
-        capture.complete(false);
+        capture.complete(StreamingUtteranceCaptureResult.cancelled);
       }
     }
   }
 
   @override
-  Future<bool> streamUtterance({
+  Future<StreamingUtteranceCaptureResult> streamUtterance({
     required VoiceCaptureConfig config,
     required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
@@ -300,7 +325,7 @@ class _ScriptedStreamingAudioCaptureService
     while (_ready.length <= index) {
       _ready.add(Completer<void>());
     }
-    final capture = Completer<bool>();
+    final capture = Completer<StreamingUtteranceCaptureResult>();
     _captures.add(capture);
     onReady();
     _lastOnSpeechStart = onSpeechStart;

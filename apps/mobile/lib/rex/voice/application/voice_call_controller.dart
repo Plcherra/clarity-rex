@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,6 +43,8 @@ part 'voice_call_controller_native.dart';
 part 'voice_call_controller_lifecycle.dart';
 part 'voice_call_controller_streaming.dart';
 part 'voice_call_controller_streaming_capture.dart';
+part 'voice_call_controller_streaming_capture_result.dart';
+part 'voice_call_controller_cloud_fallback.dart';
 part 'voice_call_controller_streaming_events.dart';
 part 'voice_call_controller_streaming_playback.dart';
 part 'voice_call_controller_timers.dart';
@@ -69,6 +72,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   BackgroundVoiceService? _activeBackgroundVoiceService;
   NativeVoiceSessionService? _activeNativeVoiceSessionService;
   StreamSubscription<NativeVoiceEvent>? _nativeVoiceSubscription;
+  StreamSubscription<AudioInterruptionEvent>? _audioInterruptionSubscription;
   final _transcriptBuffer = VoiceTranscriptBuffer();
   var _nativeAssistantText = '';
   var _isStartingCall = false;
@@ -145,9 +149,14 @@ class VoiceCallController extends Notifier<VoiceCallState>
       final streamingCaptureService = _activeStreamingCaptureService;
       final streamingSession = _activeStreamingSession;
       final nativeVoiceSubscription = _nativeVoiceSubscription;
+      final audioInterruptionSubscription = _audioInterruptionSubscription;
       final nativeVoiceSession = _activeNativeVoiceSessionService;
       final audioSessionService = _activeAudioSessionService;
       final backgroundVoiceService = _activeBackgroundVoiceService;
+      _audioInterruptionSubscription = null;
+      if (audioInterruptionSubscription != null) {
+        unawaited(audioInterruptionSubscription.cancel());
+      }
       if (captureService != null) {
         unawaited(captureService.cancel());
       }

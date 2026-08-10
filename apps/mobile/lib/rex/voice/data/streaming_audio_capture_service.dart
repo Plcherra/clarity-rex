@@ -12,8 +12,30 @@ typedef AudioChunkCallback = Future<void> Function(Uint8List chunk);
 typedef SpeechEndCallback = void Function();
 typedef BargeInCallback = void Function(List<Uint8List> audioChunks);
 
+/// Result of one streaming mic capture cycle.
+///
+/// Only [endedByVoiceEndpoint] may finalize a turn. Screenshot / audio-session
+/// blips often kill the recorder before [AppLifecycleState.inactive] arrives;
+/// those must not send a partial utterance.end.
+class StreamingUtteranceCaptureResult {
+  const StreamingUtteranceCaptureResult({
+    required this.hasSpeech,
+    required this.endedByVoiceEndpoint,
+  });
+
+  static const cancelled = StreamingUtteranceCaptureResult(
+    hasSpeech: false,
+    endedByVoiceEndpoint: false,
+  );
+
+  final bool hasSpeech;
+
+  /// True only after local VAD silence (or max-duration) closed the utterance.
+  final bool endedByVoiceEndpoint;
+}
+
 abstract class StreamingAudioCaptureService {
-  Future<bool> streamUtterance({
+  Future<StreamingUtteranceCaptureResult> streamUtterance({
     required VoiceCaptureConfig config,
     required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
@@ -167,12 +189,12 @@ class PackageStreamingAudioCaptureService
   final AudioRecorder _recorder;
   final DateTime Function() _now;
   StreamSubscription<Uint8List>? _streamSubscription;
-  Completer<bool>? _captureCompleter;
+  Completer<StreamingUtteranceCaptureResult>? _captureCompleter;
   Timer? _noSpeechTimer;
   Timer? _maxDurationTimer;
 
   @override
-  Future<bool> streamUtterance({
+  Future<StreamingUtteranceCaptureResult> streamUtterance({
     required VoiceCaptureConfig config,
     required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
@@ -185,7 +207,7 @@ class PackageStreamingAudioCaptureService
       config: endpointConfig,
       startedAt: _now(),
     );
-    _captureCompleter = Completer<bool>();
+    _captureCompleter = Completer<StreamingUtteranceCaptureResult>();
     var speechEndedNotified = false;
 
     final stream = await _recorder.startStream(
@@ -202,7 +224,7 @@ class PackageStreamingAudioCaptureService
       } on Object {
         // The recorder may already be stopped.
       }
-      return false;
+      return StreamingUtteranceCaptureResult.cancelled;
     }
     onReady();
 
@@ -221,24 +243,55 @@ class PackageStreamingAudioCaptureService
           onSpeechEnded();
         }
         if (update.endpointReached || update.maxDurationReached) {
-          unawaited(_complete(keepAudio: detector.hasSpeech));
+          unawaited(
+            _complete(
+              hasSpeech: detector.hasSpeech,
+              endedByVoiceEndpoint: true,
+            ),
+          );
         } else if (update.noSpeechTimedOut) {
-          unawaited(_complete(keepAudio: false));
+          unawaited(
+            _complete(hasSpeech: false, endedByVoiceEndpoint: false),
+          );
         }
       },
       onError: (_) {
-        unawaited(_complete(keepAudio: false));
+        // Screenshot / route blip — not a conversational endpoint.
+        unawaited(
+          _complete(
+            hasSpeech: detector.hasSpeech,
+            endedByVoiceEndpoint: false,
+          ),
+        );
+      },
+      onDone: () {
+        if (speechEndedNotified) {
+          return;
+        }
+        unawaited(
+          _complete(
+            hasSpeech: detector.hasSpeech,
+            endedByVoiceEndpoint: false,
+          ),
+        );
       },
       cancelOnError: true,
     );
 
     _noSpeechTimer = Timer(endpointConfig.noSpeechTimeout, () {
       if (!detector.hasSpeech) {
-        unawaited(_complete(keepAudio: false));
+        unawaited(
+          _complete(hasSpeech: false, endedByVoiceEndpoint: false),
+        );
       }
     });
     _maxDurationTimer = Timer(endpointConfig.maxUtteranceDuration, () {
-      unawaited(_complete(keepAudio: detector.hasSpeech));
+      unawaited(
+        _complete(
+          hasSpeech: detector.hasSpeech,
+          endedByVoiceEndpoint: true,
+        ),
+      );
     });
 
     return _captureCompleter!.future;
@@ -253,7 +306,7 @@ class PackageStreamingAudioCaptureService
     await _streamSubscription?.cancel();
     _streamSubscription = null;
     if (_captureCompleter != null && !_captureCompleter!.isCompleted) {
-      _captureCompleter!.complete(false);
+      _captureCompleter!.complete(StreamingUtteranceCaptureResult.cancelled);
     }
     _captureCompleter = null;
     try {
@@ -263,7 +316,10 @@ class PackageStreamingAudioCaptureService
     }
   }
 
-  Future<void> _complete({required bool keepAudio}) async {
+  Future<void> _complete({
+    required bool hasSpeech,
+    required bool endedByVoiceEndpoint,
+  }) async {
     final completer = _captureCompleter;
     if (completer == null || completer.isCompleted) {
       return;
@@ -279,7 +335,12 @@ class PackageStreamingAudioCaptureService
     } on Object {
       // Treat native stop failures as an empty capture.
     }
-    completer.complete(keepAudio);
+    completer.complete(
+      StreamingUtteranceCaptureResult(
+        hasSpeech: hasSpeech,
+        endedByVoiceEndpoint: endedByVoiceEndpoint,
+      ),
+    );
   }
 
   VoiceCaptureConfig _streamingEndpointConfig(VoiceCaptureConfig config) {

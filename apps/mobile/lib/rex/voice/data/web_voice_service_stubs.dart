@@ -60,9 +60,10 @@ final class NoOpVoiceAudioSessionService implements VoiceAudioSessionService {
   }
 
   @override
-  StreamSubscription<AudioInterruptionEvent> listenForInterruptions(
-    VoiceAudioInterruptionCallback onInterrupted,
-  ) {
+  StreamSubscription<AudioInterruptionEvent> listenForInterruptions({
+    required VoiceAudioInterruptionBeginCallback onBegin,
+    VoiceAudioInterruptionEndCallback? onEnd,
+  }) {
     return const Stream<AudioInterruptionEvent>.empty().listen((_) {});
   }
 }

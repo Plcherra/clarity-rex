@@ -24,12 +24,12 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
 
   final DateTime Function() _now;
   StreamSubscription<Uint8List>? _streamSubscription;
-  Completer<bool>? _captureCompleter;
+  Completer<StreamingUtteranceCaptureResult>? _captureCompleter;
   Timer? _noSpeechTimer;
   Timer? _maxDurationTimer;
 
   @override
-  Future<bool> streamUtterance({
+  Future<StreamingUtteranceCaptureResult> streamUtterance({
     required VoiceCaptureConfig config,
     required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
@@ -42,7 +42,7 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
       config: endpointConfig,
       startedAt: _now(),
     );
-    _captureCompleter = Completer<bool>();
+    _captureCompleter = Completer<StreamingUtteranceCaptureResult>();
     var speechEndedNotified = false;
 
     final session = await WebPcmMicrophoneEngine.instance.startCapture(
@@ -52,7 +52,7 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
     final completer = _captureCompleter;
     if (completer == null || completer.isCompleted) {
       await WebPcmMicrophoneEngine.instance.stopCapture();
-      return false;
+      return StreamingUtteranceCaptureResult.cancelled;
     }
     onReady();
 
@@ -71,24 +71,54 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
           onSpeechEnded();
         }
         if (update.endpointReached || update.maxDurationReached) {
-          unawaited(_complete(keepAudio: detector.hasSpeech));
+          unawaited(
+            _complete(
+              hasSpeech: detector.hasSpeech,
+              endedByVoiceEndpoint: true,
+            ),
+          );
         } else if (update.noSpeechTimedOut) {
-          unawaited(_complete(keepAudio: false));
+          unawaited(
+            _complete(hasSpeech: false, endedByVoiceEndpoint: false),
+          );
         }
       },
       onError: (_) {
-        unawaited(_complete(keepAudio: false));
+        unawaited(
+          _complete(
+            hasSpeech: detector.hasSpeech,
+            endedByVoiceEndpoint: false,
+          ),
+        );
+      },
+      onDone: () {
+        if (speechEndedNotified) {
+          return;
+        }
+        unawaited(
+          _complete(
+            hasSpeech: detector.hasSpeech,
+            endedByVoiceEndpoint: false,
+          ),
+        );
       },
       cancelOnError: true,
     );
 
     _noSpeechTimer = Timer(endpointConfig.noSpeechTimeout, () {
       if (!detector.hasSpeech) {
-        unawaited(_complete(keepAudio: false));
+        unawaited(
+          _complete(hasSpeech: false, endedByVoiceEndpoint: false),
+        );
       }
     });
     _maxDurationTimer = Timer(endpointConfig.maxUtteranceDuration, () {
-      unawaited(_complete(keepAudio: detector.hasSpeech));
+      unawaited(
+        _complete(
+          hasSpeech: detector.hasSpeech,
+          endedByVoiceEndpoint: true,
+        ),
+      );
     });
 
     return _captureCompleter!.future;
@@ -103,13 +133,16 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
     await _streamSubscription?.cancel();
     _streamSubscription = null;
     if (_captureCompleter != null && !_captureCompleter!.isCompleted) {
-      _captureCompleter!.complete(false);
+      _captureCompleter!.complete(StreamingUtteranceCaptureResult.cancelled);
     }
     _captureCompleter = null;
     await WebPcmMicrophoneEngine.instance.stopCapture();
   }
 
-  Future<void> _complete({required bool keepAudio}) async {
+  Future<void> _complete({
+    required bool hasSpeech,
+    required bool endedByVoiceEndpoint,
+  }) async {
     final completer = _captureCompleter;
     if (completer == null || completer.isCompleted) {
       return;
@@ -121,7 +154,12 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
     await _streamSubscription?.cancel();
     _streamSubscription = null;
     await WebPcmMicrophoneEngine.instance.stopCapture();
-    completer.complete(keepAudio);
+    completer.complete(
+      StreamingUtteranceCaptureResult(
+        hasSpeech: hasSpeech,
+        endedByVoiceEndpoint: endedByVoiceEndpoint,
+      ),
+    );
   }
 
   VoiceCaptureConfig _streamingEndpointConfig(VoiceCaptureConfig config) {

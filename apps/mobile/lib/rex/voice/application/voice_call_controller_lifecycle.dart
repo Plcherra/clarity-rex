@@ -6,16 +6,47 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
   Future<void> _prepareVoiceAudioEnvironment() async {
     try {
       await _audioSessionService.configureForVoiceTurn();
+      _bindAudioInterruptionHold();
       await _backgroundVoiceService.start();
     } on Object {
       // Audio session setup should improve reliability, not block voice mode.
     }
   }
 
+  void _bindAudioInterruptionHold() {
+    unawaited(_audioInterruptionSubscription?.cancel());
+    _audioInterruptionSubscription = _audioSessionService.listenForInterruptions(
+      onBegin: () {
+        if (!state.isCallActive || _isUsingNativeVoice) {
+          return;
+        }
+        _beginLifecycleUtteranceHold(reason: 'audio_interruption');
+      },
+      onEnd: () {
+        if (!state.isCallActive || _isUsingNativeVoice) {
+          return;
+        }
+        unawaited(_handleAudioInterruptionEnded());
+      },
+    );
+  }
+
+  Future<void> _handleAudioInterruptionEnded() async {
+    if (_isHandlingLifecycleResume) {
+      return;
+    }
+    // Same soft recover as screenshot inactive→resumed: never finalize.
+    _endLifecycleUtteranceHold();
+    await _recoverListenCycleAfterLifecycleHold();
+    debugPrint('rex_voice_lifecycle audio_interruption_ended recover_listen');
+  }
+
   Future<void> _releaseVoiceHardware() async {
     await _stopInterimTranscription();
     _stopNativeVoiceSession();
     _stopBargeInMonitoring();
+    final interruptionSubscription = _audioInterruptionSubscription;
+    _audioInterruptionSubscription = null;
     final streamingSession = _activeStreamingSession;
     _activeStreamingSession = null;
     _activeStreamingEventsTask = null;
@@ -28,6 +59,7 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
     streamingSession?.interrupt();
 
     await Future.wait([
+      if (interruptionSubscription != null) interruptionSubscription.cancel(),
       _streamingPlaybackQueue.cancel(),
       _playbackService.stop(),
       _backgroundVoiceService.stop(),

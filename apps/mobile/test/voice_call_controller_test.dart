@@ -3377,6 +3377,69 @@ void main() {
     },
   );
 
+  test(
+    'mic stream death before inactive must not send utterance.end',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      const partial = 'My real goal of buying before I do the road test';
+      captureService.startCurrentSpeech();
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': partial,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      // Screenshot race: recorder dies while app still reports foreground.
+      captureService.abortCurrentWithSpeechWithoutEndpoint();
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      await captureService.readyAt(1);
+
+      expect(container.read(voiceCallProvider).isCallActive, isTrue);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      expect(container.read(voiceCallProvider).currentTranscript, partial);
+      expect(
+        streamingApi.socket.sentEvents.where((e) => e == 'utterance.end'),
+        isEmpty,
+      );
+      expect(streamingApi.connectCount, 1);
+    },
+  );
+
   test('detached lifecycle ends the active voice call', () async {
     final captureService = _ReusableSilentStreamingAudioCaptureService();
     final streamingApi = _FakeStreamingVoiceApi();
