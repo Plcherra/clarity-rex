@@ -48,7 +48,6 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
   final _spendingPressureKey = GlobalKey();
   final _budgetPerformanceKey = GlobalKey();
   final _coreChartsController = ExpansibleController();
-  final _spendingAnalysisController = ExpansibleController();
   var _surface = _DashboardSurface.overview;
 
   @override
@@ -84,7 +83,6 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
   @override
   void dispose() {
     _coreChartsController.dispose();
-    _spendingAnalysisController.dispose();
     super.dispose();
   }
 
@@ -132,8 +130,8 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
         _coreChartsController.expand();
       }
       if (anchor == DashboardInsightAnchor.spendingPressure &&
-          !_spendingAnalysisController.isExpanded) {
-        _spendingAnalysisController.expand();
+          !_coreChartsController.isExpanded) {
+        _coreChartsController.expand();
       }
     }
 
@@ -227,8 +225,6 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
                                 spendingPressureKey: _spendingPressureKey,
                                 budgetPerformanceKey: _budgetPerformanceKey,
                                 coreChartsController: _coreChartsController,
-                                spendingAnalysisController:
-                                    _spendingAnalysisController,
                                 onCategoryTap: _openCategoryDetail,
                                 availableYearMonths: dashboardAvailableYearMonths(
                                   transactionDates: widget.scopedTransactions

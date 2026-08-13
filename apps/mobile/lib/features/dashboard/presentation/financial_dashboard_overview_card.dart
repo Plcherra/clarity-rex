@@ -1,11 +1,13 @@
 part of 'financial_dashboard_view.dart';
 
-class _FinancialOverviewCard extends StatefulWidget {
+class _FinancialOverviewCard extends StatelessWidget {
   const _FinancialOverviewCard({
     required this.snapshot,
     required this.isGlobalScope,
     required this.availableYearMonths,
     required this.onMonthSelected,
+    required this.period,
+    required this.onPeriodChanged,
     this.accountCount,
   });
 
@@ -14,13 +16,8 @@ class _FinancialOverviewCard extends StatefulWidget {
   final int? accountCount;
   final List<String> availableYearMonths;
   final ValueChanged<DateTime> onMonthSelected;
-
-  @override
-  State<_FinancialOverviewCard> createState() => _FinancialOverviewCardState();
-}
-
-class _FinancialOverviewCardState extends State<_FinancialOverviewCard> {
-  DashboardActivityPeriod _period = DashboardActivityPeriod.month;
+  final DashboardActivityPeriod period;
+  final ValueChanged<DashboardActivityPeriod> onPeriodChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -29,32 +26,42 @@ class _FinancialOverviewCardState extends State<_FinancialOverviewCard> {
     final l10n = context.l10n;
     final native = ClarityNativeLayout.active(context);
     final desktop = isClarityDesktopLayout(context);
-    final snapshot = widget.snapshot;
     final totals = dashboardActivityTotals(
-      period: _period,
+      period: period,
       reference: snapshot.referenceMonth,
       incomeThisMonth: snapshot.incomeThisMonth,
       spentThisMonth: snapshot.spentThisMonth,
       monthlyCashFlow: snapshot.monthlyCashFlow,
     );
     final left = totals.income - totals.spent;
+    final leftSplit = dashboardActivityLeftSplit(
+      period: period,
+      reference: snapshot.referenceMonth,
+      monthlyCashFlow: snapshot.monthlyCashFlow,
+    );
     final now = DateTime.now();
     final viewingCurrentMonth =
         snapshot.referenceMonth.year == now.year &&
         snapshot.referenceMonth.month == now.month;
-    final accountCount = widget.accountCount ?? 0;
+    final accountCount = this.accountCount ?? 0;
     final periodStrip = _PeriodActivityStrip(
-      period: _period,
+      period: period,
       income: totals.income,
       spent: totals.spent,
       left: left,
+      leftCash: leftSplit.cash,
+      leftCredit:
+          snapshot.creditAvailableTotal != null || leftSplit.credit.abs() > 0.005
+          ? leftSplit.credit
+          : null,
+      showLeftSplit: isGlobalScope,
       selectedMonth: snapshot.referenceMonth,
-      availableYearMonths: widget.availableYearMonths,
-      onMonthSelected: widget.onMonthSelected,
-      onPeriodChanged: (period) => setState(() => _period = period),
+      availableYearMonths: availableYearMonths,
+      onMonthSelected: onMonthSelected,
+      onPeriodChanged: onPeriodChanged,
     );
     final nowDetails = <Widget>[
-      if (widget.isGlobalScope) ...[
+      if (isGlobalScope) ...[
         _CashFlowSummaryMetric(
           label: l10n.dashboardOverviewDebtTotal,
           value: formatMoney(snapshot.debtTotal),
@@ -100,7 +107,7 @@ class _FinancialOverviewCardState extends State<_FinancialOverviewCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            widget.isGlobalScope
+            isGlobalScope
                 ? l10n.dashboardOverviewTotalBalance
                 : l10n.dashboardOverviewAccountBalance,
             style: theme.textTheme.labelLarge?.copyWith(
@@ -126,7 +133,7 @@ class _FinancialOverviewCardState extends State<_FinancialOverviewCard> {
           ),
           const SizedBox(height: 4),
           Text(
-            widget.isGlobalScope && accountCount > 0
+            isGlobalScope && accountCount > 0
                 ? l10n.dashboardOverviewNetBalanceHint(
                     accountCount,
                     accountCount == 1 ? '' : 's',
@@ -138,7 +145,7 @@ class _FinancialOverviewCardState extends State<_FinancialOverviewCard> {
             ),
           ),
           const SizedBox(height: 16),
-          if (desktop && widget.isGlobalScope)
+          if (desktop && isGlobalScope)
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -169,12 +176,14 @@ class _LeftSplitRow extends StatelessWidget {
     required this.leftValue,
     required this.cash,
     this.credit,
+    this.creditLabel,
   });
 
   final String leftLabel;
   final double leftValue;
   final double cash;
   final double? credit;
+  final String? creditLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +235,7 @@ class _LeftSplitRow extends StatelessWidget {
                 ),
                 if (credit != null)
                   Text(
-                    '${formatMoney(credit)} ${l10n.dashboardOverviewCreditAvailable}',
+                    '${formatMoney(credit)} ${creditLabel ?? l10n.dashboardOverviewCreditAvailable}',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: cs.onSurface,
                       fontWeight: FontWeight.w700,

@@ -310,7 +310,33 @@ void main() {
       );
 
       expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
-      expect(find.byType(InkWell), findsNothing);
+      expect(find.byTooltip('Switch category chart'), findsOneWidget);
+    });
+
+    testWidgets('a swap control rotates bars into a pie chart', (tester) async {
+      await tester.pumpWidget(
+        wrapWithClarityTheme(
+          const CategorySpendChart(
+            categories: [
+              CategorySpend(name: 'Fitness', amount: 159),
+              CategorySpend(name: 'Transportation', amount: 63.42),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.byType(PieChart), findsNothing);
+      expect(find.text('Fitness'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Switch category chart'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(PieChart), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(PieChart), findsNothing);
+      expect(find.text('Fitness'), findsOneWidget);
     });
   });
 }

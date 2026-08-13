@@ -1,7 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/formatting/formatting.dart';
 import 'package:clarity/core/layout/clarity_breakpoints.dart';
+import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
@@ -153,4 +155,86 @@ double financeChartMaxY(Iterable<double> values) {
 
 double financeChartHeight(BuildContext context, {double compact = 200}) {
   return isClarityDesktopLayout(context) ? 300 : compact;
+}
+
+class FinanceHorizontalAmountBar extends StatelessWidget {
+  const FinanceHorizontalAmountBar({
+    required this.label,
+    required this.amount,
+    required this.maxAmount,
+    required this.color,
+    this.onTap,
+  });
+
+  final String label;
+  final double amount;
+  final double maxAmount;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = context.clarityColors.textMuted;
+    final fraction = maxAmount <= 0
+        ? 0.0
+        : (amount / maxAmount).clamp(0.0, 1.0);
+
+    final bar = Padding(
+      padding: EdgeInsets.fromLTRB(0, onTap == null ? 0 : 6, 0, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                formatMoney(amount),
+                style: theme.textTheme.labelSmall?.copyWith(color: muted),
+              ),
+              if (onTap != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 2),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: muted,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 8,
+              value: fraction,
+              backgroundColor: context.clarityColors.surfaceElevated,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) return bar;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Semantics(
+        button: true,
+        label: context.l10n.dashboardChartCategoryDrilldownHint(label),
+        child: bar,
+      ),
+    );
+  }
 }

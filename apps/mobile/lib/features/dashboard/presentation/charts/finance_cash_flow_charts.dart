@@ -14,12 +14,14 @@ class MonthlyCashFlowChart extends StatefulWidget {
   const MonthlyCashFlowChart({
     required this.months,
     this.initialRange = financeChartDefaultRange,
+    this.showRangeSwitch = true,
     super.key,
   });
 
   /// Oldest month first.
   final List<MonthlyCashFlowPoint> months;
   final int initialRange;
+  final bool showRangeSwitch;
 
   @override
   State<MonthlyCashFlowChart> createState() => _MonthlyCashFlowChartState();
@@ -36,7 +38,9 @@ class _MonthlyCashFlowChartState extends State<MonthlyCashFlowChart> {
       );
     }
 
-    final recent = trimFinanceChartMonths(widget.months, months: _range);
+    final recent = widget.showRangeSwitch
+        ? trimFinanceChartMonths(widget.months, months: _range)
+        : widget.months;
     final colors = context.clarityColors;
     final l10n = context.l10n;
     final labels = [
@@ -46,11 +50,13 @@ class _MonthlyCashFlowChartState extends State<MonthlyCashFlowChart> {
 
     return Column(
       children: [
-        FinanceChartRangeSwitch(
-          months: _range,
-          onChanged: (range) => setState(() => _range = range),
-        ),
-        const SizedBox(height: 8),
+        if (widget.showRangeSwitch) ...[
+          FinanceChartRangeSwitch(
+            months: _range,
+            onChanged: (range) => setState(() => _range = range),
+          ),
+          const SizedBox(height: 8),
+        ],
         SizedBox(
           height: financeChartHeight(context),
           child: BarChart(
@@ -116,12 +122,14 @@ class SpendTrendChart extends StatefulWidget {
   const SpendTrendChart({
     required this.months,
     this.initialRange = financeChartDefaultRange,
+    this.showRangeSwitch = true,
     super.key,
   });
 
   /// Oldest month first.
   final List<MonthlyCashFlowPoint> months;
   final int initialRange;
+  final bool showRangeSwitch;
 
   @override
   State<SpendTrendChart> createState() => _SpendTrendChartState();
@@ -138,7 +146,9 @@ class _SpendTrendChartState extends State<SpendTrendChart> {
       );
     }
 
-    final recent = trimFinanceChartMonths(widget.months, months: _range);
+    final recent = widget.showRangeSwitch
+        ? trimFinanceChartMonths(widget.months, months: _range)
+        : widget.months;
     final l10n = context.l10n;
     final colors = context.clarityColors;
     final labels = [
@@ -152,11 +162,13 @@ class _SpendTrendChartState extends State<SpendTrendChart> {
 
     return Column(
       children: [
-        FinanceChartRangeSwitch(
-          months: _range,
-          onChanged: (range) => setState(() => _range = range),
-        ),
-        const SizedBox(height: 8),
+        if (widget.showRangeSwitch) ...[
+          FinanceChartRangeSwitch(
+            months: _range,
+            onChanged: (range) => setState(() => _range = range),
+          ),
+          const SizedBox(height: 8),
+        ],
         SizedBox(
           height: financeChartHeight(context, compact: 180),
           child: LineChart(

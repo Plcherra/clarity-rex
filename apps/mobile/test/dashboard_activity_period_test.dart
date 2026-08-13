@@ -96,4 +96,82 @@ void main() {
     expect(year.income, closeTo(5271.24, 0.001));
     expect(year.spent, closeTo(2909.10, 0.001));
   });
+
+  test('chart months follow the overview period, including sparse history', () {
+    const points = [
+      MonthlyCashFlowPoint(yearMonth: '2026-03', income: 1800, spend: 900),
+      MonthlyCashFlowPoint(yearMonth: '2026-08', income: 1471.24, spend: 509.10),
+    ];
+
+    expect(
+      cashFlowForActivityPeriod(
+        monthlyCashFlow: points,
+        reference: august,
+        period: DashboardActivityPeriod.month,
+      ).map((point) => point.yearMonth),
+      ['2026-08'],
+    );
+    expect(
+      cashFlowForActivityPeriod(
+        monthlyCashFlow: points,
+        reference: august,
+        period: DashboardActivityPeriod.sixMonths,
+      ).map((point) => point.yearMonth),
+      ['2026-03', '2026-08'],
+    );
+    expect(
+      cashFlowForActivityPeriod(
+        monthlyCashFlow: points,
+        reference: august,
+        period: DashboardActivityPeriod.year,
+      ).map((point) => point.yearMonth),
+      ['2026-03', '2026-08'],
+    );
+  });
+
+  test('category spend sums every month in the selected period', () {
+    const monthly = {
+      '2026-03': {'Fitness': 40.0, 'Coffee / Quick Food': 10.0},
+      '2026-08': {'Fitness': 159.0, 'Transportation': 63.42},
+    };
+
+    final month = categorySpendForActivityPeriod(
+      monthlyCategorySpend: monthly,
+      reference: august,
+      period: DashboardActivityPeriod.month,
+    );
+    expect(month.first.name, 'Fitness');
+    expect(month.first.amount, 159);
+    expect(month, hasLength(2));
+
+    final sixMonths = categorySpendForActivityPeriod(
+      monthlyCategorySpend: monthly,
+      reference: august,
+      period: DashboardActivityPeriod.sixMonths,
+    );
+    expect(sixMonths.first.name, 'Fitness');
+    expect(sixMonths.first.amount, 199);
+  });
+
+  test('period leftover splits cash vs card flow', () {
+    const points = [
+      MonthlyCashFlowPoint(
+        yearMonth: '2026-08',
+        income: 1471.24,
+        spend: 509.10,
+        cashIncome: 1471.24,
+        cashSpend: 238.42,
+        creditSpend: 270.68,
+      ),
+    ];
+
+    final split = dashboardActivityLeftSplit(
+      period: DashboardActivityPeriod.month,
+      reference: august,
+      monthlyCashFlow: points,
+    );
+    expect(split.cash, closeTo(1232.82, 0.001));
+    expect(split.credit, closeTo(-270.68, 0.001));
+    expect(split.cash + split.credit, closeTo(962.14, 0.001));
+  });
 }

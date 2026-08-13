@@ -1,4 +1,5 @@
 import '../../../core/models/models.dart';
+import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
 import 'dashboard_transaction_groups.dart';
@@ -41,6 +42,34 @@ double totalIncomeInMonth(
     sum += t.amount;
   }
   return sum;
+}
+
+void addResolvedCategorySpend(
+  Map<String, double> map,
+  ResolvedTransaction resolved,
+) {
+  final transaction = resolved.transaction;
+  if (transaction.pending) return;
+  final bucket = spendCategoryBucketKey(resolved);
+  if (isNeedsCategoryGroupKey(bucket)) {
+    map[bucket] = (map[bucket] ?? 0) + transaction.amount.abs();
+    return;
+  }
+  if (!resolved.countsAsSpend) return;
+  if (isIgnoredCategoryLabel(bucket) || isIncomeCategoryLabel(bucket)) return;
+  map[bucket] = (map[bucket] ?? 0) + (-transaction.amount);
+}
+
+Map<String, Map<String, double>> monthlyCategorySpendTotals(
+  Iterable<ResolvedTransaction> resolved,
+) {
+  final byMonth = <String, Map<String, double>>{};
+  for (final row in resolved) {
+    if (row.transaction.pending) continue;
+    final month = yearMonthKey(row.transaction.date);
+    addResolvedCategorySpend(byMonth.putIfAbsent(month, () => {}), row);
+  }
+  return byMonth;
 }
 
 /// Spending by category (outflows, non-income labels), same rules as dashboard top categories.

@@ -207,6 +207,7 @@ S2_STRINGS: dict[str, str] = {
     "dashboardOverviewCashTotal": "Cash",
     "dashboardOverviewDebtTotal": "Debt",
     "dashboardOverviewCreditAvailable": "Credit left",
+    "dashboardOverviewCreditTotal": "Credit",
     "dashboardOverviewLeftToUse": "Left",
     "dashboardOverviewDebtHint": "Cards owed right now — not this month's spending",
     "dashboardOverviewCreditLeftPartial": "A connected card has no leftover yet. Resync so its limit can be included.",

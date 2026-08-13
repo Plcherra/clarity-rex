@@ -6,6 +6,9 @@ class _PeriodActivityStrip extends StatelessWidget {
     required this.income,
     required this.spent,
     required this.left,
+    required this.leftCash,
+    required this.leftCredit,
+    required this.showLeftSplit,
     required this.selectedMonth,
     required this.availableYearMonths,
     required this.onMonthSelected,
@@ -16,6 +19,9 @@ class _PeriodActivityStrip extends StatelessWidget {
   final double income;
   final double spent;
   final double left;
+  final double leftCash;
+  final double? leftCredit;
+  final bool showLeftSplit;
   final DateTime selectedMonth;
   final List<String> availableYearMonths;
   final ValueChanged<DateTime> onMonthSelected;
@@ -72,13 +78,24 @@ class _PeriodActivityStrip extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        _CashFlowSummaryMetric(
-          label: period == DashboardActivityPeriod.month
-              ? l10n.dashboardOverviewLeftThisMonth
-              : l10n.dashboardOverviewLeftThisPeriod,
-          value: formatMoney(left),
-          color: _balanceColor(context, left),
-        ),
+        if (showLeftSplit)
+          _LeftSplitRow(
+            leftLabel: period == DashboardActivityPeriod.month
+                ? l10n.dashboardOverviewLeftThisMonth
+                : l10n.dashboardOverviewLeftThisPeriod,
+            leftValue: left,
+            cash: leftCash,
+            credit: leftCredit,
+            creditLabel: l10n.dashboardOverviewCreditTotal,
+          )
+        else
+          _CashFlowSummaryMetric(
+            label: period == DashboardActivityPeriod.month
+                ? l10n.dashboardOverviewLeftThisMonth
+                : l10n.dashboardOverviewLeftThisPeriod,
+            value: formatMoney(left),
+            color: _balanceColor(context, left),
+          ),
       ],
     );
   }

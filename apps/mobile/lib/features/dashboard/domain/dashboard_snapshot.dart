@@ -1,12 +1,11 @@
 import 'account_balance_breakdown.dart';
 import 'balance_resolve.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
+import 'dashboard_activity_period.dart';
 import 'dashboard_metrics.dart';
-import 'dashboard_transaction_groups.dart';
 import 'monthly_cash_flow_series.dart';
 import 'savings_snapshot.dart';
 import '../../../core/models/models.dart';
-import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
 
 sealed class DashboardScope {
@@ -67,6 +66,7 @@ class DashboardSnapshot {
     this.pendingIncomeThisMonth = 0,
     this.pendingSpentThisMonth = 0,
     this.monthlyCashFlow = const [],
+    this.monthlyCategorySpend = const {},
     this.savings,
   });
 
@@ -110,6 +110,9 @@ class DashboardSnapshot {
   /// Chart series, oldest month first. Counted like [spentThisMonth] and
   /// [incomeThisMonth] so a chart can never disagree with the overview card.
   final List<MonthlyCashFlowPoint> monthlyCashFlow;
+
+  /// Posted spend by `YYYY-MM` then category. Charts sum this for 1M / 6M / 1Y.
+  final Map<String, Map<String, double>> monthlyCategorySpend;
 
   /// Null unless a savings account is connected in this scope.
   final SavingsSnapshot? savings;
@@ -165,30 +168,12 @@ DashboardSnapshot buildDashboardSnapshot({
 
   final available = income - spent;
 
-  // Top categories (scoped, expense-role only). Unresolved spend shares one
-  // Needs bucket so Overview taps open the same detail Categories uses.
-  final topMap = <String, double>{};
-  for (final r in resolved) {
-    final t = r.transaction;
-    if (t.pending) continue;
-    if (t.date.year != y || t.date.month != m) continue;
-    final bucket = spendCategoryBucketKey(r);
-    if (isNeedsCategoryGroupKey(bucket)) {
-      topMap[bucket] = (topMap[bucket] ?? 0) + t.amount.abs();
-      continue;
-    }
-    if (!r.countsAsSpend) continue;
-    if (isIgnoredCategoryLabel(bucket) || isIncomeCategoryLabel(bucket)) {
-      continue;
-    }
-    topMap[bucket] = (topMap[bucket] ?? 0) + (-t.amount);
-  }
-  final top =
-      topMap.entries
-          .map((e) => CategorySpend(name: e.key, amount: e.value))
-          .toList()
-        ..sort((a, b) => b.amount.compareTo(a.amount));
-  final top5 = top.length <= 5 ? top : top.sublist(0, 5);
+  final categorySpendByMonth = monthlyCategorySpendTotals(resolved);
+  final top5 = categorySpendForActivityPeriod(
+    monthlyCategorySpend: categorySpendByMonth,
+    reference: reference,
+    period: DashboardActivityPeriod.month,
+  );
 
   // Leaks (scoped). Note: biggestCategoryLeaks currently uses its provided list
   // for role resolution context. For v1, this is acceptable; the major correctness
@@ -247,7 +232,11 @@ DashboardSnapshot buildDashboardSnapshot({
     burnRunwayDays: runway,
     monthlyGroups: monthsNewestFirst,
     referenceMonth: reference,
-    monthlyCashFlow: buildMonthlyCashFlowSeries(resolved),
+    monthlyCashFlow: buildMonthlyCashFlowSeries(
+      resolved,
+      accountsById: accountsById,
+    ),
+    monthlyCategorySpend: categorySpendByMonth,
     savings: buildSavingsSnapshot(
       scope: scope,
       reference: reference,

@@ -1,3 +1,4 @@
+import '../../../core/models/models.dart';
 import 'monthly_cash_flow_series.dart';
 
 /// Window for Income / Spending / Left on the overview period strip.
@@ -32,6 +33,70 @@ enum DashboardActivityPeriod { month, sixMonths, year }
     spent += point.spend;
   }
   return (income: income, spent: spent);
+}
+
+List<MonthlyCashFlowPoint> cashFlowForActivityPeriod({
+  required Iterable<MonthlyCashFlowPoint> monthlyCashFlow,
+  required DateTime reference,
+  required DashboardActivityPeriod period,
+}) {
+  return [
+    for (final point in monthlyCashFlow)
+      if (dashboardActivityMonthInPeriod(
+        yearMonth: point.yearMonth,
+        reference: reference,
+        period: period,
+      ))
+        point,
+  ];
+}
+
+({double cash, double credit}) dashboardActivityLeftSplit({
+  required DashboardActivityPeriod period,
+  required DateTime reference,
+  required Iterable<MonthlyCashFlowPoint> monthlyCashFlow,
+}) {
+  var cash = 0.0;
+  var credit = 0.0;
+  for (final point in monthlyCashFlow) {
+    if (!dashboardActivityMonthInPeriod(
+      yearMonth: point.yearMonth,
+      reference: reference,
+      period: period,
+    )) {
+      continue;
+    }
+    cash += point.cashLeft;
+    credit += point.creditLeft;
+  }
+  return (cash: cash, credit: credit);
+}
+
+List<CategorySpend> categorySpendForActivityPeriod({
+  required Map<String, Map<String, double>> monthlyCategorySpend,
+  required DateTime reference,
+  required DashboardActivityPeriod period,
+  int limit = 5,
+}) {
+  final totals = <String, double>{};
+  for (final entry in monthlyCategorySpend.entries) {
+    if (!dashboardActivityMonthInPeriod(
+      yearMonth: entry.key,
+      reference: reference,
+      period: period,
+    )) {
+      continue;
+    }
+    for (final category in entry.value.entries) {
+      totals[category.key] = (totals[category.key] ?? 0) + category.value;
+    }
+  }
+  final top = totals.entries
+      .map((entry) => CategorySpend(name: entry.key, amount: entry.value))
+      .toList()
+    ..sort((a, b) => b.amount.compareTo(a.amount));
+  if (top.length <= limit) return top;
+  return top.sublist(0, limit);
 }
 
 DateTime dashboardActivityPeriodStart(

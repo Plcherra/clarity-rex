@@ -13,6 +13,7 @@ import 'finance_chart_primitives.dart';
 export 'finance_cash_flow_charts.dart';
 export 'finance_chart_primitives.dart';
 export 'finance_chart_range_switch.dart';
+export 'finance_category_spend_chart.dart';
 export 'finance_spend_radar_chart.dart';
 
 String _chartCategoryLabel(AppLocalizations l10n, String category) {
@@ -20,49 +21,6 @@ String _chartCategoryLabel(AppLocalizations l10n, String category) {
     return l10n.dashboardNeedsCategoryLabel;
   }
   return category;
-}
-
-class CategorySpendChart extends StatelessWidget {
-  const CategorySpendChart({
-    required this.categories,
-    this.onCategoryTap,
-    super.key,
-  });
-
-  final List<CategorySpend> categories;
-
-  /// Opens the transactions behind a bar. Bars stay flat when this is null.
-  final void Function(String category)? onCategoryTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    if (categories.isEmpty) {
-      return FinanceChartEmpty(
-        message: l10n.dashboardChartNoCategorySpending,
-      );
-    }
-
-    final top = categories.take(5).toList(growable: false);
-    final maxAmount = top
-        .map((item) => item.amount)
-        .fold<double>(0, (max, value) => value > max ? value : max);
-
-    return Column(
-      children: [
-        for (final item in top)
-          _HorizontalAmountBar(
-            label: _chartCategoryLabel(l10n, item.name),
-            amount: item.amount,
-            maxAmount: maxAmount,
-            color: context.clarityColors.accent,
-            onTap: onCategoryTap == null
-                ? null
-                : () => onCategoryTap!(item.name),
-          ),
-      ],
-    );
-  }
 }
 
 class BiggestLeaksChart extends StatelessWidget {
@@ -90,7 +48,7 @@ class BiggestLeaksChart extends StatelessWidget {
     return Column(
       children: [
         for (final item in top)
-          _HorizontalAmountBar(
+          FinanceHorizontalAmountBar(
             label: _chartCategoryLabel(l10n, item.name),
             amount: item.amountThisMonth,
             maxAmount: maxAmount,
@@ -274,88 +232,6 @@ class _BudgetVsSpentRow extends StatelessWidget {
         button: true,
         label: l10n.dashboardChartCategoryDrilldownHint(label),
         child: row,
-      ),
-    );
-  }
-}
-
-class _HorizontalAmountBar extends StatelessWidget {
-  const _HorizontalAmountBar({
-    required this.label,
-    required this.amount,
-    required this.maxAmount,
-    required this.color,
-    this.onTap,
-  });
-
-  final String label;
-  final double amount;
-  final double maxAmount;
-  final Color color;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = context.clarityColors.textMuted;
-    final fraction = maxAmount <= 0
-        ? 0.0
-        : (amount / maxAmount).clamp(0.0, 1.0);
-
-    final bar = Padding(
-      padding: EdgeInsets.fromLTRB(0, onTap == null ? 0 : 6, 0, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              Text(
-                formatMoney(amount),
-                style: theme.textTheme.labelSmall?.copyWith(color: muted),
-              ),
-              if (onTap != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 2),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    size: 16,
-                    color: muted,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              minHeight: 8,
-              value: fraction,
-              backgroundColor: context.clarityColors.surfaceElevated,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (onTap == null) return bar;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Semantics(
-        button: true,
-        label: context.l10n.dashboardChartCategoryDrilldownHint(label),
-        child: bar,
       ),
     );
   }

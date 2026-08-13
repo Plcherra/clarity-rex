@@ -1754,6 +1754,12 @@ abstract class AppLocalizations {
   /// **'Credit left'**
   String get dashboardOverviewCreditAvailable;
 
+  /// No description provided for @dashboardOverviewCreditTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit'**
+  String get dashboardOverviewCreditTotal;
+
   /// No description provided for @dashboardOverviewLeftToUse.
   ///
   /// In en, this message translates to:
@@ -2183,6 +2189,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total · tap a category'**
   String get dashboardChartCategorySpendSubtitle;
+
+  /// No description provided for @dashboardChartToggleCategoryView.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch category chart'**
+  String get dashboardChartToggleCategoryView;
 
   /// No description provided for @dashboardOverviewSpendShape.
   ///

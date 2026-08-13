@@ -934,6 +934,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardOverviewCreditAvailable => 'Credit left';
 
   @override
+  String get dashboardOverviewCreditTotal => 'Credit';
+
+  @override
   String get dashboardOverviewLeftToUse => 'Left';
 
   @override
@@ -1190,6 +1193,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardChartCategorySpendSubtitle => 'Total · tap a category';
+
+  @override
+  String get dashboardChartToggleCategoryView => 'Switch category chart';
 
   @override
   String get dashboardOverviewSpendShape => 'Spend shape';

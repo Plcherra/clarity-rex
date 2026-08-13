@@ -46,7 +46,7 @@ class _DashboardSurfaceSwitch extends StatelessWidget {
 }
 
 /// Graphs, budget, and account health — no transaction list.
-class _DashboardOverviewBody extends StatelessWidget {
+class _DashboardOverviewBody extends StatefulWidget {
   const _DashboardOverviewBody({
     required this.snapshot,
     required this.budgetPerformance,
@@ -60,7 +60,6 @@ class _DashboardOverviewBody extends StatelessWidget {
     required this.spendingPressureKey,
     required this.budgetPerformanceKey,
     required this.coreChartsController,
-    required this.spendingAnalysisController,
     required this.onCategoryTap,
     required this.availableYearMonths,
     required this.onMonthSelected,
@@ -78,54 +77,75 @@ class _DashboardOverviewBody extends StatelessWidget {
   final GlobalKey spendingPressureKey;
   final GlobalKey budgetPerformanceKey;
   final ExpansibleController coreChartsController;
-  final ExpansibleController spendingAnalysisController;
   final ValueChanged<String> onCategoryTap;
   final List<String> availableYearMonths;
   final ValueChanged<DateTime> onMonthSelected;
 
   @override
+  State<_DashboardOverviewBody> createState() => _DashboardOverviewBodyState();
+}
+
+class _DashboardOverviewBodyState extends State<_DashboardOverviewBody> {
+  DashboardActivityPeriod _period = DashboardActivityPeriod.month;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
+    final snapshot = widget.snapshot;
+    final periodMonths = cashFlowForActivityPeriod(
+      monthlyCashFlow: snapshot.monthlyCashFlow,
+      reference: snapshot.referenceMonth,
+      period: _period,
+    );
+    final periodCategories = categorySpendForActivityPeriod(
+      monthlyCategorySpend: snapshot.monthlyCategorySpend,
+      reference: snapshot.referenceMonth,
+      period: _period,
+    );
     final overviewCard = _FinancialOverviewCard(
       snapshot: snapshot,
-      isGlobalScope: scope is GlobalDashboardScope,
-      accountCount: scope is GlobalDashboardScope ? accountCount : null,
-      availableYearMonths: availableYearMonths,
-      onMonthSelected: onMonthSelected,
+      isGlobalScope: widget.scope is GlobalDashboardScope,
+      accountCount: widget.scope is GlobalDashboardScope
+          ? widget.accountCount
+          : null,
+      availableYearMonths: widget.availableYearMonths,
+      onMonthSelected: widget.onMonthSelected,
+      period: _period,
+      onPeriodChanged: (period) => setState(() => _period = period),
     );
     final cashFlowChart = _DashboardChartSection(
-      sectionKey: monthlyCashFlowKey,
+      sectionKey: widget.monthlyCashFlowKey,
       title: l10n.dashboardOverviewMonthlyCashFlow,
-      child: MonthlyCashFlowChart(months: snapshot.monthlyCashFlow),
+      child: MonthlyCashFlowChart(
+        months: periodMonths,
+        showRangeSwitch: false,
+      ),
     );
     final categoryChart = _DashboardChartSection(
+      sectionKey: widget.spendingPressureKey,
       title: l10n.dashboardOverviewSpendingByCategory,
       subtitle: l10n.dashboardChartCategorySpendSubtitle,
       child: CategorySpendChart(
-        categories: snapshot.topCategories,
-        onCategoryTap: onCategoryTap,
+        categories: periodCategories,
+        onCategoryTap: widget.onCategoryTap,
       ),
     );
     final spendRadarChart = _DashboardChartSection(
       title: l10n.dashboardOverviewSpendShape,
       subtitle: l10n.dashboardChartSpendRadarSubtitle,
       child: CategorySpendRadarChart(
-        categories: snapshot.topCategories,
-        budgetPerformance: budgetPerformance,
+        categories: periodCategories,
+        budgetPerformance: _period == DashboardActivityPeriod.month
+            ? widget.budgetPerformance
+            : null,
       ),
     );
     final trendChart = _DashboardChartSection(
       title: l10n.dashboardOverviewSixMonthTrend,
-      child: SpendTrendChart(months: snapshot.monthlyCashFlow),
-    );
-    final pressureChart = _DashboardChartSection(
-      sectionKey: spendingPressureKey,
-      title: l10n.dashboardOverviewSpendingPressure,
-      subtitle: l10n.dashboardChartSpendingPressureSubtitle,
-      child: BiggestLeaksChart(
-        leaks: snapshot.biggestLeaksThisMonth,
-        onCategoryTap: onCategoryTap,
+      child: SpendTrendChart(
+        months: periodMonths,
+        showRangeSwitch: false,
       ),
     );
 
@@ -133,8 +153,8 @@ class _DashboardOverviewBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         overviewCard,
-        SizedBox(height: sectionGap),
-        if (wide) ...[
+        SizedBox(height: widget.sectionGap),
+        if (widget.wide) ...[
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -143,51 +163,44 @@ class _DashboardOverviewBody extends StatelessWidget {
               Expanded(child: categoryChart),
             ],
           ),
-          SizedBox(height: sectionGap),
+          SizedBox(height: widget.sectionGap),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: spendRadarChart),
-              const SizedBox(width: 16),
-              Expanded(child: pressureChart),
+              if (_period != DashboardActivityPeriod.month) ...[
+                const SizedBox(width: 16),
+                Expanded(child: trendChart),
+              ],
             ],
           ),
-          SizedBox(height: sectionGap),
-          trendChart,
         ] else ...[
           _DashboardCollapsibleChartGroup(
             title: l10n.dashboardSectionCoreCharts,
             initiallyExpanded: true,
-            alwaysExpanded: desktop,
-            controller: coreChartsController,
+            alwaysExpanded: widget.desktop,
+            controller: widget.coreChartsController,
             children: [
               cashFlowChart,
-              SizedBox(height: sectionGap),
+              SizedBox(height: widget.sectionGap),
               categoryChart,
-              SizedBox(height: sectionGap),
+              SizedBox(height: widget.sectionGap),
               spendRadarChart,
             ],
           ),
-          SizedBox(height: sectionGap),
-          _DashboardCollapsibleChartGroup(
-            title: l10n.dashboardSectionTrendCharts,
-            subtitle: l10n.dashboardSectionTrendChartsHint,
-            initiallyExpanded: desktop,
-            alwaysExpanded: desktop,
-            children: [trendChart],
-          ),
-          SizedBox(height: sectionGap),
-          _DashboardCollapsibleChartGroup(
-            title: l10n.dashboardSectionSpendingAnalysis,
-            subtitle: l10n.dashboardSectionSpendingAnalysisHint,
-            initiallyExpanded: desktop,
-            alwaysExpanded: desktop,
-            controller: spendingAnalysisController,
-            children: [pressureChart],
-          ),
+          if (_period != DashboardActivityPeriod.month) ...[
+            SizedBox(height: widget.sectionGap),
+            _DashboardCollapsibleChartGroup(
+              title: l10n.dashboardSectionTrendCharts,
+              subtitle: l10n.dashboardSectionTrendChartsHint,
+              initiallyExpanded: widget.desktop,
+              alwaysExpanded: widget.desktop,
+              children: [trendChart],
+            ),
+          ],
         ],
-        SizedBox(height: sectionGap),
-        if (wide)
+        SizedBox(height: widget.sectionGap),
+        if (widget.wide)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -201,15 +214,15 @@ class _DashboardOverviewBody extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     KeyedSubtree(
-                      key: budgetPerformanceKey,
+                      key: widget.budgetPerformanceKey,
                       child: _BudgetPerformanceCard(
-                        performance: budgetPerformance,
+                        performance: widget.budgetPerformance,
                       ),
                     ),
                     const SizedBox(height: 12),
                     _DashboardBudgetChartPanel(
-                      performance: budgetPerformance,
-                      onCategoryTap: onCategoryTap,
+                      performance: widget.budgetPerformance,
+                      onCategoryTap: widget.onCategoryTap,
                     ),
                   ],
                 ),
@@ -226,8 +239,8 @@ class _DashboardOverviewBody extends StatelessWidget {
                     const SizedBox(height: 16),
                     _AccountHealthCard(
                       snapshot: snapshot,
-                      budgetPerformance: budgetPerformance,
-                      transactionCount: transactionCount,
+                      budgetPerformance: widget.budgetPerformance,
+                      transactionCount: widget.transactionCount,
                     ),
                   ],
                 ),
@@ -241,15 +254,17 @@ class _DashboardOverviewBody extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           KeyedSubtree(
-            key: budgetPerformanceKey,
-            child: _BudgetPerformanceCard(performance: budgetPerformance),
+            key: widget.budgetPerformanceKey,
+            child: _BudgetPerformanceCard(
+              performance: widget.budgetPerformance,
+            ),
           ),
           const SizedBox(height: 12),
           _DashboardBudgetChartPanel(
-            performance: budgetPerformance,
-            onCategoryTap: onCategoryTap,
+            performance: widget.budgetPerformance,
+            onCategoryTap: widget.onCategoryTap,
           ),
-          SizedBox(height: sectionGap),
+          SizedBox(height: widget.sectionGap),
           _SectionTitle(
             theme: theme,
             title: l10n.dashboardOverviewAccountHealth,
@@ -257,8 +272,8 @@ class _DashboardOverviewBody extends StatelessWidget {
           const SizedBox(height: 16),
           _AccountHealthCard(
             snapshot: snapshot,
-            budgetPerformance: budgetPerformance,
-            transactionCount: transactionCount,
+            budgetPerformance: widget.budgetPerformance,
+            transactionCount: widget.transactionCount,
           ),
         ],
       ],
