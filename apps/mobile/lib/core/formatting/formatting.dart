@@ -60,3 +60,10 @@ String formatShortDate(DateTime date, {Locale? locale}) {
   final tag = _formatLocaleTag(activeLocale);
   return DateFormat.MMMd(tag).format(date);
 }
+
+/// Month name only, e.g. `August`.
+String formatMonthLabel(DateTime date, {Locale? locale}) {
+  final activeLocale = locale ?? _defaultFormattingLocale;
+  final tag = _formatLocaleTag(activeLocale);
+  return DateFormat.MMMM(tag).format(DateTime(date.year, date.month));
+}

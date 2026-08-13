@@ -144,7 +144,7 @@ final class AccountService {
     final rows = await _supabaseService.client
         .from('plaid_accounts')
         .select(
-          'linked_account_id,institution_name,name,official_name,mask,current_balance,available_balance,status',
+          'linked_account_id,institution_name,name,official_name,mask,current_balance,available_balance,credit_limit,status',
         )
         .eq('user_id', userId)
         .inFilter('linked_account_id', plaidAccountIds);
@@ -168,6 +168,7 @@ final class AccountService {
               metadata,
               'available_balance',
             ),
+            plaidCreditLimit: _nullableMoney(metadata, 'credit_limit'),
             currentBalance:
                 _nullableMoney(metadata, 'current_balance') ??
                 account.currentBalance,

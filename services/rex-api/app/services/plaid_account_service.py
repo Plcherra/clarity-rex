@@ -75,7 +75,7 @@ class PlaidAccountService:
                 "select": (
                     "item_id,linked_account_id,institution_name,name,"
                     "official_name,mask,account_type,account_subtype,status,"
-                    "current_balance,available_balance,iso_currency_code"
+                    "current_balance,available_balance,credit_limit,iso_currency_code"
                 ),
                 "user_id": f"eq.{user_id}",
                 "item_id": f"eq.{item_id}",
@@ -112,6 +112,7 @@ class PlaidAccountService:
                     "available_balance": number_or_none(
                         row.get("available_balance")
                     ),
+                    "credit_limit": number_or_none(row.get("credit_limit")),
                     "iso_currency_code": string_or_none(
                         row.get("iso_currency_code")
                     ),
@@ -191,12 +192,15 @@ class PlaidAccountService:
         }
         current_balance = number_or_none(balances.get("current"))
         available_balance = number_or_none(balances.get("available"))
+        credit_limit = number_or_none(balances.get("limit"))
         if current_balance is not None:
             body["current_balance"] = current_balance
         elif available_balance is not None:
             body["current_balance"] = available_balance
         if available_balance is not None:
             body["available_balance"] = available_balance
+        if credit_limit is not None:
+            body["credit_limit"] = credit_limit
         await self.cursor_service.supabase_request(
             "POST",
             PLAID_ACCOUNTS_TABLE,

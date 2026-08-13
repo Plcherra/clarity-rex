@@ -370,4 +370,43 @@ void main() {
     expect(find.textContaining('No recent Plaid webhook'), findsOneWidget);
     expect(find.textContaining('2d ago'), findsOneWidget);
   });
+
+  testWidgets(
+    'PlaidAccountTile shows leftover credit from limit when available copies owed',
+    (tester) async {
+      await _pumpPlaidAccountTile(
+        tester,
+        PlaidAccountTile(
+          item: const AccountOverviewItem(
+            account: Account(
+              id: 'cap-card',
+              name: 'Quicksilver',
+              type: AccountType.creditCard,
+              institution: 'Capital One',
+              currentBalance: 270.68,
+              source: 'plaid',
+              plaidItemId: 'item-1',
+              plaidInstitutionName: 'Capital One',
+              plaidAccountMask: '1234',
+              plaidAvailableBalance: 270.68,
+              plaidCreditLimit: 900,
+            ),
+            availableThisMonth: 0,
+            incomeThisMonth: 0,
+            spentThisMonth: 0,
+            statementBalance: -270.68,
+            netCashFlow: 0,
+          ),
+          status: PlaidAccountConnectionStatus.connected,
+          lastSyncedAt: DateTime.now(),
+          onResync: () {},
+          onDisconnect: () {},
+          onTap: () {},
+        ),
+      );
+
+      expect(find.textContaining('Credit left'), findsOneWidget);
+      expect(find.textContaining('\$629.32'), findsOneWidget);
+    },
+  );
 }

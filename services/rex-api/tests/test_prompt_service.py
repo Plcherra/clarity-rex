@@ -870,6 +870,6 @@ def test_prompt_service_phase3_prompt_shapes_are_labeled_and_compact():
     )
     finance_prompt = finance_messages[0]["content"]
     assert FINANCIAL_CONTEXT_PREFIX in finance_prompt
-    assert "Cash flow: balance=100" in finance_prompt
+    assert "Position now: net_balance=100" in finance_prompt
     assert "recall_status" not in finance_prompt
     assert "Chat history, not saved memory:" not in finance_prompt

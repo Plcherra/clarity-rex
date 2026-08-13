@@ -914,7 +914,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your statement is connected, but the transaction rows are still loading. Values will appear when the read model is complete.';
 
   @override
-  String get dashboardOverviewTotalBalance => 'Total balance';
+  String get dashboardOverviewTotalBalance => 'Net balance';
+
+  @override
+  String get dashboardOverviewNetBalanceHint => 'Cash minus cards owed';
+
+  @override
+  String get dashboardOverviewCashTotal => 'Cash';
+
+  @override
+  String get dashboardOverviewDebtTotal => 'Debt';
+
+  @override
+  String get dashboardOverviewCreditAvailable => 'Credit left';
+
+  @override
+  String get dashboardOverviewLeftThisMonth => 'Left this month';
+
+  @override
+  String get dashboardOverviewLeftThisPeriod => 'Left this period';
 
   @override
   String get dashboardOverviewAccountBalance => 'Account balance';
@@ -927,8 +945,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardOverviewThisMonthLabel => 'This month';
 
   @override
+  String get dashboardOverviewPeriodMonthShort => '1M';
+
+  @override
+  String get dashboardOverviewPeriodSixMonths => 'Last 6 months';
+
+  @override
+  String get dashboardOverviewPeriodThisYear => 'This year';
+
+  @override
   String get dashboardOverviewActivityNotBalanceNote =>
-      'Activity this month — not the same as balance';
+      'This month\'s leftover — not cash in the bank';
+
+  @override
+  String get dashboardOverviewActivityNotBalanceNotePeriod =>
+      'This period\'s leftover — not cash in the bank';
 
   @override
   String get dashboardOverviewPendingCashFlowNote =>
@@ -939,12 +970,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dashboardOverviewSavingsMovedIn(String amount) {
-    return '$amount moved in';
+    return '$amount moved in this month';
   }
 
   @override
   String dashboardOverviewSavingsTakenOut(String amount) {
-    return '$amount taken out';
+    return '$amount taken out this month';
+  }
+
+  @override
+  String dashboardOverviewSavingsMovedInInMonth(String amount, String month) {
+    return '$amount moved in ($month)';
+  }
+
+  @override
+  String dashboardOverviewSavingsTakenOutInMonth(String amount, String month) {
+    return '$amount taken out ($month)';
   }
 
   @override
@@ -1389,7 +1430,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountsScreenLoadingLabel => 'Loading accounts';
 
   @override
-  String get accountsSummaryTotalBalance => 'Total balance';
+  String get accountsSummaryTotalBalance => 'Net balance';
 
   @override
   String get accountsEmptyTitle => 'Connect your accounts';
@@ -1428,6 +1469,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plaidAccountAvailableLabel => 'Available';
+
+  @override
+  String get plaidAccountCreditAvailableLabel => 'Credit left';
 
   @override
   String get plaidAccountThisMonthLabel => 'This month';

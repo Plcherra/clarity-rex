@@ -1,3 +1,4 @@
+import 'account_balance_breakdown.dart';
 import 'balance_resolve.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import 'dashboard_metrics.dart';
@@ -51,6 +52,9 @@ List<MonthlyBankGroup> monthlyBankGroupsNewestFirstForResolvedTransactions(
 class DashboardSnapshot {
   const DashboardSnapshot({
     required this.totalBalance,
+    this.cashTotal = 0,
+    this.debtTotal = 0,
+    this.creditAvailableTotal,
     required this.spentThisMonth,
     required this.incomeThisMonth,
     required this.availableThisMonth,
@@ -70,8 +74,20 @@ class DashboardSnapshot {
   final DateTime referenceMonth;
 
   final double totalBalance;
+
+  /// Checking + savings right now. Not this month's leftover.
+  final double cashTotal;
+
+  /// Credit cards owed right now, as a positive amount.
+  final double debtTotal;
+
+  /// Unused card limit, when at least one connected card reports it.
+  final double? creditAvailableTotal;
+
   final double spentThisMonth;
   final double incomeThisMonth;
+
+  /// Income minus spending this month. Not cash on hand.
   final double availableThisMonth;
 
   /// Inflows that would count as income once the bank posts them.
@@ -108,6 +124,7 @@ DashboardSnapshot buildDashboardSnapshot({
   required Map<String, String> categoryDisplayRenamesLower,
   Map<String, String> merchantCategoryMemory = const {},
   required double? scopedBalanceFromStatement,
+  double? Function(Account account)? signedBalanceFor,
 }) {
   final accountsById = {for (final a in accounts) a.id: a};
   final resolved = resolveTransactions(
@@ -200,8 +217,21 @@ DashboardSnapshot buildDashboardSnapshot({
     referenceInMonth: reference,
   );
 
+  final scopedAccounts = switch (scope) {
+    GlobalDashboardScope() => accounts,
+    AccountDashboardScope(:final accountId) =>
+      accounts.where((account) => account.id == accountId).toList(),
+  };
+  final breakdown = buildAccountBalanceBreakdown(
+    accounts: scopedAccounts,
+    signedBalanceFor: signedBalanceFor ?? signedBalanceFromCurrent,
+  );
+
   return DashboardSnapshot(
     totalBalance: balance,
+    cashTotal: breakdown.cashTotal,
+    debtTotal: breakdown.debtTotal,
+    creditAvailableTotal: breakdown.creditAvailableTotal,
     spentThisMonth: spent,
     incomeThisMonth: income,
     availableThisMonth: available,

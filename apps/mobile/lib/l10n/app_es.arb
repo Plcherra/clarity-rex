@@ -297,7 +297,7 @@
   "accountsSheetConnectBankTitle": "Conectar banco",
   "accountsSheetImportCsvSubtitle": "Cree una cuenta manual para archivos bancarios.",
   "accountsSheetImportCsvTitle": "Importar CSV en su lugar",
-  "accountsSummaryTotalBalance": "saldo total",
+  "accountsSummaryTotalBalance": "Saldo neto",
   "addAccountDialogBalanceLabel": "Saldo actual (opcional)",
   "addAccountDialogInstitutionLabel": "Institución (opcional)",
   "addAccountDialogInvalidBalance": "Ingrese un saldo válido o déjelo en blanco.",
@@ -1254,10 +1254,11 @@
   },
   "dashboardOverviewAccountBalance": "Saldo de cuenta",
   "dashboardOverviewAccountHealth": "Estado de la cuenta",
-  "dashboardOverviewActivityNotBalanceNote": "Actividad este mes: no es lo mismo que el saldo",
+  "dashboardOverviewActivityNotBalanceNote": "Lo que sobró este mes — no es el efectivo",
+  "dashboardOverviewActivityNotBalanceNotePeriod": "Lo que sobró en este período — no es el efectivo",
   "dashboardOverviewPendingCashFlowNote": "Los totales se actualizan cuando se confirmen los pendientes.",
   "dashboardOverviewSavings": "Ahorros",
-  "dashboardOverviewSavingsMovedIn": "{amount} ingresados",
+  "dashboardOverviewSavingsMovedIn": "{amount} ingresados este mes",
   "@dashboardOverviewSavingsMovedIn": {
     "placeholders": {
       "amount": {
@@ -1265,7 +1266,7 @@
       }
     }
   },
-  "dashboardOverviewSavingsTakenOut": "{amount} retirados",
+  "dashboardOverviewSavingsTakenOut": "{amount} retirados este mes",
   "@dashboardOverviewSavingsTakenOut": {
     "placeholders": {
       "amount": {
@@ -1273,7 +1274,38 @@
       }
     }
   },
+  "dashboardOverviewSavingsMovedInInMonth": "{amount} ingresados ({month})",
+  "@dashboardOverviewSavingsMovedInInMonth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardOverviewSavingsTakenOutInMonth": "{amount} retirados ({month})",
+  "@dashboardOverviewSavingsTakenOutInMonth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
   "dashboardOverviewSavingsUnchanged": "Sin movimientos este mes",
+  "dashboardOverviewNetBalanceHint": "Efectivo menos tarjetas",
+  "dashboardOverviewCashTotal": "Efectivo",
+  "dashboardOverviewDebtTotal": "Deuda",
+  "dashboardOverviewCreditAvailable": "Crédito disponible",
+  "dashboardOverviewLeftThisMonth": "Sobra este mes",
+  "dashboardOverviewLeftThisPeriod": "Sobra este período",
+  "dashboardOverviewPeriodMonthShort": "1M",
+  "dashboardOverviewPeriodSixMonths": "Últimos 6 meses",
+  "dashboardOverviewPeriodThisYear": "Este año",
   "dashboardInsightsStripTitle": "Qué vigilar",
   "dashboardInsightsNetNegative": "Los gastos superan los ingresos por {amount} este mes.",
   "@dashboardInsightsNetNegative": {
@@ -1500,7 +1532,7 @@
   "dashboardOverviewSpendingPressure": "Presión de gasto",
   "dashboardOverviewThisMonthLabel": "este mes",
   "dashboardOverviewTitle": "Descripción general",
-  "dashboardOverviewTotalBalance": "saldo total",
+  "dashboardOverviewTotalBalance": "Saldo neto",
   "dashboardResolvingBody": "Su extracto está conectado, pero las filas de transacciones aún se están cargando. Los valores aparecerán cuando se complete la lectura del modelo.",
   "dashboardResolvingTitle": "Resolver transacciones importadas",
   "dashboardTransactionsClearFilters": "Limpiar",
@@ -2088,6 +2120,7 @@
   "onboardingSubtitle": "Nombra tu espacio de Clarity. A continuación, puede conectar su banco o utilizar CSV como respaldo manual.",
   "onboardingWelcomeTitle": "Bienvenido a Claridad",
   "plaidAccountAvailableLabel": "Disponible",
+  "plaidAccountCreditAvailableLabel": "Crédito disponible",
   "plaidAccountDisconnectTooltip": "Desconectar banco",
   "plaidAccountGenericFailed": "No se pudo actualizar esta conexión bancaria ahora.",
   "plaidAccountInOutSummary": "{income} entrada / {spending} salida",

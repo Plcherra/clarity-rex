@@ -275,6 +275,7 @@ final class FinancialReadModel {
       categoryDisplayRenamesLower: categoryDisplayRenamesLower,
       merchantCategoryMemory: merchantCategoryMemory,
       scopedBalanceFromStatement: dashboardBalanceForScope(scope),
+      signedBalanceFor: dashboardBalanceForAccount,
     );
   }
 

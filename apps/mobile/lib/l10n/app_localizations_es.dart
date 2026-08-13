@@ -922,7 +922,25 @@ class AppLocalizationsEs extends AppLocalizations {
       'Su extracto está conectado, pero las filas de transacciones aún se están cargando. Los valores aparecerán cuando se complete la lectura del modelo.';
 
   @override
-  String get dashboardOverviewTotalBalance => 'saldo total';
+  String get dashboardOverviewTotalBalance => 'Saldo neto';
+
+  @override
+  String get dashboardOverviewNetBalanceHint => 'Efectivo menos tarjetas';
+
+  @override
+  String get dashboardOverviewCashTotal => 'Efectivo';
+
+  @override
+  String get dashboardOverviewDebtTotal => 'Deuda';
+
+  @override
+  String get dashboardOverviewCreditAvailable => 'Crédito disponible';
+
+  @override
+  String get dashboardOverviewLeftThisMonth => 'Sobra este mes';
+
+  @override
+  String get dashboardOverviewLeftThisPeriod => 'Sobra este período';
 
   @override
   String get dashboardOverviewAccountBalance => 'Saldo de cuenta';
@@ -935,8 +953,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardOverviewThisMonthLabel => 'este mes';
 
   @override
+  String get dashboardOverviewPeriodMonthShort => '1M';
+
+  @override
+  String get dashboardOverviewPeriodSixMonths => 'Últimos 6 meses';
+
+  @override
+  String get dashboardOverviewPeriodThisYear => 'Este año';
+
+  @override
   String get dashboardOverviewActivityNotBalanceNote =>
-      'Actividad este mes: no es lo mismo que el saldo';
+      'Lo que sobró este mes — no es el efectivo';
+
+  @override
+  String get dashboardOverviewActivityNotBalanceNotePeriod =>
+      'Lo que sobró en este período — no es el efectivo';
 
   @override
   String get dashboardOverviewPendingCashFlowNote =>
@@ -947,12 +978,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dashboardOverviewSavingsMovedIn(String amount) {
-    return '$amount ingresados';
+    return '$amount ingresados este mes';
   }
 
   @override
   String dashboardOverviewSavingsTakenOut(String amount) {
-    return '$amount retirados';
+    return '$amount retirados este mes';
+  }
+
+  @override
+  String dashboardOverviewSavingsMovedInInMonth(String amount, String month) {
+    return '$amount ingresados ($month)';
+  }
+
+  @override
+  String dashboardOverviewSavingsTakenOutInMonth(String amount, String month) {
+    return '$amount retirados ($month)';
   }
 
   @override
@@ -1402,7 +1443,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountsScreenLoadingLabel => 'Cargando cuentas';
 
   @override
-  String get accountsSummaryTotalBalance => 'saldo total';
+  String get accountsSummaryTotalBalance => 'Saldo neto';
 
   @override
   String get accountsEmptyTitle => 'Conecta tus cuentas';
@@ -1441,6 +1482,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get plaidAccountAvailableLabel => 'Disponible';
+
+  @override
+  String get plaidAccountCreditAvailableLabel => 'Crédito disponible';
 
   @override
   String get plaidAccountThisMonthLabel => 'este mes';

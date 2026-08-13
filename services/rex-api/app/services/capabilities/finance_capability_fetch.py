@@ -117,12 +117,19 @@ def _cash_flow_lines(financial_context: dict) -> list[str]:
     cash_flow = context_dict(financial_context, "cash_flow")
     if not cash_flow:
         return []
+    left = cash_flow.get("left_this_month", cash_flow.get("available_this_month"))
     return [
-        "- Cash flow: "
-        f"balance={cash_flow.get('total_balance')}; "
-        f"spent_this_month={cash_flow.get('spent_this_month')}; "
+        "- Position now: "
+        f"net_balance={cash_flow.get('net_balance', cash_flow.get('total_balance'))} "
+        "(cash minus card debt, not this month's leftover); "
+        f"cash={cash_flow.get('cash_total')}; "
+        f"debt={cash_flow.get('debt_total')}; "
+        f"credit_available={cash_flow.get('credit_available_total')}",
+        "- This month activity: "
         f"income_this_month={cash_flow.get('income_this_month')}; "
-        f"available_this_month={cash_flow.get('available_this_month')}"
+        f"spent_this_month={cash_flow.get('spent_this_month')}; "
+        f"left_this_month={left} "
+        "(income minus spending; not cash on hand)",
     ]
 
 

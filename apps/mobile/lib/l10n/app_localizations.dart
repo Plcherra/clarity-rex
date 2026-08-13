@@ -1724,8 +1724,44 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardOverviewTotalBalance.
   ///
   /// In en, this message translates to:
-  /// **'Total balance'**
+  /// **'Net balance'**
   String get dashboardOverviewTotalBalance;
+
+  /// No description provided for @dashboardOverviewNetBalanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash minus cards owed'**
+  String get dashboardOverviewNetBalanceHint;
+
+  /// No description provided for @dashboardOverviewCashTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get dashboardOverviewCashTotal;
+
+  /// No description provided for @dashboardOverviewDebtTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Debt'**
+  String get dashboardOverviewDebtTotal;
+
+  /// No description provided for @dashboardOverviewCreditAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit left'**
+  String get dashboardOverviewCreditAvailable;
+
+  /// No description provided for @dashboardOverviewLeftThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Left this month'**
+  String get dashboardOverviewLeftThisMonth;
+
+  /// No description provided for @dashboardOverviewLeftThisPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Left this period'**
+  String get dashboardOverviewLeftThisPeriod;
 
   /// No description provided for @dashboardOverviewAccountBalance.
   ///
@@ -1745,11 +1781,35 @@ abstract class AppLocalizations {
   /// **'This month'**
   String get dashboardOverviewThisMonthLabel;
 
+  /// No description provided for @dashboardOverviewPeriodMonthShort.
+  ///
+  /// In en, this message translates to:
+  /// **'1M'**
+  String get dashboardOverviewPeriodMonthShort;
+
+  /// No description provided for @dashboardOverviewPeriodSixMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 6 months'**
+  String get dashboardOverviewPeriodSixMonths;
+
+  /// No description provided for @dashboardOverviewPeriodThisYear.
+  ///
+  /// In en, this message translates to:
+  /// **'This year'**
+  String get dashboardOverviewPeriodThisYear;
+
   /// No description provided for @dashboardOverviewActivityNotBalanceNote.
   ///
   /// In en, this message translates to:
-  /// **'Activity this month — not the same as balance'**
+  /// **'This month\'s leftover — not cash in the bank'**
   String get dashboardOverviewActivityNotBalanceNote;
+
+  /// No description provided for @dashboardOverviewActivityNotBalanceNotePeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'This period\'s leftover — not cash in the bank'**
+  String get dashboardOverviewActivityNotBalanceNotePeriod;
 
   /// No description provided for @dashboardOverviewPendingCashFlowNote.
   ///
@@ -1766,14 +1826,26 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardOverviewSavingsMovedIn.
   ///
   /// In en, this message translates to:
-  /// **'{amount} moved in'**
+  /// **'{amount} moved in this month'**
   String dashboardOverviewSavingsMovedIn(String amount);
 
   /// No description provided for @dashboardOverviewSavingsTakenOut.
   ///
   /// In en, this message translates to:
-  /// **'{amount} taken out'**
+  /// **'{amount} taken out this month'**
   String dashboardOverviewSavingsTakenOut(String amount);
+
+  /// No description provided for @dashboardOverviewSavingsMovedInInMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} moved in ({month})'**
+  String dashboardOverviewSavingsMovedInInMonth(String amount, String month);
+
+  /// No description provided for @dashboardOverviewSavingsTakenOutInMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} taken out ({month})'**
+  String dashboardOverviewSavingsTakenOutInMonth(String amount, String month);
 
   /// No description provided for @dashboardOverviewSavingsUnchanged.
   ///
@@ -2518,7 +2590,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountsSummaryTotalBalance.
   ///
   /// In en, this message translates to:
-  /// **'Total balance'**
+  /// **'Net balance'**
   String get accountsSummaryTotalBalance;
 
   /// No description provided for @accountsEmptyTitle.
@@ -2586,6 +2658,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Available'**
   String get plaidAccountAvailableLabel;
+
+  /// No description provided for @plaidAccountCreditAvailableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit left'**
+  String get plaidAccountCreditAvailableLabel;
 
   /// No description provided for @plaidAccountThisMonthLabel.
   ///

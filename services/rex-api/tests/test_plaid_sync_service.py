@@ -79,6 +79,7 @@ class FullSyncPlaidClient:
                     "balances": {
                         "current": 321.98,
                         "available": 1200.0,
+                        "limit": 1500.0,
                         "iso_currency_code": "USD",
                     },
                 }
@@ -678,6 +679,8 @@ async def test_sync_item_persists_accounts_transactions_and_cursor(monkeypatch):
     )
     assert plaid_account_calls[1]["json"]["mask"] == "9876"
     assert plaid_account_calls[1]["json"]["account_subtype"] == "credit card"
+    assert plaid_account_calls[1]["json"]["credit_limit"] == 1500.0
+    assert "credit_limit" not in plaid_account_calls[0]["json"]
 
     transaction_calls = [
         call

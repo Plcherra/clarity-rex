@@ -7,6 +7,7 @@ import '../../../../core/layout/clarity_native_layout.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import '../../../../theme/clarity_colors.dart';
 import '../../../../widgets/clarity_card.dart';
+import '../../../dashboard/domain/account_balance_breakdown.dart';
 
 class AccountsSummaryCard extends StatelessWidget {
   const AccountsSummaryCard({super.key, required this.accounts});
@@ -19,6 +20,18 @@ class AccountsSummaryCard extends StatelessWidget {
       if (balance == null) return sum;
       return (sum ?? 0) + balance;
     });
+  }
+
+  AccountBalanceBreakdown get _position {
+    return buildAccountBalanceBreakdown(
+      accounts: [for (final item in accounts) item.account],
+      signedBalanceFor: (account) {
+        for (final item in accounts) {
+          if (item.account.id == account.id) return item.signedBalance;
+        }
+        return signedBalanceFromCurrent(account);
+      },
+    );
   }
 
   @override
@@ -36,6 +49,7 @@ class AccountsSummaryCard extends StatelessWidget {
       (sum, item) => sum + item.spentThisMonth,
     );
     final netCashFlowTotal = incomeTotal - spendingTotal;
+    final position = _position;
     final l10n = context.l10n;
     final native = ClarityNativeLayout.active(context);
     return ClarityCard(
@@ -82,6 +96,14 @@ class AccountsSummaryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
+                      l10n.dashboardOverviewNetBalanceHint,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.56),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
                       l10n.commonConnectedAccountCount(
                         accounts.length,
                         accounts.length == 1 ? '' : 's',
@@ -94,6 +116,30 @@ class AccountsSummaryCard extends StatelessWidget {
                   ],
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            children: [
+              _InlineMoneyLabel(
+                label: l10n.dashboardOverviewCashTotal,
+                value: position.cashTotal,
+                color: colors.financePositive,
+              ),
+              if (position.debtTotal > 0.005)
+                _InlineMoneyLabel(
+                  label: l10n.dashboardOverviewDebtTotal,
+                  value: position.debtTotal,
+                  color: colors.financeNegative,
+                ),
+              if (position.creditAvailableTotal != null)
+                _InlineMoneyLabel(
+                  label: l10n.dashboardOverviewCreditAvailable,
+                  value: position.creditAvailableTotal!,
+                  color: cs.onSurface,
+                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -130,7 +176,7 @@ class AccountsSummaryCard extends StatelessWidget {
                         color: colors.financeSpending,
                       ),
                       _InlineMoneyLabel(
-                        label: l10n.commonNet,
+                        label: l10n.dashboardOverviewLeftThisMonth,
                         value: netCashFlowTotal,
                         color: netCashFlowTotal >= 0
                             ? colors.financePositive

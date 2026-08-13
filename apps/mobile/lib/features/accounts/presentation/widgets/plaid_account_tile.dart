@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../../app/ui_dependencies.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/l10n/app_l10n.dart';
+import '../../../../core/models/models.dart';
+import '../../../dashboard/domain/account_balance_breakdown.dart';
 import '../../data/plaid_account_service.dart';
 import 'plaid_account_detail_chip.dart';
 import 'plaid_account_header.dart';
@@ -34,7 +36,14 @@ class PlaidAccountTile extends StatelessWidget {
     final account = item.account;
     final balance = item.displayBalanceAmount;
     final availableBalance = account.plaidAvailableBalance;
-    final showAvailable =
+    final remainingCredit = creditRemainingForAccount(
+      account,
+      owed: balance,
+    );
+    final showCreditLeft =
+        account.type == AccountType.creditCard && remainingCredit != null;
+    final showDepositoryAvailable =
+        account.type != AccountType.creditCard &&
         availableBalance != null &&
         (balance == null || (availableBalance - balance).abs() > 0.01);
     final hasMonthlyActivity =
@@ -58,7 +67,7 @@ class PlaidAccountTile extends StatelessWidget {
                 onResync: onResync,
                 onDisconnect: onDisconnect,
               ),
-              if (showAvailable || hasMonthlyActivity) ...[
+              if (showCreditLeft || showDepositoryAvailable || hasMonthlyActivity) ...[
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerLeft,
@@ -66,7 +75,12 @@ class PlaidAccountTile extends StatelessWidget {
                     spacing: 10,
                     runSpacing: 6,
                     children: [
-                      if (showAvailable)
+                      if (showCreditLeft)
+                        PlaidAccountDetailChip(
+                          label: l10n.plaidAccountCreditAvailableLabel,
+                          value: formatMoney(remainingCredit),
+                        ),
+                      if (showDepositoryAvailable)
                         PlaidAccountDetailChip(
                           label: l10n.plaidAccountAvailableLabel,
                           value: formatMoney(availableBalance),

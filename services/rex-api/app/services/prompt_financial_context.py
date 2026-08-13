@@ -152,14 +152,25 @@ class PromptFinancialContextMixin:
 
         cash_flow = self._dict_value(financial_context, "cash_flow")
         if cash_flow:
+            glossary = cash_flow.get("glossary")
             priority.append(
-                "- Cash flow: "
-                f"balance={cash_flow.get('total_balance')}; "
+                "- Position now: "
+                f"net_balance={cash_flow.get('net_balance', cash_flow.get('total_balance'))} "
+                "(cash minus card debt, not this month's leftover); "
+                f"cash={cash_flow.get('cash_total')}; "
+                f"debt={cash_flow.get('debt_total')}; "
+                f"credit_available={cash_flow.get('credit_available_total')}"
+            )
+            priority.append(
+                "- This month activity: "
                 f"income_this_month={cash_flow.get('income_this_month')}; "
                 f"spent_this_month={cash_flow.get('spent_this_month')}; "
-                f"available_this_month={cash_flow.get('available_this_month')}; "
+                f"left_this_month={cash_flow.get('left_this_month', cash_flow.get('available_this_month'))} "
+                "(income minus spending; not cash on hand); "
                 f"burn_runway_days={cash_flow.get('burn_runway_days')}"
             )
+            if isinstance(glossary, str) and glossary.strip():
+                priority.append(f"- Money labels: {glossary.strip()}")
 
         budget = self._dict_value(financial_context, "budget")
         if budget:

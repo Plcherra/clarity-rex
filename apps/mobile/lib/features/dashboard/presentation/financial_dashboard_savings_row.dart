@@ -5,9 +5,10 @@ part of 'financial_dashboard_view.dart';
 /// Money moved into savings was never spent and money taken back out was never
 /// earned, so it gets its own line instead of distorting income or spending.
 class _SavingsSummaryRow extends StatelessWidget {
-  const _SavingsSummaryRow({required this.savings});
+  const _SavingsSummaryRow({required this.savings, required this.month});
 
   final SavingsSnapshot savings;
+  final DateTime month;
 
   @override
   Widget build(BuildContext context) {
@@ -15,14 +16,27 @@ class _SavingsSummaryRow extends StatelessWidget {
     final cs = theme.colorScheme;
     final l10n = context.l10n;
     final moved = savings.changeThisMonth.abs();
+    final now = DateTime.now();
+    final isCurrentMonth = month.year == now.year && month.month == now.month;
+    final monthLabel = formatMonthLabel(month);
 
     final (movement, movementColor) = switch (savings) {
       SavingsSnapshot(grewThisMonth: true) => (
-        l10n.dashboardOverviewSavingsMovedIn(formatMoney(moved)),
+        isCurrentMonth
+            ? l10n.dashboardOverviewSavingsMovedIn(formatMoney(moved))
+            : l10n.dashboardOverviewSavingsMovedInInMonth(
+                formatMoney(moved),
+                monthLabel,
+              ),
         ClarityColors.financePositive,
       ),
       SavingsSnapshot(shrankThisMonth: true) => (
-        l10n.dashboardOverviewSavingsTakenOut(formatMoney(moved)),
+        isCurrentMonth
+            ? l10n.dashboardOverviewSavingsTakenOut(formatMoney(moved))
+            : l10n.dashboardOverviewSavingsTakenOutInMonth(
+                formatMoney(moved),
+                monthLabel,
+              ),
         ClarityColors.financeSpending,
       ),
       _ => (
@@ -33,7 +47,7 @@ class _SavingsSummaryRow extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _dashboardPanel(context),
+        color: _dashboardPanelMuted(context),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Padding(

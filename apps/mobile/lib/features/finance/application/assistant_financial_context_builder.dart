@@ -197,10 +197,21 @@ final class AssistantFinancialContextBuilder {
       },
       'cash_flow': {
         'total_balance': money(snapshot.totalBalance),
+        'net_balance': money(snapshot.totalBalance),
+        'cash_total': money(snapshot.cashTotal),
+        'debt_total': money(snapshot.debtTotal),
+        if (snapshot.creditAvailableTotal != null)
+          'credit_available_total': money(snapshot.creditAvailableTotal!),
         'spent_this_month': money(snapshot.spentThisMonth),
         'income_this_month': money(snapshot.incomeThisMonth),
         'available_this_month': money(snapshot.availableThisMonth),
+        'left_this_month': money(snapshot.availableThisMonth),
         'burn_runway_days': snapshot.burnRunwayDays,
+        'glossary':
+            'net_balance is cash minus card debt right now. '
+            'left_this_month is income minus spending this month, not cash on hand. '
+            'credit_available_total is unused card limit. '
+            'Paying a card is not spending; the original card purchases are.',
       },
       'financial_data_sources': financialDataSources(
         accounts: accounts,

@@ -23,6 +23,7 @@ class Account {
     this.plaidInstitutionName,
     this.plaidAccountMask,
     this.plaidAvailableBalance,
+    this.plaidCreditLimit,
     this.plaidOfficialName,
   });
 
@@ -41,6 +42,7 @@ class Account {
   final String? plaidInstitutionName;
   final String? plaidAccountMask;
   final double? plaidAvailableBalance;
+  final double? plaidCreditLimit;
   final String? plaidOfficialName;
 
   bool get isPlaidConnected => source == 'plaid' && plaidItemId != null;
@@ -103,6 +105,7 @@ class Account {
     String? plaidInstitutionName,
     String? plaidAccountMask,
     double? plaidAvailableBalance,
+    double? plaidCreditLimit,
     String? plaidOfficialName,
   }) {
     return Account(
@@ -120,6 +123,7 @@ class Account {
       plaidAccountMask: plaidAccountMask ?? this.plaidAccountMask,
       plaidAvailableBalance:
           plaidAvailableBalance ?? this.plaidAvailableBalance,
+      plaidCreditLimit: plaidCreditLimit ?? this.plaidCreditLimit,
       plaidOfficialName: plaidOfficialName ?? this.plaidOfficialName,
     );
   }
