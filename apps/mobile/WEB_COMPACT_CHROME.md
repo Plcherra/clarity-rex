@@ -68,17 +68,17 @@ What phone has that web chrome currently misses:
 
 | ID | Item | Status | Notes |
 | --- | --- | --- | --- |
-| 1.1 | **Verify live `/app/`**: Overview / Transactions switch is present | todo | Shared widget — if missing, stale deploy |
-| 1.2 | **Verify radar (“Spend shape”)** on Overview → Core charts (narrow) or 2-col (wide) | todo | Need ≥3 categories; fl_chart radar on web |
-| 1.3 | After gate: Overview card padding/radius matches phone | todo | `_FinancialOverviewCard` |
-| 1.4 | After gate: Core charts group is collapsible on narrow web, graphs **not** double-boxed | todo | `_DashboardChartPanel` + `_DashboardCollapsibleChartGroup` |
-| 1.5 | After gate: Trend + spending-pressure groups collapsed by default on narrow web | todo | Phone: `initiallyExpanded: desktop` |
-| 1.6 | Budget performance card + budget-vs-spent chart density | todo | |
-| 1.7 | Account health card density | todo | |
-| 1.8 | Transactions surface: filters, lists, category groups look like phone | todo | |
-| 1.9 | Account-scoped dashboard (account detail) same Overview / Transactions + charts | todo | Same `FinancialDashboardView` |
-| 1.10 | Empty / loading / resolving dashboard bodies use compact padding | todo | `_Dashboard*Body` |
-| 1.11 | Manual: tap category bar → category detail; insight deep-link still scrolls | todo | |
+| 1.1 | **Verify live `/app/`**: Overview / Transactions switch is present | done | Live build 18 `main.dart.js` has Overview/Transactions getters. `_DashboardSurfaceSwitch` always in shell; no `kIsWeb`. |
+| 1.2 | **Verify radar (“Spend shape”)** on Overview → Core charts (narrow) or 2-col (wide) | verify | Live JS has “Spend shape”. Narrow: Core charts child; wide ≥1100: 2-col beside pressure. Needs ≥3 categories or empty-chart copy. No logged-in radar render this pass. |
+| 1.3 | After gate: Overview card padding/radius matches phone | verify | `_FinancialOverviewCard` uses `ClarityNativeLayout.active` (pad 12 / radius 12 at 390). No leftover `kIsWeb`. VM tokens: 390 pad 12, radius medium; 1280 desktop. |
+| 1.4 | After gate: Core charts group is collapsible on narrow web, graphs **not** double-boxed | verify | `_DashboardChartPanel` is flat `SizedBox` when `active`. `alwaysExpanded: desktop` so ExpansionTile only when width &lt; 800. |
+| 1.5 | After gate: Trend + spending-pressure groups collapsed by default on narrow web | verify | `initiallyExpanded: desktop` + `alwaysExpanded: desktop` on Trend / Spending analysis. Core stays `initiallyExpanded: true`. |
+| 1.6 | Budget performance card + budget-vs-spent chart density | verify | `_BudgetPerformanceCard` + `_DashboardBudgetChartPanel` use `_dashboardCardPaddingOf` / `active`. No `kIsWeb`. |
+| 1.7 | Account health card density | verify | `_AccountHealthCard` uses `_dashboardCardPaddingOf` / `_dashboardCardRadiusOf`. No `kIsWeb`. |
+| 1.8 | Transactions surface: filters, lists, category groups look like phone | verify | Lists/groups use `_dashboardCardPaddingOf`; scroll `desktop = isClarityDesktopLayout`. No `kIsWeb`. |
+| 1.9 | Account-scoped dashboard (account detail) same Overview / Transactions + charts | done | Same `FinancialDashboardView`. `account_detail_dashboard_parity_test` passed. |
+| 1.10 | Empty / loading / resolving dashboard bodies use compact padding | verify | `_DashboardLoadingBody` / empty / resolving / load message all branch on `ClarityNativeLayout.active`. No `kIsWeb`. |
+| 1.11 | Manual: tap category bar → category detail; insight deep-link still scrolls | verify | `_openCategoryDetail` → `CategoryDetailScreen`. Deep-link expands Core/Spending when `!desktop` then `ensureVisible`. Anchor unit tests passed. Tap not exercised (no logged-in session). |
 
 ---
 

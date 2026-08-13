@@ -59,27 +59,90 @@ class HomeShellAdaptiveScaffold extends StatelessWidget {
       );
     }
 
-    const digitKeys = <LogicalKeyboardKey>[
-      LogicalKeyboardKey.digit1,
-      LogicalKeyboardKey.digit2,
-      LogicalKeyboardKey.digit3,
-      LogicalKeyboardKey.digit4,
-      LogicalKeyboardKey.digit5,
-    ];
-    return CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        for (var i = 0; i < destinations.length && i < digitKeys.length; i++)
-          SingleActivator(digitKeys[i]): () => onDestinationSelected(i),
+    return _HomeShellWideScaffold(
+      selectedIndex: selectedIndex,
+      onDestinationSelected: onDestinationSelected,
+      destinations: destinations,
+      body: body,
+    );
+  }
+}
+
+/// True when a text field owns keyboard focus so digit 1–5 can type, not switch tabs.
+bool homeShellTextInputHasFocus() {
+  final context = FocusManager.instance.primaryFocus?.context;
+  if (context == null) return false;
+  if (context.widget is EditableText ||
+      context.widget is TextField ||
+      context.widget is TextFormField) {
+    return true;
+  }
+  if (context.findAncestorWidgetOfExactType<EditableText>() != null ||
+      context.findAncestorWidgetOfExactType<TextField>() != null ||
+      context.findAncestorWidgetOfExactType<TextFormField>() != null) {
+    return true;
+  }
+  var found = false;
+  void visit(Element element) {
+    if (found) return;
+    if (element.widget is EditableText) {
+      found = true;
+      return;
+    }
+    element.visitChildren(visit);
+  }
+
+  context.visitChildElements(visit);
+  return found;
+}
+
+int? _homeShellDigitDestinationIndex(LogicalKeyboardKey key, int destinationCount) {
+  const digitKeys = <LogicalKeyboardKey>[
+    LogicalKeyboardKey.digit1,
+    LogicalKeyboardKey.digit2,
+    LogicalKeyboardKey.digit3,
+    LogicalKeyboardKey.digit4,
+    LogicalKeyboardKey.digit5,
+  ];
+  final index = digitKeys.indexOf(key);
+  if (index < 0 || index >= destinationCount) return null;
+  return index;
+}
+
+class _HomeShellWideScaffold extends StatelessWidget {
+  const _HomeShellWideScaffold({
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    required this.destinations,
+    required this.body,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final List<NavigationDestination> destinations;
+  final Widget body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (homeShellTextInputHasFocus()) return KeyEventResult.ignored;
+        final index = _homeShellDigitDestinationIndex(
+          event.logicalKey,
+          destinations.length,
+        );
+        if (index == null) return KeyEventResult.ignored;
+        onDestinationSelected(index);
+        return KeyEventResult.handled;
       },
-      child: Focus(
-        autofocus: true,
-        child: Scaffold(
-          body: body,
-          bottomNavigationBar: _HomeShellCenteredDock(
-            selectedIndex: selectedIndex,
-            onDestinationSelected: onDestinationSelected,
-            destinations: destinations,
-          ),
+      child: Scaffold(
+        body: body,
+        bottomNavigationBar: _HomeShellCenteredDock(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onDestinationSelected,
+          destinations: destinations,
         ),
       ),
     );
