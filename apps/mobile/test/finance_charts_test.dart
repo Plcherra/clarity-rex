@@ -248,6 +248,56 @@ void main() {
       expect(tapped, ['Coffee / Quick Food']);
     });
 
+    testWidgets('tapping a budget vs spent row opens that category', (
+      tester,
+    ) async {
+      final tapped = <String>[];
+      await tester.pumpWidget(
+        wrapWithClarityTheme(
+          BudgetVsSpentChart(
+            performance: _budgetPerformance([
+              const BudgetCategoryPerformance(
+                displayLabel: 'Grocery / Supermarket',
+                budgeted: 400,
+                spent: 320,
+              ),
+              const BudgetCategoryPerformance(
+                displayLabel: 'Shopping',
+                budgeted: 200,
+                spent: 180,
+              ),
+            ]),
+            onCategoryTap: tapped.add,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Shopping'));
+
+      expect(tapped, ['Shopping']);
+    });
+
+    testWidgets('budget vs spent rows stay flat when there is nowhere to drill', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrapWithClarityTheme(
+          BudgetVsSpentChart(
+            performance: _budgetPerformance([
+              const BudgetCategoryPerformance(
+                displayLabel: 'Shopping',
+                budgeted: 200,
+                spent: 180,
+              ),
+            ]),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+      expect(find.byType(InkWell), findsNothing);
+    });
+
     testWidgets('bars stay flat when there is nowhere to drill into', (
       tester,
     ) async {
@@ -289,4 +339,21 @@ List<MonthlyCashFlowPoint> _cashFlowMonths({
         spend: spend,
       ),
   ];
+}
+
+BudgetPerformanceSnapshot _budgetPerformance(
+  List<BudgetCategoryPerformance> categories,
+) {
+  return BudgetPerformanceSnapshot(
+    periodType: BudgetPeriodType.monthly,
+    periodKey: '2026-03',
+    periodLabel: '2026-03',
+    totalBudgeted: 1,
+    totalSpent: 1,
+    budgetedCategoryCount: categories.length,
+    onTrackCategoryCount: categories.length,
+    totalOverspent: 0,
+    topOverspendingCategories: const [],
+    categories: categories,
+  );
 }

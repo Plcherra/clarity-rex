@@ -201,7 +201,10 @@ class _DashboardOverviewBody extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _DashboardBudgetChartPanel(performance: budgetPerformance),
+                    _DashboardBudgetChartPanel(
+                      performance: budgetPerformance,
+                      onCategoryTap: onCategoryTap,
+                    ),
                   ],
                 ),
               ),
@@ -236,7 +239,10 @@ class _DashboardOverviewBody extends StatelessWidget {
             child: _BudgetPerformanceCard(performance: budgetPerformance),
           ),
           const SizedBox(height: 12),
-          _DashboardBudgetChartPanel(performance: budgetPerformance),
+          _DashboardBudgetChartPanel(
+            performance: budgetPerformance,
+            onCategoryTap: onCategoryTap,
+          ),
           SizedBox(height: sectionGap),
           _SectionTitle(
             theme: theme,

@@ -217,6 +217,8 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
         maxWidth: clarityFinanceContentMaxWidth,
         BudgetsScreen(
           controller: widget.ui.budgets,
+          dashboardController: widget.ui.dashboard,
+          transactionController: widget.ui.transactions,
           manageCategoriesRequest: _manageCategoriesRequest,
         ),
       ),

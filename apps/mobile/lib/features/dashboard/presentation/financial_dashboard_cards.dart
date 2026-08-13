@@ -266,9 +266,13 @@ class _AccountHealthCard extends StatelessWidget {
 }
 
 class _DashboardBudgetChartPanel extends StatelessWidget {
-  const _DashboardBudgetChartPanel({required this.performance});
+  const _DashboardBudgetChartPanel({
+    required this.performance,
+    required this.onCategoryTap,
+  });
 
   final BudgetPerformanceSnapshot performance;
+  final ValueChanged<String> onCategoryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -324,7 +328,12 @@ class _DashboardBudgetChartPanel extends StatelessWidget {
               color: cs.onSurface.withValues(alpha: 0.58),
             ),
           ),
-          children: [BudgetVsSpentChart(performance: performance)],
+          children: [
+            BudgetVsSpentChart(
+              performance: performance,
+              onCategoryTap: onCategoryTap,
+            ),
+          ],
         ),
       ),
     );

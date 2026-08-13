@@ -105,9 +105,16 @@ class BiggestLeaksChart extends StatelessWidget {
 }
 
 class BudgetVsSpentChart extends StatelessWidget {
-  const BudgetVsSpentChart({required this.performance, super.key});
+  const BudgetVsSpentChart({
+    required this.performance,
+    this.onCategoryTap,
+    super.key,
+  });
 
   final BudgetPerformanceSnapshot performance;
+
+  /// Opens the transactions behind a row. Rows stay flat when this is null.
+  final void Function(String category)? onCategoryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -120,48 +127,15 @@ class BudgetVsSpentChart extends StatelessWidget {
       );
     }
 
-    final theme = Theme.of(context);
-    final colors = context.clarityColors;
-
     return Column(
       children: [
-        for (final category in categories) ...[
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  category.displayLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              Text(
-                '${formatMoney(category.spent)} / ${formatMoney(category.budgeted)}',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colors.textMuted,
-                ),
-              ),
-            ],
+        for (final category in categories)
+          _BudgetVsSpentRow(
+            category: category,
+            onTap: onCategoryTap == null
+                ? null
+                : () => onCategoryTap!(category.displayLabel),
           ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              minHeight: 8,
-              value: category.budgeted <= 0
-                  ? 0
-                  : (category.spent / category.budgeted).clamp(0, 1.5),
-              backgroundColor: colors.surfaceElevated,
-              color: category.onTrack
-                  ? colors.accent
-                  : ClarityColors.financeNegative,
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
       ],
     );
   }
@@ -223,6 +197,84 @@ class IncomeSpendRatioChart extends StatelessWidget {
           style: theme.textTheme.bodySmall?.copyWith(color: colors.textMuted),
         ),
       ],
+    );
+  }
+}
+
+class _BudgetVsSpentRow extends StatelessWidget {
+  const _BudgetVsSpentRow({required this.category, this.onTap});
+
+  final BudgetCategoryPerformance category;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.clarityColors;
+    final l10n = context.l10n;
+    final label = _chartCategoryLabel(l10n, category.displayLabel);
+
+    final row = Padding(
+      padding: EdgeInsets.fromLTRB(0, onTap == null ? 0 : 6, 0, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                '${formatMoney(category.spent)} / ${formatMoney(category.budgeted)}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colors.textMuted,
+                ),
+              ),
+              if (onTap != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 2),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: colors.textMuted,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 8,
+              value: category.budgeted <= 0
+                  ? 0
+                  : (category.spent / category.budgeted).clamp(0, 1.5),
+              backgroundColor: colors.surfaceElevated,
+              color: category.onTrack
+                  ? colors.accent
+                  : ClarityColors.financeNegative,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) return row;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Semantics(
+        button: true,
+        label: l10n.dashboardChartCategoryDrilldownHint(label),
+        child: row,
+      ),
     );
   }
 }

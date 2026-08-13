@@ -16,6 +16,7 @@ import 'budgets_header.dart';
 import 'budgets_viewmodel.dart';
 import 'category_management_sheet.dart';
 import '../../dashboard/presentation/charts/finance_charts.dart';
+import 'budgets_category_detail.dart';
 
 part 'budgets_screen_widgets.dart';
 part 'budgets_screen_summary.dart';
@@ -26,10 +27,14 @@ class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({
     super.key,
     required this.controller,
+    required this.dashboardController,
+    required this.transactionController,
     this.manageCategoriesRequest = 0,
   });
 
   final BudgetUiController controller;
+  final DashboardUiController dashboardController;
+  final TransactionUiController transactionController;
   final int manageCategoriesRequest;
 
   @override
@@ -390,6 +395,23 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     await _loadData();
   }
 
+  void _openCategoryTransactions(String category) {
+    final month = budgetsCategoryDetailMonth(
+      periodType: _selectedType,
+      periodKey: _selectedPeriodKey,
+    );
+    final performance = _dataNotifier.data?.metrics.performance;
+    if (month == null || performance == null) return;
+    openBudgetsCategoryDetail(
+      context: context,
+      dashboardController: widget.dashboardController,
+      transactionController: widget.transactionController,
+      performance: performance,
+      referenceMonth: month,
+      category: category,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -417,6 +439,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         final rows = _dataNotifier.data?.rows ?? const <BudgetCategoryRow>[];
         final weeklyDate = _viewModel.parseDateKey(_selectedPeriodKey);
         final canAttemptSave = rows.isNotEmpty && hasSelectedPeriod;
+        final canOpenCategory = budgetsCategoryDetailMonth(
+              periodType: _selectedType,
+              periodKey: _selectedPeriodKey,
+            ) !=
+            null;
 
         return _BudgetsScaffold(
           viewModel: _viewModel,
@@ -439,6 +466,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           onPickCustomStart: () => _pickCustomDate(start: true),
           onPickCustomEnd: () => _pickCustomDate(start: false),
           onDraftEdited: _onDraftEdited,
+          onCategoryTap: canOpenCategory ? _openCategoryTransactions : null,
         );
       },
     );

@@ -22,6 +22,7 @@ class _BudgetsScaffold extends StatelessWidget {
     required this.onPickCustomStart,
     required this.onPickCustomEnd,
     required this.onDraftEdited,
+    this.onCategoryTap,
   });
 
   final BudgetsViewModel viewModel;
@@ -44,6 +45,7 @@ class _BudgetsScaffold extends StatelessWidget {
   final Future<void> Function() onPickCustomStart;
   final Future<void> Function() onPickCustomEnd;
   final ValueChanged<String> onDraftEdited;
+  final ValueChanged<String>? onCategoryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -135,6 +137,7 @@ class _BudgetsScaffold extends StatelessWidget {
                   onPickCustomStart: onPickCustomStart,
                   onPickCustomEnd: onPickCustomEnd,
                   onDraftEdited: onDraftEdited,
+                  onCategoryTap: onCategoryTap,
                 );
               },
             ),
@@ -164,6 +167,7 @@ class _BudgetsLoadedContent extends StatelessWidget {
     required this.onPickCustomStart,
     required this.onPickCustomEnd,
     required this.onDraftEdited,
+    this.onCategoryTap,
   });
 
   final BudgetsViewModel viewModel;
@@ -183,6 +187,7 @@ class _BudgetsLoadedContent extends StatelessWidget {
   final Future<void> Function() onPickCustomStart;
   final Future<void> Function() onPickCustomEnd;
   final ValueChanged<String> onDraftEdited;
+  final ValueChanged<String>? onCategoryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -241,7 +246,10 @@ class _BudgetsLoadedContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          BudgetVsSpentChart(performance: metrics.performance),
+          BudgetVsSpentChart(
+            performance: metrics.performance,
+            onCategoryTap: onCategoryTap,
+          ),
         ],
       ),
     );
@@ -333,7 +341,10 @@ class _BudgetsLoadedContent extends StatelessWidget {
                     ),
                   ),
                   children: [
-                    BudgetVsSpentChart(performance: metrics.performance),
+                    BudgetVsSpentChart(
+                      performance: metrics.performance,
+                      onCategoryTap: onCategoryTap,
+                    ),
                   ],
                 ),
               ),
