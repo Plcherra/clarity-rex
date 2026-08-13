@@ -67,7 +67,8 @@ class RexUiTokens {
     return !isClarityDesktopLayout(context);
   }
 
-  /// Native phone compact (iOS/Android) — not Flutter web, even when narrow.
+  /// Phone-width compact chrome, including Flutter web. Delegates to
+  /// [ClarityNativeLayout.active] — do not add a second gate.
   static bool isNativeCompactChrome(BuildContext context) {
     return ClarityNativeLayout.active(context);
   }
@@ -92,8 +93,8 @@ class RexUiTokens {
   }
 
   static bool autoOpensConfirmDialog(BuildContext context) {
-    // Wide layouts use the inline strip only; native compact also stays inline.
-    // Narrow web keeps the modal so Confirm/Dismiss stay obvious on small browsers.
+    // Wide layouts use the inline strip only. Compact width (phone and narrow
+    // web) also stays inline once [isNativeCompactChrome] follows width.
     if (isClarityWideLayout(context)) {
       return false;
     }

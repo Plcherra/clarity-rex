@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets(
-    'narrow web compact does not get native full-bleed shell gutter',
+    'narrow web compact gets native full-bleed shell gutter',
     (tester) async {
       expect(kIsWeb, isTrue);
 
@@ -46,16 +46,64 @@ void main() {
       );
 
       expect(compact, isTrue);
-      expect(active, isFalse);
-      expect(RexUiTokens.isNativeCompactChrome(tester.element(find.byType(ShellContentConstraints))), isFalse);
-      expect(gutter, clarityDesktopContentGutter);
+      expect(active, isTrue);
+      expect(
+        RexUiTokens.isNativeCompactChrome(
+          tester.element(find.byType(ShellContentConstraints)),
+        ),
+        isTrue,
+      );
+      expect(gutter, 0.0);
 
       final box = tester.renderObject<RenderBox>(
         find.byKey(const Key('narrow-web-child')),
       );
+      expect(box.size.width, closeTo(390, 0.5));
+    },
+  );
+
+  testWidgets(
+    'wide web keeps desktop shell gutter',
+    (tester) async {
+      expect(kIsWeb, isTrue);
+
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      late double gutter;
+      late bool active;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              active = ClarityNativeLayout.active(context);
+              gutter = ClarityNativeLayout.shellContentGutter(context);
+              return const ShellContentConstraints(
+                child: SizedBox(
+                  key: Key('wide-web-child'),
+                  width: double.infinity,
+                  height: 80,
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(active, isFalse);
+      expect(gutter, clarityDesktopContentGutter);
+
+      final box = tester.renderObject<RenderBox>(
+        find.byKey(const Key('wide-web-child')),
+      );
       expect(
         box.size.width,
-        closeTo(390 - clarityDesktopContentGutter * 2, 0.5),
+        closeTo(1280 - clarityDesktopContentGutter * 2, 0.5),
       );
     },
   );

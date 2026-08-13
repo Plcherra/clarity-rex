@@ -15,8 +15,8 @@ bool isHomeShellCompactWidth(BuildContext context) {
 
 /// Centers [child] with a surface-specific max width, filling most of the viewport.
 ///
-/// On native compact phone, [ClarityNativeLayout.shellContentGutter] is 0 so
-/// content is full-bleed. Wide `/app/` and narrow web keep the 24px gutter.
+/// On compact phone width (native and Flutter web), [ClarityNativeLayout.shellContentGutter]
+/// is 0 so content is full-bleed. Wide `/app/` (≥800px) keeps the 24px gutter.
 class ShellContentConstraints extends StatelessWidget {
   const ShellContentConstraints({
     super.key,

@@ -12,7 +12,7 @@ void main() {
       ClarityNativeLayout.shellContentGutterFor(nativeCompact: true),
       0.0,
     );
-    // Narrow web / wide: same desktop gutter — gate is !kIsWeb, not width alone.
+    // Helper still returns 24 when nativeCompact is false (desktop / opted-out).
     expect(
       ClarityNativeLayout.shellContentGutterFor(nativeCompact: false),
       clarityDesktopContentGutter,
@@ -137,7 +137,8 @@ void main() {
   testWidgets(
     'compact chrome without native gate keeps desktop shell gutter math',
     (tester) async {
-      // Simulates narrow web: width < 800 but nativeCompact == false.
+      // Helper still returns 24 when nativeCompact is false; it is no longer
+      // the live narrow-web path (real narrow web now passes nativeCompact: true).
       const viewport = Size(390, 844);
       late double compactChromeGutter;
       late double clamped;

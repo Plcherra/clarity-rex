@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/clarity_colors.dart';
@@ -6,10 +5,10 @@ import '../../theme/clarity_radius.dart';
 import '../../theme/clarity_spacing.dart';
 import 'clarity_breakpoints.dart';
 
-/// Phone-only layout tokens for native compact chrome.
+/// Phone-width layout tokens for compact chrome (iOS, Android, and Flutter web).
 ///
-/// Active when [active] is true (`!kIsWeb && width < 800`).
-/// Wide Flutter `/app/` and narrow web must not consume these as full-bleed.
+/// Active when [active] is true (`width < 800`). Wide Flutter `/app/` (≥800px)
+/// keeps desktop tokens (24px gutter, roomier cards).
 ///
 /// Assistant chrome stays in `RexUiTokens`; gutters/list/type helpers live here
 /// so finance can import without pulling rex concerns.
@@ -32,20 +31,21 @@ abstract final class ClarityNativeLayout {
 
   /// Same gate as [RexUiTokens.isNativeCompactChrome] — single source in core.
   static bool active(BuildContext context) {
-    return !kIsWeb && !isClarityDesktopLayout(context);
+    return !isClarityDesktopLayout(context);
   }
 
-  /// Outer page inset. Native: 10; wide/web: desktop shell gutter (24).
+  /// Outer page inset. Compact width: 10; wide `/app/`: desktop shell gutter (24).
   static double pageGutter(BuildContext context) {
     return active(context) ? _pageGutter : clarityDesktopContentGutter;
   }
 
-  /// [ShellContentConstraints] clamp gutter. Native: 0; wide/web: 24.
+  /// [ShellContentConstraints] clamp gutter. Compact width: 0; wide `/app/`: 24.
   static double shellContentGutter(BuildContext context) {
     return shellContentGutterFor(nativeCompact: active(context));
   }
 
-  /// Pure gutter resolution for tests (simulates narrow web via `false`).
+  /// Pure gutter resolution for tests. Returns 24 when [nativeCompact] is false;
+  /// that is no longer the live narrow-web path (narrow web now passes true).
   static double shellContentGutterFor({required bool nativeCompact}) {
     return nativeCompact ? 0.0 : clarityDesktopContentGutter;
   }

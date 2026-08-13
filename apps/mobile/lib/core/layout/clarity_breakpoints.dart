@@ -39,8 +39,8 @@ const double clarityDesktopContentGutter = 24;
 /// Usable content width: fill the viewport with modest gutters, up to [preferredMax].
 ///
 /// Pass ClarityNativeLayout.shellContentGutter as [gutter] for phone-aware shell
-/// clamp (0 on native compact; 24 on wide/web). Default remains 24 for callers
-/// that do not opt into native full-bleed.
+/// clamp (0 on compact width including Flutter web; 24 on wide `/app/`). Default
+/// remains 24 for callers that do not opt into compact full-bleed.
 double clarityClampedContentWidth(
   BuildContext context,
   double preferredMax, {
