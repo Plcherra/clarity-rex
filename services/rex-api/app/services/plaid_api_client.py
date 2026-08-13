@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -67,6 +68,8 @@ class PlaidApiClient:
             body["webhook"] = self.settings.plaid_webhook_url
         if self.settings.plaid_account_filters_json:
             body["account_filters"] = self._account_filters()
+        if "liabilities" not in body["products"]:
+            body["required_if_supported_products"] = ["liabilities"]
 
         logger.info(
             "Plaid link token payload prepared platform=%s redirect_uri=%s webhook=%s android_package_name_present=%s account_filters_present=%s",
@@ -76,7 +79,17 @@ class PlaidApiClient:
             "android_package_name" in body,
             "account_filters" in body,
         )
-        return await self._post("/link/token/create", body)
+        try:
+            return await self._post("/link/token/create", body)
+        except PlaidApiClientError as error:
+            if (
+                "required_if_supported_products" in body
+                and error.plaid_error_code
+                in {"INVALID_FIELD", "INVALID_PRODUCT", "INVALID_REQUEST"}
+            ):
+                body.pop("required_if_supported_products", None)
+                return await self._post("/link/token/create", body)
+            raise
 
     def _link_redirect_uri(self, platform: str) -> str | None:
         if platform == "android":
@@ -105,10 +118,24 @@ class PlaidApiClient:
         )
 
     async def get_account_balances(self, access_token: str) -> dict[str, Any]:
-        return await self._post(
-            "/accounts/balance/get",
-            {"access_token": self._required_access_token(access_token)},
-        )
+        token = self._required_access_token(access_token)
+        body: dict[str, Any] = {
+            "access_token": token,
+            "options": {
+                "min_last_updated_datetime": datetime.now(timezone.utc).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
+            },
+        }
+        try:
+            return await self._post("/accounts/balance/get", body)
+        except PlaidApiClientError as error:
+            if error.plaid_error_code in {"INVALID_FIELD", "INVALID_REQUEST"}:
+                return await self._post(
+                    "/accounts/balance/get",
+                    {"access_token": token},
+                )
+            raise
 
     async def get_liabilities(self, access_token: str) -> dict[str, Any]:
         return await self._post(

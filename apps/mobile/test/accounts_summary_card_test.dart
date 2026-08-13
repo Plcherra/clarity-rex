@@ -45,18 +45,20 @@ void main() {
       ),
     );
 
-    expect(find.text('Net worth'), findsOneWidget);
-    expect(find.text('Cash minus what you owe on cards right now'), findsOneWidget);
+        expect(find.text('Net worth'), findsOneWidget);
+    expect(
+      find.text('Total cash − total debt across 2 accounts'),
+      findsOneWidget,
+    );
     expect(find.text('−\$315.58'), findsOneWidget);
     expect(find.textContaining('Cash \$100.00'), findsOneWidget);
     expect(find.textContaining('Debt \$415.58'), findsOneWidget);
     expect(find.textContaining('Credit left \$500.00'), findsOneWidget);
-    expect(find.text('2 connected accounts'), findsOneWidget);
     expect(find.text('This month'), findsOneWidget);
     expect(find.textContaining('Left this month'), findsOneWidget);
     expect(
       find.textContaining("This month's leftover — not cash in the bank"),
-      findsOneWidget,
+      findsNothing,
     );
     expect(find.text('monthly net'), findsNothing);
   });

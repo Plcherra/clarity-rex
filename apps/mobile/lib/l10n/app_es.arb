@@ -1297,7 +1297,17 @@
     }
   },
   "dashboardOverviewSavingsUnchanged": "Sin movimientos este mes",
-  "dashboardOverviewNetBalanceHint": "Efectivo menos lo que debes en tarjetas ahora",
+  "dashboardOverviewNetBalanceHint": "Efectivo total − deuda total en {accountCount} cuenta{accountCountSuffix}",
+  "@dashboardOverviewNetBalanceHint": {
+    "placeholders": {
+      "accountCount": {
+        "type": "int"
+      },
+      "accountCountSuffix": {
+        "type": "String"
+      }
+    }
+  },
   "dashboardOverviewCashTotal": "Efectivo",
   "dashboardOverviewDebtTotal": "Deuda",
   "dashboardOverviewCreditAvailable": "Crédito disponible",

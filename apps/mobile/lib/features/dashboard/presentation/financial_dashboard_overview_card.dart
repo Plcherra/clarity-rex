@@ -28,6 +28,7 @@ class _FinancialOverviewCardState extends State<_FinancialOverviewCard> {
     final cs = theme.colorScheme;
     final l10n = context.l10n;
     final native = ClarityNativeLayout.active(context);
+    final desktop = isClarityDesktopLayout(context);
     final snapshot = widget.snapshot;
     final totals = dashboardActivityTotals(
       period: _period,
@@ -41,16 +42,54 @@ class _FinancialOverviewCardState extends State<_FinancialOverviewCard> {
     final viewingCurrentMonth =
         snapshot.referenceMonth.year == now.year &&
         snapshot.referenceMonth.month == now.month;
+    final accountCount = widget.accountCount ?? 0;
+    final periodStrip = _PeriodActivityStrip(
+      period: _period,
+      income: totals.income,
+      spent: totals.spent,
+      left: left,
+      selectedMonth: snapshot.referenceMonth,
+      availableYearMonths: widget.availableYearMonths,
+      onMonthSelected: widget.onMonthSelected,
+      onPeriodChanged: (period) => setState(() => _period = period),
+    );
+    final nowDetails = <Widget>[
+      if (widget.isGlobalScope) ...[
+        _CashFlowSummaryMetric(
+          label: l10n.dashboardOverviewDebtTotal,
+          value: formatMoney(snapshot.debtTotal),
+          color: snapshot.debtTotal > 0.005
+              ? ClarityColors.financeNegative
+              : cs.onSurface,
+        ),
+        if (snapshot.savings case final savings?) ...[
+          const SizedBox(height: 12),
+          _SavingsSummaryRow(
+            savings: savings,
+            month: snapshot.referenceMonth,
+            showMovement: viewingCurrentMonth,
+          ),
+        ],
+        const SizedBox(height: 12),
+        _LeftSplitRow(
+          leftLabel: l10n.dashboardOverviewLeftToUse,
+          leftValue: snapshot.cashTotal + (snapshot.creditAvailableTotal ?? 0),
+          cash: snapshot.cashTotal,
+          credit: snapshot.creditAvailableTotal,
+        ),
+      ] else if (snapshot.creditAvailableTotal != null) ...[
+        _CashFlowSummaryMetric(
+          label: l10n.dashboardOverviewCreditAvailable,
+          value: formatMoney(snapshot.creditAvailableTotal),
+          color: cs.onSurface,
+        ),
+      ],
+    ];
     return Container(
       width: double.infinity,
       padding: native
           ? ClarityNativeLayout.cardPadding(context)
-          : EdgeInsets.fromLTRB(
-              !isClarityDesktopLayout(context) ? 16 : 20,
-              !isClarityDesktopLayout(context) ? 14 : 18,
-              !isClarityDesktopLayout(context) ? 16 : 20,
-              !isClarityDesktopLayout(context) ? 16 : 20,
-            ),
+          : const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
         color: _dashboardPanel(context),
         borderRadius: BorderRadius.circular(_dashboardCardRadiusOf(context)),
@@ -75,7 +114,7 @@ class _FinancialOverviewCardState extends State<_FinancialOverviewCard> {
             alignment: Alignment.centerLeft,
             child: Text(
               formatMoney(snapshot.totalBalance),
-              style: (!isClarityDesktopLayout(context)
+              style: (!desktop
                       ? theme.textTheme.headlineMedium
                       : theme.textTheme.displaySmall)
                   ?.copyWith(
@@ -87,95 +126,37 @@ class _FinancialOverviewCardState extends State<_FinancialOverviewCard> {
           ),
           const SizedBox(height: 4),
           Text(
-            widget.isGlobalScope
-                ? l10n.dashboardOverviewNetBalanceHint
+            widget.isGlobalScope && accountCount > 0
+                ? l10n.dashboardOverviewNetBalanceHint(
+                    accountCount,
+                    accountCount == 1 ? '' : 's',
+                  )
                 : l10n.dashboardOverviewFromConnectedAccounts,
             style: theme.textTheme.bodySmall?.copyWith(
               color: cs.onSurface.withValues(alpha: 0.46),
               fontWeight: FontWeight.w600,
             ),
           ),
-          if (widget.isGlobalScope &&
-              widget.accountCount != null &&
-              widget.accountCount! > 0) ...[
-            const SizedBox(height: 2),
-            Text(
-              l10n.commonAcrossAccounts(
-                widget.accountCount!,
-                widget.accountCount == 1 ? '' : 's',
-              ),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurface.withValues(alpha: 0.46),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          if (widget.isGlobalScope) ...[
-            const SizedBox(height: 14),
-            _CashFlowSummaryMetric(
-              label: l10n.dashboardOverviewDebtTotal,
-              value: formatMoney(snapshot.debtTotal),
-              color: snapshot.debtTotal > 0.005
-                  ? ClarityColors.financeNegative
-                  : cs.onSurface,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.dashboardOverviewDebtHint,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: cs.onSurface.withValues(alpha: 0.42),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (snapshot.savings case final savings?) ...[
-              const SizedBox(height: 12),
-              _SavingsSummaryRow(
-                savings: savings,
-                month: snapshot.referenceMonth,
-                showMovement: viewingCurrentMonth,
-              ),
-            ],
-            const SizedBox(height: 12),
-            _LeftSplitRow(
-              leftLabel: l10n.dashboardOverviewLeftToUse,
-              leftValue: snapshot.cashTotal + (snapshot.creditAvailableTotal ?? 0),
-              cash: snapshot.cashTotal,
-              credit: snapshot.creditAvailableTotal,
-            ),
-            if (snapshot.creditLeftIncomplete) ...[
-              const SizedBox(height: 6),
-              Text(
-                l10n.dashboardOverviewCreditLeftPartial,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: ClarityColors.warning,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ] else if (snapshot.creditAvailableTotal != null) ...[
-            const SizedBox(height: 14),
-            _CashFlowSummaryMetric(
-              label: l10n.dashboardOverviewCreditAvailable,
-              value: formatMoney(snapshot.creditAvailableTotal),
-              color: cs.onSurface,
-            ),
-          ],
           const SizedBox(height: 16),
-          _PeriodActivityStrip(
-            period: _period,
-            income: totals.income,
-            spent: totals.spent,
-            left: left,
-            cash: snapshot.cashTotal,
-            credit: snapshot.creditAvailableTotal,
-            selectedMonth: snapshot.referenceMonth,
-            availableYearMonths: widget.availableYearMonths,
-            onMonthSelected: widget.onMonthSelected,
-            showPendingNote:
-                _period == DashboardActivityPeriod.month &&
-                snapshot.hasPendingCashFlowThisMonth,
-            onPeriodChanged: (period) => setState(() => _period = period),
-          ),
+          if (desktop && widget.isGlobalScope)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: nowDetails,
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(child: periodStrip),
+              ],
+            )
+          else ...[
+            ...nowDetails,
+            if (nowDetails.isNotEmpty) const SizedBox(height: 16),
+            periodStrip,
+          ],
         ],
       ),
     );

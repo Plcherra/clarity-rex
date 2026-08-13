@@ -66,6 +66,7 @@ async def test_create_link_token_posts_ios_oauth_payload(monkeypatch):
     assert call["json"]["secret"] == "secret-value"
     assert call["json"]["client_name"] == "Clarity"
     assert call["json"]["products"] == ["transactions"]
+    assert call["json"]["required_if_supported_products"] == ["liabilities"]
     assert call["json"]["country_codes"] == ["US"]
     assert call["json"]["user"] == {"client_user_id": "user-1"}
     assert call["json"]["redirect_uri"] == "https://app.example.com/plaid/oauth"
@@ -262,3 +263,74 @@ async def test_invalid_account_filters_json_fails_before_http(monkeypatch):
 
     with pytest.raises(PlaidApiClientError, match="valid JSON"):
         await client.create_link_token(PlaidLinkTokenPayload(user_id="user-1"))
+
+
+@pytest.mark.asyncio
+async def test_create_link_token_retries_without_liabilities_when_unsupported(
+    monkeypatch,
+):
+    calls = []
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        if len(calls) == 1:
+            return make_response(
+                status_code=400,
+                json_data={
+                    "error_code": "INVALID_FIELD",
+                    "error_message": "required_if_supported_products is invalid",
+                },
+            )
+        return make_response(json_data={"link_token": "link-sandbox"})
+
+    monkeypatch.setattr(
+        "app.services.plaid_api_client.request_with_retries",
+        fake_request,
+    )
+    client = PlaidApiClient(configured_settings())
+
+    result = await client.create_link_token(
+        PlaidLinkTokenPayload(user_id="user-1", platform="web")
+    )
+
+    assert result["link_token"] == "link-sandbox"
+    assert len(calls) == 2
+    assert calls[0]["json"]["required_if_supported_products"] == ["liabilities"]
+    assert "required_if_supported_products" not in calls[1]["json"]
+
+
+@pytest.mark.asyncio
+async def test_get_account_balances_requests_a_live_institution_refresh(
+    monkeypatch,
+):
+    calls = []
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return make_response(
+            json_data={
+                "accounts": [
+                    {
+                        "account_id": "cap-card",
+                        "balances": {
+                            "current": 270.68,
+                            "available": 608.08,
+                            "limit": 878.76,
+                        },
+                    }
+                ]
+            }
+        )
+
+    monkeypatch.setattr(
+        "app.services.plaid_api_client.request_with_retries",
+        fake_request,
+    )
+    client = PlaidApiClient(configured_settings())
+
+    result = await client.get_account_balances("access-token")
+
+    assert result["accounts"][0]["balances"]["available"] == 608.08
+    assert calls[0]["url"] == "https://sandbox.plaid.com/accounts/balance/get"
+    assert "min_last_updated_datetime" in calls[0]["json"]["options"]
+

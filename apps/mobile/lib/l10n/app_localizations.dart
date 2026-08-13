@@ -1730,8 +1730,11 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardOverviewNetBalanceHint.
   ///
   /// In en, this message translates to:
-  /// **'Cash minus what you owe on cards right now'**
-  String get dashboardOverviewNetBalanceHint;
+  /// **'Total cash − total debt across {accountCount} account{accountCountSuffix}'**
+  String dashboardOverviewNetBalanceHint(
+    int accountCount,
+    String accountCountSuffix,
+  );
 
   /// No description provided for @dashboardOverviewCashTotal.
   ///

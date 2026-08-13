@@ -499,7 +499,17 @@
   "dashboardResolvingTitle": "Resolving imported transactions",
   "dashboardResolvingBody": "Your statement is connected, but the transaction rows are still loading. Values will appear when the read model is complete.",
   "dashboardOverviewTotalBalance": "Net worth",
-  "dashboardOverviewNetBalanceHint": "Cash minus what you owe on cards right now",
+  "dashboardOverviewNetBalanceHint": "Total cash − total debt across {accountCount} account{accountCountSuffix}",
+  "@dashboardOverviewNetBalanceHint": {
+    "placeholders": {
+      "accountCount": {
+        "type": "int"
+      },
+      "accountCountSuffix": {
+        "type": "String"
+      }
+    }
+  },
   "dashboardOverviewCashTotal": "Cash",
   "dashboardOverviewDebtTotal": "Debt",
   "dashboardOverviewCreditAvailable": "Credit left",

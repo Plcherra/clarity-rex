@@ -925,8 +925,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardOverviewTotalBalance => 'Patrimonio neto';
 
   @override
-  String get dashboardOverviewNetBalanceHint =>
-      'Efectivo menos lo que debes en tarjetas ahora';
+  String dashboardOverviewNetBalanceHint(
+    int accountCount,
+    String accountCountSuffix,
+  ) {
+    return 'Efectivo total − deuda total en $accountCount cuenta$accountCountSuffix';
+  }
 
   @override
   String get dashboardOverviewCashTotal => 'Efectivo';

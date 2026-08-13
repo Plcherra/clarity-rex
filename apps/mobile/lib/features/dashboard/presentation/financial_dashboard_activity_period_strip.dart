@@ -6,12 +6,9 @@ class _PeriodActivityStrip extends StatelessWidget {
     required this.income,
     required this.spent,
     required this.left,
-    required this.cash,
-    required this.credit,
     required this.selectedMonth,
     required this.availableYearMonths,
     required this.onMonthSelected,
-    required this.showPendingNote,
     required this.onPeriodChanged,
   });
 
@@ -19,12 +16,9 @@ class _PeriodActivityStrip extends StatelessWidget {
   final double income;
   final double spent;
   final double left;
-  final double cash;
-  final double? credit;
   final DateTime selectedMonth;
   final List<String> availableYearMonths;
   final ValueChanged<DateTime> onMonthSelected;
-  final bool showPendingNote;
   final ValueChanged<DashboardActivityPeriod> onPeriodChanged;
 
   @override
@@ -78,34 +72,13 @@ class _PeriodActivityStrip extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        _LeftSplitRow(
-          leftLabel: period == DashboardActivityPeriod.month
+        _CashFlowSummaryMetric(
+          label: period == DashboardActivityPeriod.month
               ? l10n.dashboardOverviewLeftThisMonth
               : l10n.dashboardOverviewLeftThisPeriod,
-          leftValue: left,
-          cash: cash,
-          credit: credit,
+          value: formatMoney(left),
+          color: _balanceColor(context, left),
         ),
-        const SizedBox(height: 8),
-        Text(
-          period == DashboardActivityPeriod.month
-              ? l10n.dashboardOverviewActivityNotBalanceNote
-              : l10n.dashboardOverviewActivityNotBalanceNotePeriod,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: cs.onSurface.withValues(alpha: 0.42),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        if (showPendingNote) ...[
-          const SizedBox(height: 6),
-          Text(
-            l10n.dashboardOverviewPendingCashFlowNote,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: ClarityColors.warning,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
       ],
     );
   }

@@ -917,8 +917,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardOverviewTotalBalance => 'Net worth';
 
   @override
-  String get dashboardOverviewNetBalanceHint =>
-      'Cash minus what you owe on cards right now';
+  String dashboardOverviewNetBalanceHint(
+    int accountCount,
+    String accountCountSuffix,
+  ) {
+    return 'Total cash − total debt across $accountCount account$accountCountSuffix';
+  }
 
   @override
   String get dashboardOverviewCashTotal => 'Cash';

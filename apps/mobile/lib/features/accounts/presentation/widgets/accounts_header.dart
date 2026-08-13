@@ -96,15 +96,7 @@ class AccountsSummaryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      l10n.dashboardOverviewNetBalanceHint,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurface.withValues(alpha: 0.56),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.commonConnectedAccountCount(
+                      l10n.dashboardOverviewNetBalanceHint(
                         accounts.length,
                         accounts.length == 1 ? '' : 's',
                       ),
@@ -183,14 +175,6 @@ class AccountsSummaryCard extends StatelessWidget {
                             : colors.financeNegative,
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.dashboardOverviewActivityNotBalanceNote,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: cs.onSurface.withValues(alpha: 0.42),
-                      fontWeight: FontWeight.w600,
-                    ),
                   ),
                 ],
               ),
