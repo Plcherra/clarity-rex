@@ -45,8 +45,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Net balance'), findsOneWidget);
-    expect(find.text('Cash minus cards owed'), findsOneWidget);
+    expect(find.text('Net worth'), findsOneWidget);
+    expect(find.text('Cash minus what you owe on cards right now'), findsOneWidget);
     expect(find.text('−\$315.58'), findsOneWidget);
     expect(find.textContaining('Cash \$100.00'), findsOneWidget);
     expect(find.textContaining('Debt \$415.58'), findsOneWidget);

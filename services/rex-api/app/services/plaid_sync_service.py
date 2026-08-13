@@ -148,19 +148,19 @@ class PlaidSyncService:
                         _safe_user_label(user_id),
                         _safe_item_label(normalized_item_id),
                     )
-                phase = "fetch_balances"
-                try:
-                    accounts_response = await self.plaid_client.get_account_balances(
-                        access_token
-                    )
-                    balances_refreshed = True
-                except PlaidApiClientError as error:
-                    logger.warning(
-                        "Plaid balance fetch failed user=%s item=%s code=%s",
-                        _safe_user_label(user_id),
-                        _safe_item_label(normalized_item_id),
-                        _safe_error_detail(error.plaid_error_code),
-                    )
+            phase = "fetch_balances"
+            try:
+                accounts_response = await self.plaid_client.get_account_balances(
+                    access_token
+                )
+                balances_refreshed = True
+            except PlaidApiClientError as error:
+                logger.warning(
+                    "Plaid balance fetch failed user=%s item=%s code=%s",
+                    _safe_user_label(user_id),
+                    _safe_item_label(normalized_item_id),
+                    _safe_error_detail(error.plaid_error_code),
+                )
             phase = "sync_accounts"
             account_map = await self.account_service.sync_accounts(
                 user_id=user_id,

@@ -1724,13 +1724,13 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardOverviewTotalBalance.
   ///
   /// In en, this message translates to:
-  /// **'Net balance'**
+  /// **'Net worth'**
   String get dashboardOverviewTotalBalance;
 
   /// No description provided for @dashboardOverviewNetBalanceHint.
   ///
   /// In en, this message translates to:
-  /// **'Cash minus cards owed'**
+  /// **'Cash minus what you owe on cards right now'**
   String get dashboardOverviewNetBalanceHint;
 
   /// No description provided for @dashboardOverviewCashTotal.
@@ -1750,6 +1750,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Credit left'**
   String get dashboardOverviewCreditAvailable;
+
+  /// No description provided for @dashboardOverviewLeftToUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get dashboardOverviewLeftToUse;
+
+  /// No description provided for @dashboardOverviewDebtHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards owed right now — not this month\'s spending'**
+  String get dashboardOverviewDebtHint;
+
+  /// No description provided for @dashboardOverviewCreditLeftPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'A connected card has no leftover yet. Resync so its limit can be included.'**
+  String get dashboardOverviewCreditLeftPartial;
 
   /// No description provided for @dashboardOverviewLeftThisMonth.
   ///
@@ -1814,7 +1832,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardOverviewPendingCashFlowNote.
   ///
   /// In en, this message translates to:
-  /// **'Totals update after pending items post.'**
+  /// **'Income and spending wait until pending posts. Net already includes them.'**
   String get dashboardOverviewPendingCashFlowNote;
 
   /// No description provided for @dashboardOverviewSavings.
@@ -2590,7 +2608,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountsSummaryTotalBalance.
   ///
   /// In en, this message translates to:
-  /// **'Net balance'**
+  /// **'Net worth'**
   String get accountsSummaryTotalBalance;
 
   /// No description provided for @accountsEmptyTitle.

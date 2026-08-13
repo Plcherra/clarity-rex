@@ -6,6 +6,11 @@ class _PeriodActivityStrip extends StatelessWidget {
     required this.income,
     required this.spent,
     required this.left,
+    required this.cash,
+    required this.credit,
+    required this.selectedMonth,
+    required this.availableYearMonths,
+    required this.onMonthSelected,
     required this.showPendingNote,
     required this.onPeriodChanged,
   });
@@ -14,6 +19,11 @@ class _PeriodActivityStrip extends StatelessWidget {
   final double income;
   final double spent;
   final double left;
+  final double cash;
+  final double? credit;
+  final DateTime selectedMonth;
+  final List<String> availableYearMonths;
+  final ValueChanged<DateTime> onMonthSelected;
   final bool showPendingNote;
   final ValueChanged<DashboardActivityPeriod> onPeriodChanged;
 
@@ -42,7 +52,12 @@ class _PeriodActivityStrip extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        DashboardMonthSwitcher(
+          selectedMonth: selectedMonth,
+          availableYearMonths: availableYearMonths,
+          onMonthSelected: onMonthSelected,
+        ),
+        const SizedBox(height: 4),
         Row(
           children: [
             Expanded(
@@ -60,17 +75,16 @@ class _PeriodActivityStrip extends StatelessWidget {
                 color: ClarityColors.financeSpending,
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _CashFlowSummaryMetric(
-                label: period == DashboardActivityPeriod.month
-                    ? l10n.dashboardOverviewLeftThisMonth
-                    : l10n.dashboardOverviewLeftThisPeriod,
-                value: formatMoney(left),
-                color: _balanceColor(context, left),
-              ),
-            ),
           ],
+        ),
+        const SizedBox(height: 10),
+        _LeftSplitRow(
+          leftLabel: period == DashboardActivityPeriod.month
+              ? l10n.dashboardOverviewLeftThisMonth
+              : l10n.dashboardOverviewLeftThisPeriod,
+          leftValue: left,
+          cash: cash,
+          credit: credit,
         ),
         const SizedBox(height: 8),
         Text(

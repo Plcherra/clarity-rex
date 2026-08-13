@@ -62,6 +62,8 @@ class _DashboardOverviewBody extends StatelessWidget {
     required this.coreChartsController,
     required this.spendingAnalysisController,
     required this.onCategoryTap,
+    required this.availableYearMonths,
+    required this.onMonthSelected,
   });
 
   final DashboardSnapshot snapshot;
@@ -78,6 +80,8 @@ class _DashboardOverviewBody extends StatelessWidget {
   final ExpansibleController coreChartsController;
   final ExpansibleController spendingAnalysisController;
   final ValueChanged<String> onCategoryTap;
+  final List<String> availableYearMonths;
+  final ValueChanged<DateTime> onMonthSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +91,8 @@ class _DashboardOverviewBody extends StatelessWidget {
       snapshot: snapshot,
       isGlobalScope: scope is GlobalDashboardScope,
       accountCount: scope is GlobalDashboardScope ? accountCount : null,
+      availableYearMonths: availableYearMonths,
+      onMonthSelected: onMonthSelected,
     );
     final cashFlowChart = _DashboardChartSection(
       sectionKey: monthlyCashFlowKey,

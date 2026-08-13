@@ -1,5 +1,6 @@
 import '../../../core/models/models.dart';
 import '../../transactions/domain/transaction_resolution.dart';
+import 'account_balance_breakdown.dart';
 import 'dashboard_snapshot.dart';
 
 /// What the user is holding in savings, and what moved there this month.
@@ -56,7 +57,7 @@ SavingsSnapshot? buildSavingsSnapshot({
   return SavingsSnapshot(
     balance: savingsAccounts.fold<double>(
       0,
-      (sum, account) => sum + (account.currentBalance ?? 0),
+      (sum, account) => sum + (liveSignedBalanceForAccount(account) ?? 0),
     ),
     changeThisMonth: change,
     accountCount: savingsAccounts.length,

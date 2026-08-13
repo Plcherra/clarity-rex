@@ -3,7 +3,7 @@ import '../../../core/models/models.dart';
 /// Right-now position across accounts: cash, card debt, leftover credit.
 ///
 /// Kept apart from this-month income/spending on purpose. Those are flow.
-/// These numbers are stock.
+/// These numbers are stock. NOW must match the bank, including pending.
 class AccountBalanceBreakdown {
   const AccountBalanceBreakdown({
     required this.cashTotal,
@@ -27,24 +27,69 @@ class AccountBalanceBreakdown {
   final int creditAccountCount;
   final int creditAccountsWithAvailableCount;
 
+  /// Live net worth for these accounts: cash minus cards owed right now.
   double get netBalance => cashTotal - debtTotal;
+
+  /// Cash plus unused credit — spendable room, not net worth.
+  double get usableTotal => cashTotal + (creditAvailableTotal ?? 0);
 
   bool get hasCashAccounts => cashAccountCount > 0;
   bool get hasCreditCards => creditAccountCount > 0;
   bool get hasCreditAvailable => creditAvailableTotal != null;
+  bool get creditLeftIncomplete =>
+      creditAccountCount > creditAccountsWithAvailableCount;
 }
 
-/// Signed dashboard balance when no statement override is available.
-///
-/// Credit cards are stored as a positive amount owed; net-worth math needs
-/// them negative.
+/// Signed posted ledger. Prefer [liveSignedBalanceForAccount] for NOW.
 double? signedBalanceFromCurrent(Account account) {
   final raw = account.currentBalance;
   if (raw == null || raw.isNaN) return null;
-  return switch (account.type) {
+  return _signedFromRaw(account.type, raw);
+}
+
+/// Bank-matching NOW balance: Plaid available, else current ± pending.
+///
+/// Depository `available` already subtracts pending and holds — do not also
+/// subtract our pending rows. Credit `current` is the bank's amount owed,
+/// including pending charges; a refunded pending row drops out on the next
+/// live balance.
+double? liveSignedBalanceForAccount(
+  Account account, {
+  double? statementOverride,
+  Iterable<Transaction> pendingTransactions = const [],
+}) {
+  if (statementOverride != null && !statementOverride.isNaN) {
+    return _signedFromRaw(account.type, statementOverride);
+  }
+  switch (account.type) {
+    case AccountType.checking:
+    case AccountType.savings:
+      final available = account.plaidAvailableBalance;
+      if (available != null && !available.isNaN) return available;
+      final current = account.currentBalance;
+      if (current == null || current.isNaN) return null;
+      return current + _pendingAmountDelta(pendingTransactions);
+    case AccountType.creditCard:
+      final current = account.currentBalance;
+      if (current == null || current.isNaN) return null;
+      return _signedFromRaw(AccountType.creditCard, current);
+  }
+}
+
+double _signedFromRaw(AccountType type, double raw) {
+  return switch (type) {
     AccountType.creditCard => raw <= 0 ? raw : -raw,
     AccountType.checking || AccountType.savings => raw,
   };
+}
+
+double _pendingAmountDelta(Iterable<Transaction> pending) {
+  var total = 0.0;
+  for (final transaction in pending) {
+    if (transaction.amount.isNaN) continue;
+    total += transaction.amount;
+  }
+  return total;
 }
 
 /// Leftover credit for one card. Prefer Plaid `available`; if the issuer

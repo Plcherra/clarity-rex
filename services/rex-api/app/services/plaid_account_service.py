@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
-from app.services.plaid_api_client import PlaidApiClient
+from app.services.plaid_api_client import PlaidApiClient, PlaidApiClientError
 from app.services.plaid_cursor_service import PlaidCursorService
+from app.services.plaid_liability_balances import (
+    apply_credit_liability_patch,
+    credit_balance_patches_from_liabilities,
+)
 from app.services.plaid_sync_models import (
     dict_or_empty,
     first_row,
     number_or_none,
-    number_or_zero,
     required_string,
     string_or_none,
     utc_now_iso,
@@ -17,6 +21,15 @@ from app.services.plaid_sync_models import (
 
 PLAID_ACCOUNTS_TABLE = "plaid_accounts"
 ACCOUNTS_TABLE = "accounts"
+_LIABILITY_SKIP_CODES = {
+    "INVALID_PRODUCT",
+    "PRODUCTS_NOT_SUPPORTED",
+    "NO_LIABILITY_ACCOUNTS",
+    "ITEM_NOT_SUPPORTED",
+    "PRODUCT_NOT_READY",
+}
+
+logger = logging.getLogger(__name__)
 
 
 class PlaidAccountService:
@@ -40,9 +53,14 @@ class PlaidAccountService:
     ) -> dict[str, str]:
         if accounts_response is None:
             accounts_response = await self.plaid_client.get_accounts(access_token)
+        liability_patches = await self._credit_liability_patches(access_token)
         account_map: dict[str, str] = {}
         for account in _account_list(accounts_response.get("accounts")):
             plaid_account_id = required_string(account, "account_id")
+            account = apply_credit_liability_patch(
+                account,
+                liability_patches.get(plaid_account_id),
+            )
             linked_account = await self._upsert_clarity_account(
                 user_id=user_id,
                 item_id=item_id,
@@ -146,7 +164,11 @@ class PlaidAccountService:
             "sync_status": "active",
             "last_synced_at": utc_now_iso(),
         }
-        resolved_balance = _resolve_plaid_balance(balances)
+        resolved_balance = _resolve_plaid_balance(
+            balances,
+            account_type=string_or_none(account.get("type")),
+            subtype=string_or_none(account.get("subtype")),
+        )
         if resolved_balance is not None:
             body["balance"] = resolved_balance
         rows = await self.cursor_service.supabase_request(
@@ -160,6 +182,22 @@ class PlaidAccountService:
             prefer="resolution=merge-duplicates,return=representation",
         )
         return first_row(rows, "Supabase account upsert returned no rows.")
+
+    async def _credit_liability_patches(
+        self,
+        access_token: str,
+    ) -> dict[str, dict[str, float]]:
+        try:
+            payload = await self.plaid_client.get_liabilities(access_token)
+        except PlaidApiClientError as error:
+            code = error.plaid_error_code or ""
+            if code not in _LIABILITY_SKIP_CODES:
+                logger.warning(
+                    "Plaid liabilities fetch failed code=%s",
+                    code or "unknown",
+                )
+            return {}
+        return credit_balance_patches_from_liabilities(payload)
 
     async def _upsert_plaid_account(
         self,
@@ -312,11 +350,30 @@ def _is_generic_account_name(
     return False
 
 
-def _resolve_plaid_balance(balances: dict[str, Any]) -> float | None:
+def _resolve_plaid_balance(
+    balances: dict[str, Any],
+    *,
+    account_type: str | None = None,
+    subtype: str | None = None,
+) -> float | None:
     current = number_or_none(balances.get("current"))
+    available = number_or_none(balances.get("available"))
+    kind = f"{subtype or ''} {account_type or ''}".lower()
+    is_depository = any(
+        token in kind
+        for token in (
+            "depository",
+            "checking",
+            "savings",
+            "money market",
+            "cash management",
+        )
+    )
+    if is_depository and available is not None:
+        return available
     if current is not None:
         return current
-    return number_or_none(balances.get("available"))
+    return available
 
 
 def _account_list(value: Any) -> list[dict[str, Any]]:

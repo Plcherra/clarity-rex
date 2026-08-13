@@ -5,10 +5,15 @@ part of 'financial_dashboard_view.dart';
 /// Money moved into savings was never spent and money taken back out was never
 /// earned, so it gets its own line instead of distorting income or spending.
 class _SavingsSummaryRow extends StatelessWidget {
-  const _SavingsSummaryRow({required this.savings, required this.month});
+  const _SavingsSummaryRow({
+    required this.savings,
+    required this.month,
+    this.showMovement = true,
+  });
 
   final SavingsSnapshot savings;
   final DateTime month;
+  final bool showMovement;
 
   @override
   Widget build(BuildContext context) {
@@ -82,17 +87,19 @@ class _SavingsSummaryRow extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                movement,
-                textAlign: TextAlign.end,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: movementColor,
-                  fontWeight: FontWeight.w700,
+            if (showMovement) ...[
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  movement,
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: movementColor,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

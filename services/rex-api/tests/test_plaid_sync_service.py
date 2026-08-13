@@ -26,6 +26,7 @@ class FullSyncPlaidClient:
         self.sync_cursors = []
         self.refresh_calls = 0
         self.balance_get_calls = 0
+        self.liability_get_calls = 0
         self.get_transaction_calls = 0
 
     async def get_transactions(
@@ -53,6 +54,11 @@ class FullSyncPlaidClient:
         assert access_token == "access-token-secret"
         self.balance_get_calls += 1
         return await self.get_accounts(access_token)
+
+    async def get_liabilities(self, access_token):
+        assert access_token == "access-token-secret"
+        self.liability_get_calls += 1
+        return {"accounts": [], "liabilities": {"credit": []}}
 
     async def get_accounts(self, access_token):
         assert access_token == "access-token-secret"
@@ -150,6 +156,16 @@ class FailingAccountsPlaidClient(FullSyncPlaidClient):
             "plaid unavailable",
             status_code=503,
             plaid_error_code="INSTITUTION_ERROR",
+        )
+
+
+class InvalidProductLiabilitiesClient(FullSyncPlaidClient):
+    async def get_liabilities(self, access_token):
+        self.liability_get_calls += 1
+        raise PlaidApiClientError(
+            "product missing",
+            status_code=400,
+            plaid_error_code="INVALID_PRODUCT",
         )
 
 
@@ -647,6 +663,8 @@ async def test_sync_item_persists_accounts_transactions_and_cursor(monkeypatch):
     assert result.transactions_removed == 1
     assert result.next_cursor == "cursor-final"
     assert plaid_client.sync_cursors == ["cursor-old", "cursor-mid"]
+    assert plaid_client.balance_get_calls == 1
+    assert plaid_client.liability_get_calls == 1
 
     account_calls = [
         call
@@ -658,6 +676,7 @@ async def test_sync_item_persists_accounts_transactions_and_cursor(monkeypatch):
     assert account_calls[0]["json"]["name"] == "Bank of Test Checking 1234"
     assert account_calls[0]["json"]["institution"] == "Bank of Test"
     assert account_calls[0]["json"]["plaid_account_id"] == "plaid-account-1"
+    assert account_calls[0]["json"]["balance"] == 90.0
     assert account_calls[1]["json"]["name"] == "Bank of Test Credit Card 9876"
     assert account_calls[1]["json"]["plaid_account_id"] == "plaid-account-2"
     assert account_calls[1]["json"]["type"] == "credit card"
@@ -792,3 +811,28 @@ async def test_sync_item_handles_plaid_rate_limit(monkeypatch):
 
     assert exc_info.value.status_code == 429
     assert "rate limited" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_sync_item_continues_when_liabilities_product_is_missing(
+    monkeypatch,
+):
+    plaid_client = InvalidProductLiabilitiesClient()
+    service = PlaidSyncService(
+        plaid_client=plaid_client,
+        settings=settings(),
+    )
+    token_ref = service._encrypted_access_token_ref("access-token-secret")
+
+    async def fake_request(method, url, **kwargs):
+        return sync_storage_response(url, kwargs.get("json"), token_ref)
+
+    monkeypatch.setattr(
+        "app.services.plaid_cursor_service.request_with_retries",
+        fake_request,
+    )
+
+    result = await service.sync_item("item-record-1")
+
+    assert result.accounts_synced == 2
+    assert plaid_client.liability_get_calls == 1

@@ -159,14 +159,15 @@ final class FinancialReadModel {
   }
 
   double? dashboardBalanceForAccount(Account account) {
-    final raw =
-        latestStatementImportByAccount[account.id]?.statementBalance ??
-        account.currentBalance;
-    if (raw == null || raw.isNaN) return null;
-    return switch (account.type) {
-      AccountType.creditCard => raw <= 0 ? raw : -raw,
-      AccountType.checking || AccountType.savings => raw,
-    };
+    return liveSignedBalanceForAccount(
+      account,
+      statementOverride:
+          latestStatementImportByAccount[account.id]?.statementBalance,
+      pendingTransactions: transactions.where(
+        (transaction) =>
+            transaction.accountId == account.id && transaction.pending,
+      ),
+    );
   }
 
   double? dashboardBalanceForScope(DashboardScope scope) {

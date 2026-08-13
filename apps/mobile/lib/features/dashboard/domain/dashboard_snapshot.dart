@@ -55,6 +55,7 @@ class DashboardSnapshot {
     this.cashTotal = 0,
     this.debtTotal = 0,
     this.creditAvailableTotal,
+    this.creditLeftIncomplete = false,
     required this.spentThisMonth,
     required this.incomeThisMonth,
     required this.availableThisMonth,
@@ -83,6 +84,9 @@ class DashboardSnapshot {
 
   /// Unused card limit, when at least one connected card reports it.
   final double? creditAvailableTotal;
+
+  /// True when at least one card is owed or connected but has no leftover figure.
+  final bool creditLeftIncomplete;
 
   final double spentThisMonth;
   final double incomeThisMonth;
@@ -203,8 +207,18 @@ DashboardSnapshot buildDashboardSnapshot({
     resolved,
   );
 
+  final scopedAccounts = switch (scope) {
+    GlobalDashboardScope() => accounts,
+    AccountDashboardScope(:final accountId) =>
+      accounts.where((account) => account.id == accountId).toList(),
+  };
+  final breakdown = buildAccountBalanceBreakdown(
+    accounts: scopedAccounts,
+    signedBalanceFor: signedBalanceFor ?? signedBalanceFromCurrent,
+  );
+
   final balance = switch (scope) {
-    GlobalDashboardScope() => resolveTotalBalance(scopedBalanceFromStatement),
+    GlobalDashboardScope() => breakdown.netBalance,
     AccountDashboardScope(:final accountId) =>
       scopedBalanceFromStatement ??
           accountsById[accountId]?.currentBalance ??
@@ -217,21 +231,12 @@ DashboardSnapshot buildDashboardSnapshot({
     referenceInMonth: reference,
   );
 
-  final scopedAccounts = switch (scope) {
-    GlobalDashboardScope() => accounts,
-    AccountDashboardScope(:final accountId) =>
-      accounts.where((account) => account.id == accountId).toList(),
-  };
-  final breakdown = buildAccountBalanceBreakdown(
-    accounts: scopedAccounts,
-    signedBalanceFor: signedBalanceFor ?? signedBalanceFromCurrent,
-  );
-
   return DashboardSnapshot(
     totalBalance: balance,
     cashTotal: breakdown.cashTotal,
     debtTotal: breakdown.debtTotal,
     creditAvailableTotal: breakdown.creditAvailableTotal,
+    creditLeftIncomplete: breakdown.creditLeftIncomplete,
     spentThisMonth: spent,
     incomeThisMonth: income,
     availableThisMonth: available,

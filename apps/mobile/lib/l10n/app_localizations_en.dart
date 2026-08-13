@@ -914,10 +914,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your statement is connected, but the transaction rows are still loading. Values will appear when the read model is complete.';
 
   @override
-  String get dashboardOverviewTotalBalance => 'Net balance';
+  String get dashboardOverviewTotalBalance => 'Net worth';
 
   @override
-  String get dashboardOverviewNetBalanceHint => 'Cash minus cards owed';
+  String get dashboardOverviewNetBalanceHint =>
+      'Cash minus what you owe on cards right now';
 
   @override
   String get dashboardOverviewCashTotal => 'Cash';
@@ -927,6 +928,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardOverviewCreditAvailable => 'Credit left';
+
+  @override
+  String get dashboardOverviewLeftToUse => 'Left';
+
+  @override
+  String get dashboardOverviewDebtHint =>
+      'Cards owed right now — not this month\'s spending';
+
+  @override
+  String get dashboardOverviewCreditLeftPartial =>
+      'A connected card has no leftover yet. Resync so its limit can be included.';
 
   @override
   String get dashboardOverviewLeftThisMonth => 'Left this month';
@@ -963,7 +975,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardOverviewPendingCashFlowNote =>
-      'Totals update after pending items post.';
+      'Income and spending wait until pending posts. Net already includes them.';
 
   @override
   String get dashboardOverviewSavings => 'Savings';
@@ -1430,7 +1442,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountsScreenLoadingLabel => 'Loading accounts';
 
   @override
-  String get accountsSummaryTotalBalance => 'Net balance';
+  String get accountsSummaryTotalBalance => 'Net worth';
 
   @override
   String get accountsEmptyTitle => 'Connect your accounts';

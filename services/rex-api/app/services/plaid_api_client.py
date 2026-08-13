@@ -110,6 +110,12 @@ class PlaidApiClient:
             {"access_token": self._required_access_token(access_token)},
         )
 
+    async def get_liabilities(self, access_token: str) -> dict[str, Any]:
+        return await self._post(
+            "/liabilities/get",
+            {"access_token": self._required_access_token(access_token)},
+        )
+
     async def refresh_transactions(self, access_token: str) -> dict[str, Any]:
         return await self._post(
             "/transactions/refresh",

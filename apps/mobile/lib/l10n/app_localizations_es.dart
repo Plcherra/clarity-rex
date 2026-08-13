@@ -922,10 +922,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Su extracto está conectado, pero las filas de transacciones aún se están cargando. Los valores aparecerán cuando se complete la lectura del modelo.';
 
   @override
-  String get dashboardOverviewTotalBalance => 'Saldo neto';
+  String get dashboardOverviewTotalBalance => 'Patrimonio neto';
 
   @override
-  String get dashboardOverviewNetBalanceHint => 'Efectivo menos tarjetas';
+  String get dashboardOverviewNetBalanceHint =>
+      'Efectivo menos lo que debes en tarjetas ahora';
 
   @override
   String get dashboardOverviewCashTotal => 'Efectivo';
@@ -935,6 +936,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dashboardOverviewCreditAvailable => 'Crédito disponible';
+
+  @override
+  String get dashboardOverviewLeftToUse => 'Disponible';
+
+  @override
+  String get dashboardOverviewDebtHint =>
+      'Lo que deben las tarjetas ahora — no el gasto de este mes';
+
+  @override
+  String get dashboardOverviewCreditLeftPartial =>
+      'Una tarjeta conectada aún no tiene sobrante. Vuelve a sincronizar para incluir su límite.';
 
   @override
   String get dashboardOverviewLeftThisMonth => 'Sobra este mes';
@@ -971,7 +983,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dashboardOverviewPendingCashFlowNote =>
-      'Los totales se actualizan cuando se confirmen los pendientes.';
+      'Ingresos y gastos esperan a que los pendientes se confirmen. El neto ya los incluye.';
 
   @override
   String get dashboardOverviewSavings => 'Ahorros';
@@ -1443,7 +1455,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountsScreenLoadingLabel => 'Cargando cuentas';
 
   @override
-  String get accountsSummaryTotalBalance => 'Saldo neto';
+  String get accountsSummaryTotalBalance => 'Patrimonio neto';
 
   @override
   String get accountsEmptyTitle => 'Conecta tus cuentas';

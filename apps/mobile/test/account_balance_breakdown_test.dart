@@ -46,6 +46,8 @@ void main() {
       expect(breakdown.debtTotal, closeTo(270.68, 0.001));
       expect(breakdown.netBalance, closeTo(-24.10, 0.001));
       expect(breakdown.creditAvailableTotal, closeTo(500, 0.001));
+      expect(breakdown.usableTotal, closeTo(746.58, 0.001));
+      expect(breakdown.creditLeftIncomplete, isTrue);
       expect(breakdown.cashAccountCount, 3);
       expect(breakdown.creditAccountCount, 2);
     });
@@ -149,6 +151,102 @@ void main() {
 
       expect(breakdown.debtTotal, closeTo(270.68, 0.001));
       expect(breakdown.creditAvailableTotal, closeTo(1129.32, 0.001));
+    });
+
+    test('NOW cash prefers Plaid available over posted current', () {
+      expect(
+        liveSignedBalanceForAccount(
+          const Account(
+            id: 'boa-checking',
+            name: 'Checking',
+            type: AccountType.checking,
+            currentBalance: 89.66,
+            plaidAvailableBalance: 66.15,
+          ),
+          pendingTransactions: [
+            Transaction(
+              date: DateTime(2026, 8, 12),
+              description: 'BOM DOUGH',
+              amount: -4.14,
+              accountId: 'boa-checking',
+              pending: true,
+            ),
+          ],
+        ),
+        closeTo(66.15, 0.001),
+      );
+    });
+
+    test('NOW cash adds pending when Plaid available is missing', () {
+      expect(
+        liveSignedBalanceForAccount(
+          const Account(
+            id: 'checking',
+            name: 'Checking',
+            type: AccountType.checking,
+            currentBalance: 70.29,
+          ),
+          pendingTransactions: [
+            Transaction(
+              date: DateTime(2026, 8, 12),
+              description: 'BOM DOUGH',
+              amount: -4.14,
+              accountId: 'checking',
+              pending: true,
+            ),
+          ],
+        ),
+        closeTo(66.15, 0.001),
+      );
+    });
+
+    test('NOW leftover uses Capital One available credit when Plaid sends it', () {
+      final breakdown = buildAccountBalanceBreakdown(
+        accounts: const [
+          Account(
+            id: 'cap-card',
+            name: 'Quicksilver',
+            type: AccountType.creditCard,
+            currentBalance: 270.68,
+            plaidAvailableBalance: 608.08,
+          ),
+          Account(
+            id: 'boa-card',
+            name: 'Cash Rewards',
+            type: AccountType.creditCard,
+            currentBalance: 0,
+            plaidAvailableBalance: 500,
+          ),
+        ],
+        signedBalanceFor: liveSignedBalanceForAccount,
+      );
+
+      expect(breakdown.debtTotal, closeTo(270.68, 0.001));
+      expect(breakdown.creditAvailableTotal, closeTo(1108.08, 0.001));
+    });
+
+    test('net worth is live cash minus current card debt', () {
+      final breakdown = buildAccountBalanceBreakdown(
+        accounts: const [
+          Account(
+            id: 'checking',
+            name: 'Checking',
+            type: AccountType.checking,
+            currentBalance: 100,
+          ),
+          Account(
+            id: 'card',
+            name: 'Card',
+            type: AccountType.creditCard,
+            currentBalance: 1000,
+          ),
+        ],
+        signedBalanceFor: liveSignedBalanceForAccount,
+      );
+
+      expect(breakdown.cashTotal, 100);
+      expect(breakdown.debtTotal, 1000);
+      expect(breakdown.netBalance, -900);
     });
   });
 }

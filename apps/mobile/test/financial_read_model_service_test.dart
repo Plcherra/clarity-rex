@@ -864,6 +864,80 @@ void main() {
       {'Coffee / Quick Food': 125},
     );
   });
+
+  test('NOW cash uses Plaid available so pending matches the bank', () {
+    final model = FinancialReadModel.fromRecords(
+      accounts: const [
+        Account(
+          id: 'checking',
+          name: 'Adv Plus Banking',
+          type: AccountType.checking,
+          currentBalance: 89.66,
+          plaidAvailableBalance: 66.15,
+          source: 'plaid',
+        ),
+      ],
+      categories: const [],
+      transactionRecords: [
+        _record(
+          id: 'pending-dough',
+          amount: 4.14,
+          type: 'expense',
+          description: 'BOM DOUGH',
+          source: 'plaid',
+          pending: true,
+          date: DateTime(2026, 8, 12),
+        ),
+      ],
+      budgets: const [],
+    );
+
+    expect(model.dashboardBalanceForAccount(model.accounts.single), 66.15);
+    expect(
+      model
+          .dashboardSnapshot(
+            scope: const GlobalDashboardScope(),
+            reference: DateTime(2026, 8, 13),
+          )
+          .cashTotal,
+      66.15,
+    );
+    expect(model.dashboardSnapshot(
+      scope: const GlobalDashboardScope(),
+      reference: DateTime(2026, 8, 13),
+    ).spentThisMonth, 0);
+  });
+
+  test('net worth is live cash minus current card debt, including new charges', () {
+    final model = FinancialReadModel.fromRecords(
+      accounts: const [
+        Account(
+          id: 'checking',
+          name: 'Checking',
+          type: AccountType.checking,
+          currentBalance: 100,
+        ),
+        Account(
+          id: 'card',
+          name: 'Card',
+          type: AccountType.creditCard,
+          currentBalance: 1000,
+        ),
+      ],
+      categories: const [],
+      transactionRecords: const [],
+      budgets: const [],
+    );
+
+    final snapshot = model.dashboardSnapshot(
+      scope: const GlobalDashboardScope(),
+      reference: DateTime(2026, 8, 13),
+    );
+
+    expect(snapshot.cashTotal, 100);
+    expect(snapshot.debtTotal, 1000);
+    expect(snapshot.totalBalance, -900);
+  });
 }
 
 Transaction _transaction({
