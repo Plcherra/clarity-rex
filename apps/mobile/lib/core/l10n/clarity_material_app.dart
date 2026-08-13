@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../features/profile/application/locale_controller.dart';
 import '../../features/profile/application/theme_mode_controller.dart';
 import '../../theme/clarity_theme.dart';
+import '../layout/clarity_scroll_behavior.dart';
 
 /// Shared [MaterialApp] configuration for boot screens and the main app.
 class ClarityMaterialApp extends StatelessWidget {
@@ -41,11 +42,20 @@ class ClarityMaterialApp extends StatelessWidget {
           darkTheme: ClarityTheme.dark(),
           themeMode: themeModeController.themeMode,
           builder: (context, child) {
+            final theme = Theme.of(context);
             return AnnotatedRegion<SystemUiOverlayStyle>(
-              value: ClarityTheme.systemUiOverlayStyle(
-                Theme.of(context).brightness,
+              value: ClarityTheme.systemUiOverlayStyle(theme.brightness),
+              child: Theme(
+                data: theme.copyWith(
+                  scrollbarTheme: clarityScrollbarThemeOf(context),
+                ),
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    physics: clarityScrollPhysics(context),
+                  ),
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
-              child: child ?? const SizedBox.shrink(),
             );
           },
           home: home,

@@ -1,6 +1,7 @@
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_transcript.dart';
+import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -145,5 +146,48 @@ void main() {
     await tester.pump();
 
     expect(retried, isTrue);
+  });
+
+  testWidgets('compact width keeps confirm cards inline without a dialog', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapWithL10n(
+        MediaQuery(
+          data: const MediaQueryData(size: Size(390, 844)),
+          child: Scaffold(
+            body: ChatTranscript(
+              messages: const [
+                ChatMessage(
+                  id: 'assistant-1',
+                  role: ChatMessageRole.assistant,
+                  content: 'Should I save that?',
+                  clarityActions: [
+                    ClarityActionCard(
+                      id: 'plan-save-1',
+                      action: 'save_plan',
+                      payload: {},
+                      confirmationText:
+                          'Save strength routine as a plan in Clarity?',
+                      riskLevel: 'medium',
+                      status: 'pending',
+                    ),
+                  ],
+                ),
+              ],
+              errorMessage: null,
+              scrollController: ScrollController(),
+              onPromptSelected: (_) {},
+              onConfirmClarityAction: (_) {},
+              onDismissClarityAction: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(ClarityActionCardsStrip), findsOneWidget);
+    expect(find.text(l10n.commonConfirm), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
   });
 }

@@ -17,7 +17,7 @@ ClarityNativeLayout.active(context)
   == width < 800
 ```
 
-Narrow web (`goclarity.app/app/` on a phone or a skinny browser) now shares those tokens with iOS/Android. Wide `/app/` (≥800px) stays desktop chrome. Remaining gaps are extra `kIsWeb` branches (section 5) and visual verify — not a second token gate.
+Narrow web (`goclarity.app/app/` on a phone or a skinny browser) now shares those tokens with iOS/Android. Wide `/app/` (≥800px) stays desktop chrome. Sections 0–5 chrome items are landed; remaining work is tests/manual/deploy (6–7).
 
 `RexUiTokens.isNativeCompactChrome` delegates to `ClarityNativeLayout.active`. `isCompactChrome` is the same width check (used for some confirm/composer numbers).
 
@@ -64,7 +64,7 @@ What phone has that web chrome currently misses:
 - **Flat chart panels** inside one group card (web wraps each graph in its own padded box)
 - Collapsible **Core charts / Trend / Spending analysis** on width &lt; 800 (`alwaysExpanded` is desktop-only)
 - Overview card, budget card, account-health card density
-- Nav: selected-label-only bottom bar (still `!kIsWeb` — see 5.1)
+- Nav: selected-label-only bottom bar (5.1 done — compact web included)
 
 | ID | Item | Status | Notes |
 | --- | --- | --- | --- |
@@ -84,32 +84,32 @@ What phone has that web chrome currently misses:
 
 ## 2. Budgets
 
-Functional budgets are shared. Compact chrome is padding / card radius / list density.
+Functional budgets are shared. Compact chrome is padding / card radius / list density. No leftover `kIsWeb` under `lib/features/budgets/`. Manage-categories overlay stays on 5.2.
 
 | ID | Item | Status | Notes |
 | --- | --- | --- | --- |
-| 2.1 | Page gutter matches phone (10 vs 16) | todo | `_BudgetsScaffold` |
-| 2.2 | Summary cards use native card padding/radius | todo | `budgets_screen_widgets.dart` |
-| 2.3 | Category expansion list density | todo | `budget_category_list.dart` |
-| 2.4 | Keyboard-open edit + save still works on web | todo | |
-| 2.5 | Manage categories overlay: sheet vs dialog (see 5.2) | todo | |
+| 2.1 | Page gutter matches phone (10 vs 16) | verify | `_BudgetsScaffold` uses `ClarityNativeLayout.pagePadding` when `active` (gutter 10). Desktop keeps inner 16. No `kIsWeb`. |
+| 2.2 | Summary cards use native card padding/radius | verify | Chart card uses native pad 12 / radius 12 when `active`. `_BudgetSummaryStrip` is a shared dense metric row (10/7, default card radius 18) on phone and compact web — same widget, no web branch. |
+| 2.3 | Category expansion list density | verify | `BudgetCategoryList` native tile pad 12 + radius medium at 390; desktop tile pad 16 + default card radius at 1280. `budgets_native_layout_test` passed. |
+| 2.4 | Keyboard-open edit + save still works on web | verify | `resizeToAvoidBottomInset`; chart hides while keyboard open; save unfocuses then writes. Digit 1–5 no longer steal focused fields (`home_shell_layout_test`). Amount field accepts `250` with 320px inset. |
+| 2.5 | Manage categories overlay: sheet vs dialog (see 5.2) | done | Rides `showClarityAdaptiveOverlay`. Compact web is a sheet (`heightFactor` 0.92); desktop ≥800 stays a dialog. |
 
 ---
 
 ## 3. Chat / companion
 
-Composer, lists, and confirm UX still have extra `kIsWeb` / native-compact branches **after** the gate.
+Composer, lists, confirm UX, overview, Knows, Goals, and companion settings follow `ClarityNativeLayout.active` / `RexUiTokens` (width-only). No leftover `kIsWeb` under those surfaces.
 
 | ID | Item | Status | Notes |
 | --- | --- | --- | --- |
-| 3.1 | Composer: 46px min height, 10px chrome pad, no filled pill | todo | `chat_input_bar` + `RexUiTokens` |
-| 3.2 | Transcript side inset 16 (not 36); list gutter 10 | todo | `bubbleSideInsetOf`, `transcriptPaddingHOf` |
-| 3.3 | Hide assistant page title on compact (phone already hides it) | todo | `showsAssistantPageTitle` |
-| 3.4 | Hide transcript scrollbar on compact | todo | `showsTranscriptScrollbar` |
-| 3.5 | Confirm cards **inline** on compact web (today narrow web still auto-opens a modal) | todo | `autoOpensConfirmDialog` — still `!isNativeCompactChrome` |
-| 3.6 | Chats list: title-only rows, 28-char titles, denser search field | todo | `listPreviewMaxLines` = 0 on compact |
-| 3.7 | Companion overview / Knows / Goals gutters and section gaps | todo | `assistant_overview_page`, `memory_page`, `accountability_page` |
-| 3.8 | Companion settings list row padding | todo | |
+| 3.1 | Composer: 46px min height, 10px chrome pad, no filled pill | verify | `ChatInputBar` uses `ClarityNativeLayout.active` for minHeight 46; `filled: false`. Tokens: 390 minHeight ≥44, padH 10, padV 10. Wide 1280 keeps desktop composer pads. |
+| 3.2 | Transcript side inset 16 (not 36); list gutter 10 | verify | `bubbleSideInsetOf` / `transcriptPaddingHOf` follow native compact. VM: 390 inset 16 + gutter 10; 1280 inset 36 + gutter 16. |
+| 3.3 | Hide assistant page title on compact (phone already hides it) | verify | `showsAssistantPageTitle` = `!isNativeCompactChrome`. VM: 390 false, 1280 true. |
+| 3.4 | Hide transcript scrollbar on compact | verify | `showsTranscriptScrollbar` same gate; `ChatTranscript` skips `Scrollbar` when false. VM: 390 false, 1280 true. |
+| 3.5 | Confirm cards **inline** on compact web | done | Width-only: compact (&lt;800) never auto-opens. Medium desktop (800–1099) still uses a dialog; wide ≥1100 stays inline. No `kIsWeb`. Tests: 390 false, 900 true, 1280 false; transcript strip with no `Dialog` at 390. |
+| 3.6 | Chats list: title-only rows, 28-char titles, denser search field | verify | `listPreviewMaxLines` = 0, `listTitleMaxChars` = 28, search `isDense` when `active`. `conversation_history_tile_test`: native tile title-only, search inset 10. |
+| 3.7 | Companion overview / Knows / Goals gutters and section gaps | verify | No `kIsWeb`. Overview/Knows/Goals use `ClarityNativeLayout.pageGutter` / `pagePadding` / `sectionGap` when `active` (10 / 14). Wide overview keeps 20–28 gutters. `phase_e_native_layout_test` + `companion_native_layout_test`: 390 card pad 12; 1280 desktop 16/14/12. |
+| 3.8 | Companion settings list row padding | verify | `CompanionSettingsScreen` page pad 10 when `active` (desktop 20). `CompanionSwitchRow` / `ProfileActionTile` use `listRowPadding` 10×8 at 390; desktop switch row stays horizontal 14. |
 | 3.9 | Attach: keep web file picker (no fake camera). Optional: gallery vs files later | skip | Capability, not chrome |
 | 3.10 | Voice: keep foreground-only on web | skip | Capability, not chrome |
 
@@ -117,28 +117,28 @@ Composer, lists, and confirm UX still have extra `kIsWeb` / native-compact branc
 
 ## 4. Rest of compact chrome (after 1–3)
 
-Same gate; verify rather than rewrite.
+Same gate; verify rather than rewrite. Snackbars were the leftover `kIsWeb` in this batch.
 
 | ID | Item | Status | Notes |
 | --- | --- | --- | --- |
-| 4.1 | Accounts list / header / empty state | todo | |
-| 4.2 | Profile, language picker, usage summary | todo | |
-| 4.3 | Activity (transaction history) page padding | todo | |
-| 4.4 | Account selection screen | todo | |
-| 4.5 | Snackbars: compact vs wide (`clarity_snackbar` still treats all web as wide) | todo | Separate `kIsWeb` |
+| 4.1 | Accounts list / header / empty state | verify | No `kIsWeb` in list chrome. Body/header/empty use `ClarityNativeLayout.active`: page pad 10, summary card pad 12 / radius medium at 390; desktop inner 20 / card 16×14. `rest_of_chrome_native_layout_test` passed. |
+| 4.2 | Profile, language picker, usage summary | verify | Profile, language picker inner pad, usage summary already use `active` page/card/list tokens. Language overlay now follows 5.2 (sheet on compact web). |
+| 4.3 | Activity (transaction history) page padding | verify | `ActivityScreen` list uses `pagePadding` when `active` (10 + top 12); desktop keeps 20. Empty copy stays a centered 32 inset (shared phone/web). |
+| 4.4 | Account selection screen | verify | `account_selection_screen` uses native gutter, page pad, list row pad, card radius when `active`. |
+| 4.5 | Snackbars: compact vs wide (`clarity_snackbar` still treats all web as wide) | done | Dropped `kIsWeb`. Compact (&lt;800) clears the dock (`16/16/16/88`, dismiss down). Desktop ≥800 stays top-end toast. |
 
 ---
 
 ## 5. Extra `kIsWeb` chrome (not unlocked by 0.1)
 
-Decide per item: follow compact width, or keep web-specific.
+Decide per item: follow compact width, or keep web-specific. 5.1–5.4 follow compact width.
 
 | ID | Item | Status | Notes |
 | --- | --- | --- | --- |
-| 5.1 | Bottom nav: `onlyShowSelected` labels on compact web (today native-only) | todo | `home_shell_layout.dart` |
-| 5.2 | Overlays: bottom sheets on compact web vs always-dialog on web | todo | `clarity_adaptive_overlay.dart` |
-| 5.3 | Visible web scrollbars vs native thin ones | todo | `clarity_scroll_behavior.dart` |
-| 5.4 | Add-account dialog centering wrapper | todo | cosmetic |
+| 5.1 | Bottom nav: `onlyShowSelected` labels on compact web (today native-only) | done | Dropped `!kIsWeb`. Compact (`width < 800`) selected-label only, including Flutter web. Wide dock unchanged. |
+| 5.2 | Overlays: bottom sheets on compact web vs always-dialog on web | done | `clarityAdaptiveOverlayUsesDialog` = `isClarityDesktopLayout`. Compact web is a sheet; ≥800 stays a dialog. Language picker, Knows edit, profile photo, Goals detail ride this. |
+| 5.3 | Visible web scrollbars vs native thin ones | done | Width-only. Compact: 4px auto-hide + bouncing. Desktop: 8px visible thumb + clamping. `ClarityMaterialApp` builder applies tokens. `scroll_and_dialog_chrome_test`: 6 passed. |
+| 5.4 | Add-account dialog centering wrapper | done | `wrapWebCenteredDialog` is width-only (no `kIsWeb`). Compact returns the child; ≥800 centers/constrains. Add-account options uses the helper. Same test file. |
 
 **Out of this tracker (product capabilities, not chrome):** CSV import, camera, background voice, native Plaid Link, OS mic-settings deep link, haptics.
 
@@ -175,5 +175,5 @@ Decide per item: follow compact width, or keep web-specific.
 2. **1.** Dashboard visual pass (1.1–1.2 verify first on current web)  
 3. **3.5** confirm-card modal vs inline (chat feel)  
 4. **2** Budgets, **3.1–3.7** Chat lists  
-5. **5.1–5.2** nav labels + sheets if still off  
-6. **7.** manual + deploy
+5. **5.1–5.4** nav, sheets, scrollbars, add-account centering — done  
+6. **6–7.** tests + manual (~390 / ~1280) + deploy

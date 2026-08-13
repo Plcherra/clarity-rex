@@ -67,8 +67,8 @@ class _ChatPageState extends ConsumerState<ChatPage>
     if (!mounted || pending.isEmpty) {
       return;
     }
-    // Wide + native compact: inline confirm strip only.
-    // Narrow web keeps a modal so Confirm/Dismiss stay obvious.
+    // Compact width (phone + narrow web) and wide desktop: inline strip only.
+    // Medium desktop (800–1099) still auto-opens a confirm dialog.
     if (!RexUiTokens.autoOpensConfirmDialog(context)) {
       return;
     }

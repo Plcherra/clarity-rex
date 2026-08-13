@@ -185,4 +185,51 @@ void main() {
     expect(showTitle, isTrue);
     expect(autoDialog, isFalse);
   });
+
+  testWidgets('compact width never auto-opens the confirm dialog', (
+    tester,
+  ) async {
+    late bool autoDialog;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(390, 844)),
+          child: Builder(
+            builder: (context) {
+              autoDialog = RexUiTokens.autoOpensConfirmDialog(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(autoDialog, isFalse);
+  });
+
+  testWidgets('medium desktop still auto-opens the confirm dialog', (
+    tester,
+  ) async {
+    late bool autoDialog;
+    late bool nativeCompact;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(900, 800)),
+          child: Builder(
+            builder: (context) {
+              nativeCompact = RexUiTokens.isNativeCompactChrome(context);
+              autoDialog = RexUiTokens.autoOpensConfirmDialog(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(nativeCompact, isFalse);
+    expect(autoDialog, isTrue);
+  });
 }

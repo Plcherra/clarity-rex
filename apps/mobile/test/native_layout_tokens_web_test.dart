@@ -53,6 +53,12 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        RexUiTokens.autoOpensConfirmDialog(
+          tester.element(find.byType(ShellContentConstraints)),
+        ),
+        isFalse,
+      );
       expect(gutter, 0.0);
 
       final box = tester.renderObject<RenderBox>(

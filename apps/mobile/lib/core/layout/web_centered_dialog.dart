@@ -1,7 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-/// Constrains Material dialogs on wide web/desktop so they stay centered.
+import 'clarity_breakpoints.dart';
+
+/// Constrains Material dialogs on desktop so they stay centered.
+/// Compact width (`width < 800`), including Flutter web, returns [child] as-is.
 Widget wrapWebCenteredDialog(
   BuildContext context,
   Widget? child, {
@@ -12,8 +14,7 @@ Widget wrapWebCenteredDialog(
     return const SizedBox.shrink();
   }
 
-  final width = MediaQuery.sizeOf(context).width;
-  if (!kIsWeb && width < 800) {
+  if (!isClarityDesktopLayout(context)) {
     return child;
   }
 

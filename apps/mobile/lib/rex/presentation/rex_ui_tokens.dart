@@ -93,12 +93,14 @@ class RexUiTokens {
   }
 
   static bool autoOpensConfirmDialog(BuildContext context) {
-    // Wide layouts use the inline strip only. Compact width (phone and narrow
-    // web) also stays inline once [isNativeCompactChrome] follows width.
-    if (isClarityWideLayout(context)) {
+    // Compact width (<800), including Flutter web: inline strip like the phone.
+    // Do not branch on kIsWeb — width-only, same gate as [isNativeCompactChrome].
+    if (ClarityNativeLayout.active(context)) {
       return false;
     }
-    return !isNativeCompactChrome(context);
+    // Wide desktop (≥1100) already uses the inline strip. Medium desktop
+    // (800–1099) still auto-opens a dialog so Confirm/Dismiss stay obvious.
+    return !isClarityWideLayout(context);
   }
 
   static double confirmCardPaddingOf(BuildContext context) {

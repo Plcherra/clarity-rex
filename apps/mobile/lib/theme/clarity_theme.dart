@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'clarity_colors.dart';
 import 'clarity_radius.dart';
+import '../core/layout/clarity_scroll_behavior.dart';
 
 class ClarityTheme {
   const ClarityTheme._();
@@ -170,14 +171,7 @@ class ClarityTheme {
           side: BorderSide(color: outlineSoft),
         ),
       ),
-      scrollbarTheme: ScrollbarThemeData(
-        thumbVisibility: const WidgetStatePropertyAll(true),
-        thickness: const WidgetStatePropertyAll(8),
-        radius: const Radius.circular(8),
-        thumbColor: WidgetStatePropertyAll(
-          colors.textPrimary.withValues(alpha: isDark ? 0.32 : 0.22),
-        ),
-      ),
+      scrollbarTheme: clarityScrollbarTheme(scheme, desktop: false),
       listTileTheme: ListTileThemeData(
         iconColor: colors.textSecondary,
         textColor: colors.textPrimary,

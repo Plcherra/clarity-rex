@@ -1,10 +1,15 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'clarity_breakpoints.dart';
 import '../../theme/clarity_sheet_insets.dart';
 
-/// Shows a centered dialog on web/desktop, bottom sheet on compact mobile.
+/// Width-only. Compact (`width < 800`), including Flutter web, uses a sheet.
+/// Desktop `/app/` stays a centered dialog.
+bool clarityAdaptiveOverlayUsesDialog(BuildContext context) {
+  return isClarityDesktopLayout(context);
+}
+
+/// Shows a centered dialog on desktop, bottom sheet on compact width.
 Future<T?> showClarityAdaptiveOverlay<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -15,7 +20,7 @@ Future<T?> showClarityAdaptiveOverlay<T>({
   double dialogMaxHeight = 720,
   bool barrierDismissible = true,
 }) {
-  final useDialog = kIsWeb || isClarityDesktopLayout(context);
+  final useDialog = clarityAdaptiveOverlayUsesDialog(context);
 
   if (useDialog) {
     return showDialog<T>(

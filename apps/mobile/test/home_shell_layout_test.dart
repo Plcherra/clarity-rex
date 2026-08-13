@@ -83,6 +83,12 @@ void main() {
       final barBox = tester.renderObject<RenderBox>(find.byType(NavigationBar));
       // Full-bleed bar matches the compact viewport (not the centered dock).
       expect(barBox.size.width, closeTo(390, 1));
+      expect(
+        Theme.of(tester.element(find.byType(NavigationBar)))
+            .navigationBarTheme
+            .labelBehavior,
+        NavigationDestinationLabelBehavior.onlyShowSelected,
+      );
     },
   );
 
