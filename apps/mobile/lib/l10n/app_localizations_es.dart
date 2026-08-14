@@ -1212,6 +1212,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardOverviewSpendingShare => 'Distribución del gasto';
 
   @override
+  String get dashboardChartSpendingShareSubtitle =>
+      'Pasa el cursor · toca para abrir';
+
+  @override
   String get dashboardOverviewSpendShape => 'Forma del gasto';
 
   @override

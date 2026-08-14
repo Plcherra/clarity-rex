@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/formatting/formatting.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_transaction_groups.dart';
@@ -53,7 +54,7 @@ class CategorySpendChart extends StatelessWidget {
   }
 }
 
-class CategorySpendPieChart extends StatelessWidget {
+class CategorySpendPieChart extends StatefulWidget {
   const CategorySpendPieChart({
     required this.categories,
     this.onCategoryTap,
@@ -64,47 +65,131 @@ class CategorySpendPieChart extends StatelessWidget {
   final void Function(String category)? onCategoryTap;
 
   @override
+  State<CategorySpendPieChart> createState() => _CategorySpendPieChartState();
+}
+
+class _CategorySpendPieChartState extends State<CategorySpendPieChart> {
+  int _hoveredIndex = -1;
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    if (categories.isEmpty) {
+    if (widget.categories.isEmpty) {
       return FinanceChartEmpty(
         message: l10n.dashboardChartNoCategorySpending,
       );
     }
 
-    final top = categories.take(5).toList(growable: false);
+    final top = widget.categories.take(5).toList(growable: false);
+    final total = top.fold<double>(0, (sum, item) => sum + item.amount);
     final sliceColors = categorySpendSliceColors(context);
+    final hovered =
+        _hoveredIndex >= 0 && _hoveredIndex < top.length
+        ? top[_hoveredIndex]
+        : null;
     return SizedBox(
       height: financeChartHeight(context, compact: 180),
-      child: PieChart(
-        PieChartData(
-          sectionsSpace: 2,
-          centerSpaceRadius: 28,
-          pieTouchData: PieTouchData(
-            enabled: onCategoryTap != null,
-            touchCallback: (event, response) {
-              if (onCategoryTap == null || event is! FlTapUpEvent) {
-                return;
-              }
-              final index =
-                  response?.touchedSection?.touchedSectionIndex ?? -1;
-              if (index < 0 || index >= top.length) return;
-              onCategoryTap!(top[index].name);
-            },
-          ),
-          sections: [
-            for (var i = 0; i < top.length; i++)
-              PieChartSectionData(
-                value: top[i].amount,
-                color: sliceColors[i % sliceColors.length],
-                radius: 52,
-                title: '',
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          PieChart(
+            PieChartData(
+              sectionsSpace: 2,
+              centerSpaceRadius: 44,
+              pieTouchData: PieTouchData(
+                touchCallback: (event, response) {
+                  final index =
+                      response?.touchedSection?.touchedSectionIndex ?? -1;
+                  final inside =
+                      event.isInterestedForInteractions &&
+                      index >= 0 &&
+                      index < top.length;
+                  final next = inside ? index : -1;
+                  if (next != _hoveredIndex) {
+                    setState(() => _hoveredIndex = next);
+                  }
+                  if (widget.onCategoryTap == null ||
+                      event is! FlTapUpEvent ||
+                      !inside) {
+                    return;
+                  }
+                  widget.onCategoryTap!(top[index].name);
+                },
               ),
-          ],
-        ),
+              sections: [
+                for (var i = 0; i < top.length; i++)
+                  PieChartSectionData(
+                    value: top[i].amount,
+                    color: sliceColors[i % sliceColors.length],
+                    radius: i == _hoveredIndex ? 50 : 44,
+                    title: '',
+                  ),
+              ],
+            ),
+          ),
+          if (hovered != null)
+            IgnorePointer(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: _SliceDetail(
+                  label: categorySpendLabel(l10n, hovered.name),
+                  amount: hovered.amount,
+                  total: total,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
+}
+
+class _SliceDetail extends StatelessWidget {
+  const _SliceDetail({
+    required this.label,
+    required this.amount,
+    required this.total,
+  });
+
+  final String label;
+  final double amount;
+  final double total;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          categorySpendSliceShare(amount: amount, total: total),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: context.clarityColors.textMuted,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String categorySpendSliceShare({
+  required double amount,
+  required double total,
+}) {
+  final percent = total <= 0 ? 0 : (amount / total * 100).round();
+  return '${formatMoney(amount)} · $percent%';
 }
 
 String categorySpendLabel(AppLocalizations l10n, String category) {

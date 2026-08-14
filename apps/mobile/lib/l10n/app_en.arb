@@ -668,6 +668,7 @@
   "chatShowLess": "Show less",
   "dashboardChartCategorySpendSubtitle": "Total · tap a category",
   "dashboardOverviewSpendingShare": "Spending share",
+  "dashboardChartSpendingShareSubtitle": "Hover a slice · tap to open",
   "dashboardOverviewSpendShape": "Spend shape",
   "dashboardChartSpendRadarSubtitle": "Top categories",
   "dashboardShowingMonth": "Showing {month}",

@@ -132,7 +132,7 @@ class _DashboardOverviewBodyState extends State<_DashboardOverviewBody> {
     );
     final categoryPieChart = _DashboardChartSection(
       title: l10n.dashboardOverviewSpendingShare,
-      subtitle: l10n.dashboardChartCategorySpendSubtitle,
+      subtitle: l10n.dashboardChartSpendingShareSubtitle,
       child: CategorySpendPieChart(
         categories: periodCategories,
         onCategoryTap: widget.onCategoryTap,

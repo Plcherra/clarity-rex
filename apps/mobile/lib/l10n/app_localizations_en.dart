@@ -1201,6 +1201,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardOverviewSpendingShare => 'Spending share';
 
   @override
+  String get dashboardChartSpendingShareSubtitle =>
+      'Hover a slice · tap to open';
+
+  @override
   String get dashboardOverviewSpendShape => 'Spend shape';
 
   @override

@@ -2202,6 +2202,12 @@ abstract class AppLocalizations {
   /// **'Spending share'**
   String get dashboardOverviewSpendingShare;
 
+  /// No description provided for @dashboardChartSpendingShareSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hover a slice · tap to open'**
+  String get dashboardChartSpendingShareSubtitle;
+
   /// No description provided for @dashboardOverviewSpendShape.
   ///
   /// In en, this message translates to:

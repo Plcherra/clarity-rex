@@ -323,6 +323,13 @@ void main() {
       expect(find.byType(InkWell), findsNothing);
     });
 
+    test('a pie slice names the category, amount, and share', () {
+      expect(
+        categorySpendSliceShare(amount: 159, total: 222.42),
+        '\$159.00 · 71%',
+      );
+    });
+
     testWidgets('category bars and pie stay on screen together', (tester) async {
       await tester.pumpWidget(
         wrapWithClarityTheme(

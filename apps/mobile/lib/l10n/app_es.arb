@@ -1419,6 +1419,7 @@
   "chatShowLess": "Ver menos",
   "dashboardChartCategorySpendSubtitle": "Total · toca una categoría",
   "dashboardOverviewSpendingShare": "Distribución del gasto",
+  "dashboardChartSpendingShareSubtitle": "Pasa el cursor · toca para abrir",
   "dashboardOverviewSpendShape": "Forma del gasto",
   "dashboardChartSpendRadarSubtitle": "Principales categorías",
   "dashboardShowingMonth": "Mostrando {month}",
