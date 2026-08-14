@@ -773,7 +773,7 @@ void main() {
     });
   });
 
-  test('Plaid multi-account totals use signs and exclude pending rollups', () {
+  test('Plaid multi-account totals use signs and keep pending out of month spend', () {
     final model = FinancialReadModel.fromRecords(
       accounts: const [
         Account(
@@ -848,7 +848,9 @@ void main() {
       reference: DateTime(2026, 6, 9),
     );
 
-    expect(snapshot.totalBalance, 800);
+    expect(snapshot.cashTotal, 1000);
+    expect(snapshot.debtTotal, 210);
+    expect(snapshot.totalBalance, 790);
     expect(snapshot.incomeThisMonth, 3000);
     expect(snapshot.spentThisMonth, 125);
     expect(snapshot.availableThisMonth, 2875);

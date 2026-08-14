@@ -50,9 +50,9 @@ double? signedBalanceFromCurrent(Account account) {
 /// Bank-matching NOW balance: Plaid available, else current ± pending.
 ///
 /// Depository `available` already subtracts pending and holds — do not also
-/// subtract our pending rows. Credit `current` is the bank's amount owed,
-/// including pending charges; a refunded pending row drops out on the next
-/// live balance.
+/// subtract our pending rows. Credit `current` is posted amount owed; when the
+/// issuer does not send a live leftover, pending card charges still belong in
+/// NOW debt so net worth moves the same day you spend.
 double? liveSignedBalanceForAccount(
   Account account, {
   double? statementOverride,
@@ -70,10 +70,34 @@ double? liveSignedBalanceForAccount(
       if (current == null || current.isNaN) return null;
       return current + _pendingAmountDelta(pendingTransactions);
     case AccountType.creditCard:
-      final current = account.currentBalance;
-      if (current == null || current.isNaN) return null;
-      return _signedFromRaw(AccountType.creditCard, current);
+      return _liveCreditSigned(account, pendingTransactions);
   }
+}
+
+/// Posted card debt plus pending charges when Plaid leftover is missing.
+///
+/// Old unpaid balance stays in `current`. New pending spend is added so
+/// $200 leftover from last month plus an $800 charge is $1,000 owed now.
+double? _liveCreditSigned(
+  Account account,
+  Iterable<Transaction> pendingTransactions,
+) {
+  final pendingDelta = _pendingAmountDelta(pendingTransactions);
+  final current = account.currentBalance;
+  if (current == null || current.isNaN) {
+    return pendingDelta == 0 ? null : pendingDelta;
+  }
+  final signed = _signedFromRaw(AccountType.creditCard, current);
+  if (_creditCurrentAlreadyLive(account, signed.abs())) return signed;
+  return signed + pendingDelta;
+}
+
+/// True when leftover credit is a real bank figure, so `current` already
+/// includes pending. Skip that add to avoid counting the same charge twice.
+bool _creditCurrentAlreadyLive(Account account, double owed) {
+  final available = account.plaidAvailableBalance;
+  if (available == null || available.isNaN) return false;
+  return (available - owed).abs() > 0.01;
 }
 
 double _signedFromRaw(AccountType type, double raw) {
@@ -93,20 +117,23 @@ double _pendingAmountDelta(Iterable<Transaction> pending) {
 }
 
 /// Leftover credit for one card. Prefer Plaid `available`; if the issuer
-/// omitted it or copied the amount owed into it, fall back to limit − owed.
+/// omitted it or copied the posted amount owed into it, fall back to
+/// limit − live owed (posted + pending when those were folded in).
 double? creditRemainingForAccount(Account account, {double? owed}) {
   if (account.type != AccountType.creditCard) return null;
-  final owedAmount =
-      (owed ?? account.currentBalance)?.abs() ?? 0;
+  final postedOwed = account.currentBalance?.abs() ?? 0;
+  final liveOwed = (owed ?? postedOwed).abs();
   final reported = account.plaidAvailableBalance;
   if (reported != null &&
       !reported.isNaN &&
-      (reported - owedAmount).abs() > 0.01) {
-    return reported;
+      (reported - postedOwed).abs() > 0.01) {
+    final extraPending = liveOwed > postedOwed ? liveOwed - postedOwed : 0.0;
+    final leftover = reported - extraPending;
+    return leftover < 0 ? 0 : leftover;
   }
   final limit = account.plaidCreditLimit;
   if (limit == null || limit.isNaN) return null;
-  final leftover = limit - owedAmount;
+  final leftover = limit - liveOwed;
   return leftover < 0 ? 0 : leftover;
 }
 

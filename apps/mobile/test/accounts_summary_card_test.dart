@@ -47,7 +47,9 @@ void main() {
 
         expect(find.text('Net worth'), findsOneWidget);
     expect(
-      find.text('Total cash − total debt across 2 accounts'),
+      find.text(
+        'All 2 accounts: live cash minus cards owed. This month\'s spending already moved those balances.',
+      ),
       findsOneWidget,
     );
     expect(find.text('−\$315.58'), findsOneWidget);

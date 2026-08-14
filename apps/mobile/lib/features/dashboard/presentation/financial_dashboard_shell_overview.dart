@@ -118,8 +118,7 @@ class _DashboardOverviewBodyState extends State<_DashboardOverviewBody> {
       sectionKey: widget.monthlyCashFlowKey,
       title: l10n.dashboardOverviewMonthlyCashFlow,
       child: MonthlyCashFlowChart(
-        months: periodMonths,
-        showRangeSwitch: false,
+        months: snapshot.monthlyCashFlow,
       ),
     );
     final categoryChart = _DashboardChartSection(
@@ -127,6 +126,14 @@ class _DashboardOverviewBodyState extends State<_DashboardOverviewBody> {
       title: l10n.dashboardOverviewSpendingByCategory,
       subtitle: l10n.dashboardChartCategorySpendSubtitle,
       child: CategorySpendChart(
+        categories: periodCategories,
+        onCategoryTap: widget.onCategoryTap,
+      ),
+    );
+    final categoryPieChart = _DashboardChartSection(
+      title: l10n.dashboardOverviewSpendingShare,
+      subtitle: l10n.dashboardChartCategorySpendSubtitle,
+      child: CategorySpendPieChart(
         categories: periodCategories,
         onCategoryTap: widget.onCategoryTap,
       ),
@@ -167,13 +174,15 @@ class _DashboardOverviewBodyState extends State<_DashboardOverviewBody> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Expanded(child: categoryPieChart),
+              const SizedBox(width: 16),
               Expanded(child: spendRadarChart),
-              if (_period != DashboardActivityPeriod.month) ...[
-                const SizedBox(width: 16),
-                Expanded(child: trendChart),
-              ],
             ],
           ),
+          if (_period != DashboardActivityPeriod.month) ...[
+            SizedBox(height: widget.sectionGap),
+            trendChart,
+          ],
         ] else ...[
           _DashboardCollapsibleChartGroup(
             title: l10n.dashboardSectionCoreCharts,
@@ -184,6 +193,8 @@ class _DashboardOverviewBodyState extends State<_DashboardOverviewBody> {
               cashFlowChart,
               SizedBox(height: widget.sectionGap),
               categoryChart,
+              SizedBox(height: widget.sectionGap),
+              categoryPieChart,
               SizedBox(height: widget.sectionGap),
               spendRadarChart,
             ],

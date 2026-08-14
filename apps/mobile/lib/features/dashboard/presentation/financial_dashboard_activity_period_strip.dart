@@ -86,7 +86,6 @@ class _PeriodActivityStrip extends StatelessWidget {
             leftValue: left,
             cash: leftCash,
             credit: leftCredit,
-            creditLabel: l10n.dashboardOverviewCreditTotal,
           )
         else
           _CashFlowSummaryMetric(

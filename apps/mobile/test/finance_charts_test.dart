@@ -17,6 +17,10 @@ void main() {
       expect(trimFinanceChartMonths(months), ['2025-3', '2025-4', '2025-5', '2025-6', '2025-7', '2025-8']);
     });
 
+    test('cash flow ranges are 3M, 6M, 9M, and 1Y', () {
+      expect(cashFlowChartRanges, [3, 6, 9, 12]);
+    });
+
     test('financeChartMaxY adds headroom and handles zero values', () {
       expect(financeChartMaxY(const [0, 0]), 1);
       expect(financeChartMaxY(const [100]), closeTo(115, 0.001));
@@ -134,6 +138,12 @@ void main() {
       expect(chart().data.barGroups, hasLength(3));
       expect(find.text('Oct'), findsOneWidget);
       expect(find.text('Jul'), findsNothing);
+
+      await tester.tap(find.text('9M'));
+      await tester.pumpAndSettle();
+      expect(chart().data.barGroups, hasLength(9));
+      expect(find.text('Apr'), findsOneWidget);
+      expect(find.text('Mar'), findsNothing);
 
       await tester.tap(find.text('1Y'));
       await tester.pumpAndSettle();
@@ -310,33 +320,34 @@ void main() {
       );
 
       expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
-      expect(find.byTooltip('Switch category chart'), findsOneWidget);
+      expect(find.byType(InkWell), findsNothing);
     });
 
-    testWidgets('a swap control rotates bars into a pie chart', (tester) async {
+    testWidgets('category bars and pie stay on screen together', (tester) async {
       await tester.pumpWidget(
         wrapWithClarityTheme(
-          const CategorySpendChart(
-            categories: [
-              CategorySpend(name: 'Fitness', amount: 159),
-              CategorySpend(name: 'Transportation', amount: 63.42),
+          const Column(
+            children: [
+              CategorySpendChart(
+                categories: [
+                  CategorySpend(name: 'Fitness', amount: 159),
+                  CategorySpend(name: 'Transportation', amount: 63.42),
+                ],
+              ),
+              CategorySpendPieChart(
+                categories: [
+                  CategorySpend(name: 'Fitness', amount: 159),
+                  CategorySpend(name: 'Transportation', amount: 63.42),
+                ],
+              ),
             ],
           ),
         ),
       );
 
-      expect(find.byType(PieChart), findsNothing);
       expect(find.text('Fitness'), findsOneWidget);
-
-      await tester.tap(find.byTooltip('Switch category chart'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(PieChart), findsOneWidget);
-
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byType(PieChart), findsNothing);
-      expect(find.text('Fitness'), findsOneWidget);
+      expect(find.byTooltip('Switch category chart'), findsNothing);
     });
   });
 }

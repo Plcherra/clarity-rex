@@ -34,11 +34,6 @@ class _FinancialOverviewCard extends StatelessWidget {
       monthlyCashFlow: snapshot.monthlyCashFlow,
     );
     final left = totals.income - totals.spent;
-    final leftSplit = dashboardActivityLeftSplit(
-      period: period,
-      reference: snapshot.referenceMonth,
-      monthlyCashFlow: snapshot.monthlyCashFlow,
-    );
     final now = DateTime.now();
     final viewingCurrentMonth =
         snapshot.referenceMonth.year == now.year &&
@@ -49,12 +44,12 @@ class _FinancialOverviewCard extends StatelessWidget {
       income: totals.income,
       spent: totals.spent,
       left: left,
-      leftCash: leftSplit.cash,
-      leftCredit:
-          snapshot.creditAvailableTotal != null || leftSplit.credit.abs() > 0.005
-          ? leftSplit.credit
-          : null,
-      showLeftSplit: isGlobalScope,
+      leftCash: snapshot.cashTotal,
+      leftCredit: snapshot.creditAvailableTotal,
+      showLeftSplit:
+          isGlobalScope &&
+          viewingCurrentMonth &&
+          period == DashboardActivityPeriod.month,
       selectedMonth: snapshot.referenceMonth,
       availableYearMonths: availableYearMonths,
       onMonthSelected: onMonthSelected,
@@ -62,12 +57,26 @@ class _FinancialOverviewCard extends StatelessWidget {
     );
     final nowDetails = <Widget>[
       if (isGlobalScope) ...[
-        _CashFlowSummaryMetric(
-          label: l10n.dashboardOverviewDebtTotal,
-          value: formatMoney(snapshot.debtTotal),
-          color: snapshot.debtTotal > 0.005
-              ? ClarityColors.financeNegative
-              : cs.onSurface,
+        Row(
+          children: [
+            Expanded(
+              child: _CashFlowSummaryMetric(
+                label: l10n.dashboardOverviewCashTotal,
+                value: formatMoney(snapshot.cashTotal),
+                color: ClarityColors.financePositive,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _CashFlowSummaryMetric(
+                label: l10n.dashboardOverviewDebtTotal,
+                value: formatMoney(snapshot.debtTotal),
+                color: snapshot.debtTotal > 0.005
+                    ? ClarityColors.financeNegative
+                    : cs.onSurface,
+              ),
+            ),
+          ],
         ),
         if (snapshot.savings case final savings?) ...[
           const SizedBox(height: 12),

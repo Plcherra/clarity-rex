@@ -479,6 +479,7 @@
   "financeChartRangeLabel": "Chart range",
   "financeChartRange3Months": "3M",
   "financeChartRange6Months": "6M",
+  "financeChartRange9Months": "9M",
   "financeChartRange12Months": "1Y",
   "dashboardOverviewSpendingPressure": "Spending pressure",
   "dashboardOverviewBudgetPerformance": "Budget performance",
@@ -499,7 +500,7 @@
   "dashboardResolvingTitle": "Resolving imported transactions",
   "dashboardResolvingBody": "Your statement is connected, but the transaction rows are still loading. Values will appear when the read model is complete.",
   "dashboardOverviewTotalBalance": "Net worth",
-  "dashboardOverviewNetBalanceHint": "Total cash − total debt across {accountCount} account{accountCountSuffix}",
+  "dashboardOverviewNetBalanceHint": "All {accountCount} account{accountCountSuffix}: live cash minus cards owed. This month's spending already moved those balances.",
   "@dashboardOverviewNetBalanceHint": {
     "placeholders": {
       "accountCount": {
@@ -666,7 +667,7 @@
   "chatShowMore": "Show more",
   "chatShowLess": "Show less",
   "dashboardChartCategorySpendSubtitle": "Total · tap a category",
-  "dashboardChartToggleCategoryView": "Switch category chart",
+  "dashboardOverviewSpendingShare": "Spending share",
   "dashboardOverviewSpendShape": "Spend shape",
   "dashboardChartSpendRadarSubtitle": "Top categories",
   "dashboardShowingMonth": "Showing {month}",

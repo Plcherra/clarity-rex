@@ -7,18 +7,23 @@ import 'package:clarity/theme/clarity_colors.dart';
 /// Windows a finance chart can show, in months.
 const financeChartRanges = [3, 6, 12];
 
+/// Monthly cash flow on Overview: 3M / 6M / 9M / 1Y.
+const cashFlowChartRanges = [3, 6, 9, 12];
+
 const financeChartDefaultRange = 6;
 
-/// Compact 3M / 6M / 1Y control that sits above a single chart.
+/// Compact range chips that sit above a single chart.
 class FinanceChartRangeSwitch extends StatelessWidget {
   const FinanceChartRangeSwitch({
     required this.months,
     required this.onChanged,
+    this.ranges = financeChartRanges,
     super.key,
   });
 
   final int months;
   final ValueChanged<int> onChanged;
+  final List<int> ranges;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +44,7 @@ class FinanceChartRangeSwitch extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                for (final range in financeChartRanges)
+                for (final range in ranges)
                   _RangeChip(
                     label: financeChartRangeLabel(l10n, range),
                     selected: range == months,
@@ -57,6 +62,7 @@ class FinanceChartRangeSwitch extends StatelessWidget {
 String financeChartRangeLabel(AppLocalizations l10n, int months) {
   return switch (months) {
     3 => l10n.financeChartRange3Months,
+    9 => l10n.financeChartRange9Months,
     12 => l10n.financeChartRange12Months,
     _ => l10n.financeChartRange6Months,
   };

@@ -873,6 +873,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get financeChartRange6Months => '6M';
 
   @override
+  String get financeChartRange9Months => '9M';
+
+  @override
   String get financeChartRange12Months => '1Y';
 
   @override
@@ -921,7 +924,7 @@ class AppLocalizationsEn extends AppLocalizations {
     int accountCount,
     String accountCountSuffix,
   ) {
-    return 'Total cash − total debt across $accountCount account$accountCountSuffix';
+    return 'All $accountCount account$accountCountSuffix: live cash minus cards owed. This month\'s spending already moved those balances.';
   }
 
   @override
@@ -1195,7 +1198,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardChartCategorySpendSubtitle => 'Total · tap a category';
 
   @override
-  String get dashboardChartToggleCategoryView => 'Switch category chart';
+  String get dashboardOverviewSpendingShare => 'Spending share';
 
   @override
   String get dashboardOverviewSpendShape => 'Spend shape';

@@ -53,6 +53,7 @@ class _MonthlyCashFlowChartState extends State<MonthlyCashFlowChart> {
         if (widget.showRangeSwitch) ...[
           FinanceChartRangeSwitch(
             months: _range,
+            ranges: cashFlowChartRanges,
             onChanged: (range) => setState(() => _range = range),
           ),
           const SizedBox(height: 8),

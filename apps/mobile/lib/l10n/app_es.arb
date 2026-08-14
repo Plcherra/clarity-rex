@@ -1297,7 +1297,7 @@
     }
   },
   "dashboardOverviewSavingsUnchanged": "Sin movimientos este mes",
-  "dashboardOverviewNetBalanceHint": "Efectivo total − deuda total en {accountCount} cuenta{accountCountSuffix}",
+  "dashboardOverviewNetBalanceHint": "Las {accountCount} cuenta{accountCountSuffix}: efectivo menos tarjetas. El gasto de este mes ya está en esos saldos.",
   "@dashboardOverviewNetBalanceHint": {
     "placeholders": {
       "accountCount": {
@@ -1418,7 +1418,7 @@
   "chatShowMore": "Ver más",
   "chatShowLess": "Ver menos",
   "dashboardChartCategorySpendSubtitle": "Total · toca una categoría",
-  "dashboardChartToggleCategoryView": "Cambiar gráfico de categoría",
+  "dashboardOverviewSpendingShare": "Distribución del gasto",
   "dashboardOverviewSpendShape": "Forma del gasto",
   "dashboardChartSpendRadarSubtitle": "Principales categorías",
   "dashboardShowingMonth": "Mostrando {month}",
@@ -1530,6 +1530,7 @@
   "financeChartRangeLabel": "Rango del gráfico",
   "financeChartRange3Months": "3M",
   "financeChartRange6Months": "6M",
+  "financeChartRange9Months": "9M",
   "financeChartRange12Months": "1A",
   "financialAuditAccountCreated": "Cuenta creada",
   "financialAuditAccountDeleted": "Cuenta eliminada",

@@ -879,6 +879,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get financeChartRange6Months => '6M';
 
   @override
+  String get financeChartRange9Months => '9M';
+
+  @override
   String get financeChartRange12Months => '1A';
 
   @override
@@ -929,7 +932,7 @@ class AppLocalizationsEs extends AppLocalizations {
     int accountCount,
     String accountCountSuffix,
   ) {
-    return 'Efectivo total − deuda total en $accountCount cuenta$accountCountSuffix';
+    return 'Las $accountCount cuenta$accountCountSuffix: efectivo menos tarjetas. El gasto de este mes ya está en esos saldos.';
   }
 
   @override
@@ -1206,8 +1209,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Total · toca una categoría';
 
   @override
-  String get dashboardChartToggleCategoryView =>
-      'Cambiar gráfico de categoría';
+  String get dashboardOverviewSpendingShare => 'Distribución del gasto';
 
   @override
   String get dashboardOverviewSpendShape => 'Forma del gasto';

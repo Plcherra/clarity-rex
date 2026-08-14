@@ -1649,6 +1649,12 @@ abstract class AppLocalizations {
   /// **'6M'**
   String get financeChartRange6Months;
 
+  /// No description provided for @financeChartRange9Months.
+  ///
+  /// In en, this message translates to:
+  /// **'9M'**
+  String get financeChartRange9Months;
+
   /// No description provided for @financeChartRange12Months.
   ///
   /// In en, this message translates to:
@@ -1730,7 +1736,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardOverviewNetBalanceHint.
   ///
   /// In en, this message translates to:
-  /// **'Total cash − total debt across {accountCount} account{accountCountSuffix}'**
+  /// **'All {accountCount} account{accountCountSuffix}: live cash minus cards owed. This month\'s spending already moved those balances.'**
   String dashboardOverviewNetBalanceHint(
     int accountCount,
     String accountCountSuffix,
@@ -2190,11 +2196,11 @@ abstract class AppLocalizations {
   /// **'Total · tap a category'**
   String get dashboardChartCategorySpendSubtitle;
 
-  /// No description provided for @dashboardChartToggleCategoryView.
+  /// No description provided for @dashboardOverviewSpendingShare.
   ///
   /// In en, this message translates to:
-  /// **'Switch category chart'**
-  String get dashboardChartToggleCategoryView;
+  /// **'Spending share'**
+  String get dashboardOverviewSpendingShare;
 
   /// No description provided for @dashboardOverviewSpendShape.
   ///

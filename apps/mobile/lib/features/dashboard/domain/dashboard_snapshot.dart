@@ -232,10 +232,7 @@ DashboardSnapshot buildDashboardSnapshot({
     burnRunwayDays: runway,
     monthlyGroups: monthsNewestFirst,
     referenceMonth: reference,
-    monthlyCashFlow: buildMonthlyCashFlowSeries(
-      resolved,
-      accountsById: accountsById,
-    ),
+    monthlyCashFlow: buildMonthlyCashFlowSeries(resolved),
     monthlyCategorySpend: categorySpendByMonth,
     savings: buildSavingsSnapshot(
       scope: scope,

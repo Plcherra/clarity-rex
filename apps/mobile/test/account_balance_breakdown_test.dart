@@ -111,6 +111,23 @@ void main() {
       );
     });
 
+    test('leftover credit uses live owed so pending charges reduce room', () {
+      expect(
+        creditRemainingForAccount(
+          const Account(
+            id: 'cap-card',
+            name: 'Quicksilver',
+            type: AccountType.creditCard,
+            currentBalance: 200,
+            plaidAvailableBalance: 200,
+            plaidCreditLimit: 1200,
+          ),
+          owed: 1000,
+        ),
+        closeTo(200, 0.001),
+      );
+    });
+
     test('ignores available that just copies the amount owed', () {
       expect(
         creditRemainingForAccount(
@@ -247,6 +264,88 @@ void main() {
       expect(breakdown.cashTotal, 100);
       expect(breakdown.debtTotal, 1000);
       expect(breakdown.netBalance, -900);
+    });
+
+    test('NOW debt adds pending card spend on top of old unpaid balance', () {
+      expect(
+        liveSignedBalanceForAccount(
+          const Account(
+            id: 'card',
+            name: 'Card',
+            type: AccountType.creditCard,
+            currentBalance: 200,
+          ),
+          pendingTransactions: [
+            Transaction(
+              date: DateTime(2026, 8, 13),
+              description: 'AMAZON MKTPL',
+              amount: -800,
+              accountId: 'card',
+              pending: true,
+            ),
+          ],
+        ),
+        closeTo(-1000, 0.001),
+      );
+
+      final breakdown = buildAccountBalanceBreakdown(
+        accounts: const [
+          Account(
+            id: 'checking',
+            name: 'Checking',
+            type: AccountType.checking,
+            currentBalance: 100,
+          ),
+          Account(
+            id: 'card',
+            name: 'Card',
+            type: AccountType.creditCard,
+            currentBalance: 200,
+          ),
+        ],
+        signedBalanceFor: (account) => liveSignedBalanceForAccount(
+          account,
+          pendingTransactions: account.id == 'card'
+              ? [
+                  Transaction(
+                    date: DateTime(2026, 8, 13),
+                    description: 'AMAZON MKTPL',
+                    amount: -800,
+                    accountId: 'card',
+                    pending: true,
+                  ),
+                ]
+              : const [],
+        ),
+      );
+
+      expect(breakdown.cashTotal, 100);
+      expect(breakdown.debtTotal, 1000);
+      expect(breakdown.netBalance, -900);
+    });
+
+    test('does not double-count pending when the card already reports leftover', () {
+      expect(
+        liveSignedBalanceForAccount(
+          const Account(
+            id: 'boa-card',
+            name: 'Cash Rewards',
+            type: AccountType.creditCard,
+            currentBalance: 0,
+            plaidAvailableBalance: 500,
+          ),
+          pendingTransactions: [
+            Transaction(
+              date: DateTime(2026, 8, 13),
+              description: 'COFFEE',
+              amount: -12.50,
+              accountId: 'boa-card',
+              pending: true,
+            ),
+          ],
+        ),
+        closeTo(0, 0.001),
+      );
     });
   });
 }

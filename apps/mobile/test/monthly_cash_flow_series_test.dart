@@ -102,37 +102,6 @@ void main() {
       expect(snapshot.spentThisMonth, closeTo(480.35, 0.001));
     });
 
-    test('cash and card leftover add up to the month leftover', () {
-      final snapshot = _snapshot([
-        _tx(
-          description: 'PAYROLL DIRECT DEP',
-          account: 'checking',
-          amount: 1942.53,
-          day: 1,
-        ),
-        _tx(
-          description: 'PUBLIX 1234',
-          account: 'checking',
-          amount: -480.35,
-          day: 3,
-          category: 'Grocery / Supermarket',
-        ),
-        _tx(
-          description: 'AMAZON MKTPL',
-          account: 'visa',
-          amount: -86.40,
-          day: 8,
-          category: 'Shopping',
-        ),
-      ]);
-
-      final july = snapshot.monthlyCashFlow.single;
-      expect(july.cashLeft, closeTo(1462.18, 0.001));
-      expect(july.creditLeft, closeTo(-86.40, 0.001));
-      expect(july.cashLeft + july.creditLeft, closeTo(july.net, 0.001));
-      expect(july.net, closeTo(snapshot.availableThisMonth, 0.001));
-    });
-
     test('pending rows stay out until they settle', () {
       final snapshot = _snapshot([
         _tx(

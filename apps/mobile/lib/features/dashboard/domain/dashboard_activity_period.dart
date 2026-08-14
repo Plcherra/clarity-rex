@@ -51,27 +51,6 @@ List<MonthlyCashFlowPoint> cashFlowForActivityPeriod({
   ];
 }
 
-({double cash, double credit}) dashboardActivityLeftSplit({
-  required DashboardActivityPeriod period,
-  required DateTime reference,
-  required Iterable<MonthlyCashFlowPoint> monthlyCashFlow,
-}) {
-  var cash = 0.0;
-  var credit = 0.0;
-  for (final point in monthlyCashFlow) {
-    if (!dashboardActivityMonthInPeriod(
-      yearMonth: point.yearMonth,
-      reference: reference,
-      period: period,
-    )) {
-      continue;
-    }
-    cash += point.cashLeft;
-    credit += point.creditLeft;
-  }
-  return (cash: cash, credit: credit);
-}
-
 List<CategorySpend> categorySpendForActivityPeriod({
   required Map<String, Map<String, double>> monthlyCategorySpend,
   required DateTime reference,

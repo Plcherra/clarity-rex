@@ -153,25 +153,4 @@ void main() {
     expect(sixMonths.first.amount, 199);
   });
 
-  test('period leftover splits cash vs card flow', () {
-    const points = [
-      MonthlyCashFlowPoint(
-        yearMonth: '2026-08',
-        income: 1471.24,
-        spend: 509.10,
-        cashIncome: 1471.24,
-        cashSpend: 238.42,
-        creditSpend: 270.68,
-      ),
-    ];
-
-    final split = dashboardActivityLeftSplit(
-      period: DashboardActivityPeriod.month,
-      reference: august,
-      monthlyCashFlow: points,
-    );
-    expect(split.cash, closeTo(1232.82, 0.001));
-    expect(split.credit, closeTo(-270.68, 0.001));
-    expect(split.cash + split.credit, closeTo(962.14, 0.001));
-  });
 }

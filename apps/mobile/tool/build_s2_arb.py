@@ -203,7 +203,7 @@ S2_STRINGS: dict[str, str] = {
     "dashboardResolvingTitle": "Resolving imported transactions",
     "dashboardResolvingBody": "Your statement is connected, but the transaction rows are still loading. Values will appear when the read model is complete.",
     "dashboardOverviewTotalBalance": "Net worth",
-    "dashboardOverviewNetBalanceHint": "Total cash − total debt across {accountCount} account{accountCountSuffix}",
+    "dashboardOverviewNetBalanceHint": "All {accountCount} account{accountCountSuffix}: live cash minus cards owed. This month's spending already moved those balances.",
     "dashboardOverviewCashTotal": "Cash",
     "dashboardOverviewDebtTotal": "Debt",
     "dashboardOverviewCreditAvailable": "Credit left",
