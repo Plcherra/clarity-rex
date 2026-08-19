@@ -1,6 +1,6 @@
 # Clarity execution plans
 
-These five files are the **only** execution plans for the app. Do not add competing plan docs under `docs/` or revive archived trackers.
+These files under `plans/` are the **only** execution plans for the app. Do not add competing plan docs under `docs/` or revive archived trackers. Plans 01–05 are the Grok-brain cutover. Plan 06 is pre-launch work on the same working branch.
 
 ## Product one-liner (shipping intent)
 
@@ -30,8 +30,9 @@ Agents must follow those three plus these plans. Do not invent parallel architec
 | 03 | [`03_canon_update.md`](03_canon_update.md) | Update the three hearts + docs CI — **before** deletion |
 | 04 | [`04_aggressive_deletion.md`](04_aggressive_deletion.md) | Delete misaligned brain/plans — break-OK |
 | 05 | [`05_simple_brain_implementation.md`](05_simple_brain_implementation.md) | Rebuild simple Grok brain + body handlers (milestones + social net in later phases) |
+| 06 | [`06_pre_launch.md`](06_pre_launch.md) | Pre-launch blocking fixes (leftover + leak, money chips, JWT/realtime, Plaid reconnect, passwords) |
 
-Execute **file by file**, **phase by phase**. Manual tests at each phase gate. Do not skip 03 before 04.
+Execute **file by file**, **phase by phase**. Manual tests at each phase gate. Do not skip 03 before 04. Plan 06 does not reopen the kill list.
 
 ## Locked architecture
 
