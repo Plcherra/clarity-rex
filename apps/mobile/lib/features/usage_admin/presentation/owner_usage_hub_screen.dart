@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
+import 'package:clarity/features/owner_debug/presentation/owner_debug_screen.dart';
 import 'package:clarity/features/usage_admin/application/owner_usage_controller.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_models.dart';
-import 'package:clarity/features/usage_admin/presentation/owner_debug_panel.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_usage_period_filter.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_user_detail_screen.dart';
 import 'package:clarity/theme/clarity_colors.dart';
@@ -48,7 +48,11 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: Text(l10n.usageAdminTitle),
+        title: GestureDetector(
+          key: const Key('owner_usage_admin_title'),
+          onLongPress: () => OwnerDebugScreen.open(context),
+          child: Text(l10n.usageAdminTitle),
+        ),
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -92,8 +96,6 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
               children: [
-                const OwnerDebugPanel(),
-                const SizedBox(height: 16),
                 OwnerUsagePeriodFilter(
                   filter: _controller.filter,
                   onChanged: _controller.setFilter,

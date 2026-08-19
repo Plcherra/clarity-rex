@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
+import 'package:clarity/features/owner_debug/presentation/owner_debug_screen.dart';
 import 'package:clarity/features/usage_admin/application/owner_usage_controller.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_usage_hub_screen.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_card.dart';
 
 final class OwnerUsageProfileEntry extends StatefulWidget {
-  const OwnerUsageProfileEntry({super.key});
+  const OwnerUsageProfileEntry({super.key, OwnerAccessController? controller})
+    : _controller = controller;
+
+  final OwnerAccessController? _controller;
 
   @override
   State<OwnerUsageProfileEntry> createState() => _OwnerUsageProfileEntryState();
 }
 
 class _OwnerUsageProfileEntryState extends State<OwnerUsageProfileEntry> {
-  late final OwnerAccessController _controller = OwnerAccessController();
+  late final OwnerAccessController _controller =
+      widget._controller ?? OwnerAccessController();
+  late final bool _ownsController = widget._controller == null;
 
   @override
   void initState() {
@@ -24,7 +30,9 @@ class _OwnerUsageProfileEntryState extends State<OwnerUsageProfileEntry> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (_ownsController) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -60,11 +68,13 @@ class _OwnerUsageProfileEntryState extends State<OwnerUsageProfileEntry> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
+                    key: const Key('owner_usage_admin_entry'),
                     onTap: () => Navigator.of(context).push<void>(
                       MaterialPageRoute<void>(
                         builder: (_) => const OwnerUsageHubScreen(),
                       ),
                     ),
+                    onLongPress: () => OwnerDebugScreen.open(context),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,

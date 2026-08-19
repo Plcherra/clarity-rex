@@ -9,6 +9,8 @@ import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_card.dart';
 
 /// Owner-only build provenance + voice session trace export.
+///
+/// Kept off Usage administration. Open via [OwnerDebugScreen] (long-press).
 class OwnerDebugPanel extends StatefulWidget {
   const OwnerDebugPanel({super.key});
 
