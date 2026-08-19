@@ -1,8 +1,13 @@
 # OS/editor noise
 .DS_Store
 .idea/
-.cursor/
 *.iml
+
+# Ignore local .cursor state but keep the committed Cloud Agent environment config
+.cursor/*
+!.cursor/environment.json
+!.cursor/Dockerfile
+!.cursor/install.sh
 
 # Secrets and local environment
 .env

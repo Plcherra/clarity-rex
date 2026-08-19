@@ -1,0 +1,22 @@
+{
+  "name": "Clarity",
+  "user": "ubuntu",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "install": "bash ./.cursor/install.sh",
+  "terminals": [
+    {
+      "name": "rex-api",
+      "command": "cd services/rex-api && ./.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000"
+    },
+    {
+      "name": "web",
+      "command": "cd apps/web && npm run dev -- --host 127.0.0.1 --port 4321"
+    }
+  ],
+  "ports": [
+    { "name": "rex-api", "port": 8000 },
+    { "name": "web", "port": 4321 }
+  ]
+}
