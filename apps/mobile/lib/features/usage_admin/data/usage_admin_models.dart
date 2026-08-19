@@ -1,3 +1,4 @@
+import 'package:clarity/features/usage_admin/data/usage_admin_breakdown.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 
 class OwnerUserUsage {
@@ -11,6 +12,11 @@ class OwnerUserUsage {
     required this.monthSttSeconds,
     required this.monthTtsSeconds,
     required this.monthEstimatedCostCents,
+    this.costBreakdown = const [],
+    this.largestCostDriver,
+    this.plaidItemCount = 0,
+    this.plaidAccountCount = 0,
+    this.plaidCostMetered = false,
   });
 
   factory OwnerUserUsage.fromJson(Map<String, dynamic> json) {
@@ -24,6 +30,15 @@ class OwnerUserUsage {
       monthSttSeconds: _double(json['month_stt_seconds']),
       monthTtsSeconds: _double(json['month_tts_seconds']),
       monthEstimatedCostCents: _double(json['month_estimated_cost_cents']),
+      costBreakdown: parseCostSlices(json['cost_breakdown']),
+      largestCostDriver: UsageCostDriver.fromJson(
+        json['largest_cost_driver'] is Map<String, dynamic>
+            ? json['largest_cost_driver'] as Map<String, dynamic>
+            : null,
+      ),
+      plaidItemCount: _int(json['plaid_item_count']),
+      plaidAccountCount: _int(json['plaid_account_count']),
+      plaidCostMetered: json['plaid_cost_metered'] == true,
     );
   }
 
@@ -36,6 +51,11 @@ class OwnerUserUsage {
   final double monthSttSeconds;
   final double monthTtsSeconds;
   final double monthEstimatedCostCents;
+  final List<UsageCostSlice> costBreakdown;
+  final UsageCostDriver? largestCostDriver;
+  final int plaidItemCount;
+  final int plaidAccountCount;
+  final bool plaidCostMetered;
 
   String get displayLabel {
     final value = email?.trim();
@@ -58,6 +78,26 @@ class OwnerPlatformSummary {
     required this.monthChatLlmCalls,
     required this.monthVoiceLlmCalls,
     required this.monthEstimatedCostCents,
+    this.costMix = const [],
+    this.largestCostDriver,
+    this.pricing = const UsagePricingHelper(
+      cogsCents: 0,
+      activeUserCount: 0,
+      voiceMinutes: 0,
+      costPerActiveUserCents: 0,
+      costPerVoiceMinuteCents: 0,
+      priceFloor2xCents: 0,
+      priceFloor3xCents: 0,
+      pricePerUser2xCents: 0,
+      pricePerUser3xCents: 0,
+      plaidIncluded: false,
+    ),
+    this.plaid = const UsagePlaidLinks(
+      metered: false,
+      userCount: 0,
+      itemCount: 0,
+      accountCount: 0,
+    ),
   });
 
   factory OwnerPlatformSummary.fromJson(Map<String, dynamic> json) {
@@ -69,6 +109,22 @@ class OwnerPlatformSummary {
       monthChatLlmCalls: _int(json['month_chat_llm_calls']),
       monthVoiceLlmCalls: _int(json['month_voice_llm_calls']),
       monthEstimatedCostCents: _double(json['month_estimated_cost_cents']),
+      costMix: parseCostSlices(json['cost_mix']),
+      largestCostDriver: UsageCostDriver.fromJson(
+        json['largest_cost_driver'] is Map<String, dynamic>
+            ? json['largest_cost_driver'] as Map<String, dynamic>
+            : null,
+      ),
+      pricing: UsagePricingHelper.fromJson(
+        json['pricing'] is Map<String, dynamic>
+            ? json['pricing'] as Map<String, dynamic>
+            : null,
+      ),
+      plaid: UsagePlaidLinks.fromJson(
+        json['plaid'] is Map<String, dynamic>
+            ? json['plaid'] as Map<String, dynamic>
+            : null,
+      ),
     );
   }
 
@@ -79,6 +135,10 @@ class OwnerPlatformSummary {
   final int monthChatLlmCalls;
   final int monthVoiceLlmCalls;
   final double monthEstimatedCostCents;
+  final List<UsageCostSlice> costMix;
+  final UsageCostDriver? largestCostDriver;
+  final UsagePricingHelper pricing;
+  final UsagePlaidLinks plaid;
 }
 
 class OwnerUserDailyUsage {

@@ -2507,6 +2507,116 @@
   "usageAdminDailyChartsCaption": "Totales diarios del rango de fechas cargado",
   "usageAdminRadarChartCaption": "Totales del mes en curso (no diarios)",
   "usageAdminUserLoadFailed": "No se pudo cargar el historial de uso del usuario.",
+  "usageAdminCostMixTitle": "Mezcla de gasto",
+  "usageAdminPricingTitle": "Precio desde COGS",
+  "usageAdminPricingHint": "Suelo de suscripción sugerido a partir del costo real del proveedor en este periodo. Plaid no está incluido.",
+  "usageAdminLargestDriver": "Mayor costo: {label}",
+  "@usageAdminLargestDriver": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminNoMeteredCost": "Sin costo medido",
+  "usageAdminSliceShare": "{percent}% del gasto",
+  "@usageAdminSliceShare": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminCostPerActiveUser": "Costo por usuario activo {cost}",
+  "@usageAdminCostPerActiveUser": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminCostPerVoiceMinute": "Costo por minuto de voz {cost}",
+  "@usageAdminCostPerVoiceMinute": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminPriceFloor2x": "2× COGS · {total} · {perUser} / usuario activo",
+  "@usageAdminPriceFloor2x": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      },
+      "perUser": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminPriceFloor3x": "3× COGS · {total} · {perUser} / usuario activo",
+  "@usageAdminPriceFloor3x": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      },
+      "perUser": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminPlaidNotMetered": "Plaid aún no se mide · {items} ítems vinculados · {accounts} cuentas",
+  "@usageAdminPlaidNotMetered": {
+    "placeholders": {
+      "items": {
+        "type": "int"
+      },
+      "accounts": {
+        "type": "int"
+      }
+    }
+  },
+  "usageAdminPlaidUserLinks": "Plaid · {items} ítems · {accounts} cuentas · costo no medido",
+  "@usageAdminPlaidUserLinks": {
+    "placeholders": {
+      "items": {
+        "type": "int"
+      },
+      "accounts": {
+        "type": "int"
+      }
+    }
+  },
+  "usageAdminBreakdownSection": "Costo por función",
+  "usageAdminOpenDailyCharts": "Gráficos diarios",
+  "usageAdminSliceGrokChat": "Grok chat",
+  "usageAdminSliceGrokVoice": "Grok voz",
+  "usageAdminSliceGoogleTts": "Google TTS",
+  "usageAdminSliceDeepgramStt": "Deepgram STT",
+  "usageAdminSliceDeepgramTts": "Deepgram TTS",
+  "usageAdminSliceVoiceSession": "Sesión de voz (no medida)",
+  "usageAdminSlicePlaid": "Plaid",
+  "usageAdminSliceOther": "Otro",
+  "usageAdminUserUsageCounts": "{voiceMinutes} voz · {chatCalls} chat · {voiceCalls} voz LLM · {sttMinutes} STT · {ttsMinutes} TTS",
+  "@usageAdminUserUsageCounts": {
+    "placeholders": {
+      "voiceMinutes": {
+        "type": "String"
+      },
+      "chatCalls": {
+        "type": "int"
+      },
+      "voiceCalls": {
+        "type": "int"
+      },
+      "sttMinutes": {
+        "type": "String"
+      },
+      "ttsMinutes": {
+        "type": "String"
+      }
+    }
+  },
   "usageAdminUserTileSummary": "{voiceMinutes} voz · {chatCalls} chat · {voiceCalls} llamadas de voz",
   "@usageAdminUserTileSummary": {
     "placeholders": {

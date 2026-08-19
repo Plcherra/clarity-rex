@@ -2494,6 +2494,116 @@
   },
   "usageAdminLoadFailed": "Could not load owner usage right now.",
   "usageAdminUserLoadFailed": "Could not load user usage history.",
+  "usageAdminCostMixTitle": "Spend mix",
+  "usageAdminPricingTitle": "Pricing from COGS",
+  "usageAdminPricingHint": "Suggested subscription floor from real provider cost in this period. Plaid is not included.",
+  "usageAdminLargestDriver": "Largest cost: {label}",
+  "@usageAdminLargestDriver": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminNoMeteredCost": "No metered cost",
+  "usageAdminSliceShare": "{percent}% of spend",
+  "@usageAdminSliceShare": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminCostPerActiveUser": "Cost per active user {cost}",
+  "@usageAdminCostPerActiveUser": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminCostPerVoiceMinute": "Cost per voice minute {cost}",
+  "@usageAdminCostPerVoiceMinute": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminPriceFloor2x": "2× COGS · {total} · {perUser} / active user",
+  "@usageAdminPriceFloor2x": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      },
+      "perUser": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminPriceFloor3x": "3× COGS · {total} · {perUser} / active user",
+  "@usageAdminPriceFloor3x": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      },
+      "perUser": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminPlaidNotMetered": "Plaid not metered yet · {items} linked items · {accounts} accounts",
+  "@usageAdminPlaidNotMetered": {
+    "placeholders": {
+      "items": {
+        "type": "int"
+      },
+      "accounts": {
+        "type": "int"
+      }
+    }
+  },
+  "usageAdminPlaidUserLinks": "Plaid · {items} items · {accounts} accounts · cost not metered",
+  "@usageAdminPlaidUserLinks": {
+    "placeholders": {
+      "items": {
+        "type": "int"
+      },
+      "accounts": {
+        "type": "int"
+      }
+    }
+  },
+  "usageAdminBreakdownSection": "Cost by function",
+  "usageAdminOpenDailyCharts": "Daily charts",
+  "usageAdminSliceGrokChat": "Grok chat",
+  "usageAdminSliceGrokVoice": "Grok voice",
+  "usageAdminSliceGoogleTts": "Google TTS",
+  "usageAdminSliceDeepgramStt": "Deepgram STT",
+  "usageAdminSliceDeepgramTts": "Deepgram TTS",
+  "usageAdminSliceVoiceSession": "Voice session (not metered)",
+  "usageAdminSlicePlaid": "Plaid",
+  "usageAdminSliceOther": "Other",
+  "usageAdminUserUsageCounts": "{voiceMinutes} voice · {chatCalls} chat · {voiceCalls} voice LLM · {sttMinutes} STT · {ttsMinutes} TTS",
+  "@usageAdminUserUsageCounts": {
+    "placeholders": {
+      "voiceMinutes": {
+        "type": "String"
+      },
+      "chatCalls": {
+        "type": "int"
+      },
+      "voiceCalls": {
+        "type": "int"
+      },
+      "sttMinutes": {
+        "type": "String"
+      },
+      "ttsMinutes": {
+        "type": "String"
+      }
+    }
+  },
   "usageSummaryLoadFailed": "Could not load usage right now.",
   "memoryErrorSignInAgain": "Please sign in again to manage saved information.",
   "memoryErrorNoLongerAvailable": "That memory is no longer available.",

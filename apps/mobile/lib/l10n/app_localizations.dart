@@ -6984,6 +6984,150 @@ abstract class AppLocalizations {
   /// **'Could not load user usage history.'**
   String get usageAdminUserLoadFailed;
 
+  /// No description provided for @usageAdminCostMixTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Spend mix'**
+  String get usageAdminCostMixTitle;
+
+  /// No description provided for @usageAdminPricingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing from COGS'**
+  String get usageAdminPricingTitle;
+
+  /// No description provided for @usageAdminPricingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested subscription floor from real provider cost in this period. Plaid is not included.'**
+  String get usageAdminPricingHint;
+
+  /// No description provided for @usageAdminLargestDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Largest cost: {label}'**
+  String usageAdminLargestDriver(String label);
+
+  /// No description provided for @usageAdminNoMeteredCost.
+  ///
+  /// In en, this message translates to:
+  /// **'No metered cost'**
+  String get usageAdminNoMeteredCost;
+
+  /// No description provided for @usageAdminSliceShare.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of spend'**
+  String usageAdminSliceShare(String percent);
+
+  /// No description provided for @usageAdminCostPerActiveUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost per active user {cost}'**
+  String usageAdminCostPerActiveUser(String cost);
+
+  /// No description provided for @usageAdminCostPerVoiceMinute.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost per voice minute {cost}'**
+  String usageAdminCostPerVoiceMinute(String cost);
+
+  /// No description provided for @usageAdminPriceFloor2x.
+  ///
+  /// In en, this message translates to:
+  /// **'2× COGS · {total} · {perUser} / active user'**
+  String usageAdminPriceFloor2x(String total, String perUser);
+
+  /// No description provided for @usageAdminPriceFloor3x.
+  ///
+  /// In en, this message translates to:
+  /// **'3× COGS · {total} · {perUser} / active user'**
+  String usageAdminPriceFloor3x(String total, String perUser);
+
+  /// No description provided for @usageAdminPlaidNotMetered.
+  ///
+  /// In en, this message translates to:
+  /// **'Plaid not metered yet · {items} linked items · {accounts} accounts'**
+  String usageAdminPlaidNotMetered(int items, int accounts);
+
+  /// No description provided for @usageAdminPlaidUserLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Plaid · {items} items · {accounts} accounts · cost not metered'**
+  String usageAdminPlaidUserLinks(int items, int accounts);
+
+  /// No description provided for @usageAdminBreakdownSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost by function'**
+  String get usageAdminBreakdownSection;
+
+  /// No description provided for @usageAdminOpenDailyCharts.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily charts'**
+  String get usageAdminOpenDailyCharts;
+
+  /// No description provided for @usageAdminSliceGrokChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Grok chat'**
+  String get usageAdminSliceGrokChat;
+
+  /// No description provided for @usageAdminSliceGrokVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Grok voice'**
+  String get usageAdminSliceGrokVoice;
+
+  /// No description provided for @usageAdminSliceGoogleTts.
+  ///
+  /// In en, this message translates to:
+  /// **'Google TTS'**
+  String get usageAdminSliceGoogleTts;
+
+  /// No description provided for @usageAdminSliceDeepgramStt.
+  ///
+  /// In en, this message translates to:
+  /// **'Deepgram STT'**
+  String get usageAdminSliceDeepgramStt;
+
+  /// No description provided for @usageAdminSliceDeepgramTts.
+  ///
+  /// In en, this message translates to:
+  /// **'Deepgram TTS'**
+  String get usageAdminSliceDeepgramTts;
+
+  /// No description provided for @usageAdminSliceVoiceSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice session (not metered)'**
+  String get usageAdminSliceVoiceSession;
+
+  /// No description provided for @usageAdminSlicePlaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Plaid'**
+  String get usageAdminSlicePlaid;
+
+  /// No description provided for @usageAdminSliceOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get usageAdminSliceOther;
+
+  /// No description provided for @usageAdminUserUsageCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'{voiceMinutes} voice · {chatCalls} chat · {voiceCalls} voice LLM · {sttMinutes} STT · {ttsMinutes} TTS'**
+  String usageAdminUserUsageCounts(
+    String voiceMinutes,
+    int chatCalls,
+    int voiceCalls,
+    String sttMinutes,
+    String ttsMinutes,
+  );
+
   /// No description provided for @usageSummaryLoadFailed.
   ///
   /// In en, this message translates to:

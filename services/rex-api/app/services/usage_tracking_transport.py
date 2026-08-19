@@ -13,6 +13,8 @@ VOICE_SUMMARIES_VIEW = "user_voice_summaries"
 OWNER_USAGE_DAILY_VIEW = "owner_usage_daily"
 ADMIN_USERS_TABLE = "admin_users"
 PROFILES_TABLE = "profiles"
+PLAID_ITEMS_TABLE = "plaid_items"
+PLAID_ACCOUNTS_TABLE = "plaid_accounts"
 
 
 def response_text(response: httpx.Response | None) -> str:
@@ -74,3 +76,22 @@ class UsageTrackingTransport:
             raise RuntimeError(f"Supabase usage query failed: {detail}") from error
         data = response.json()
         return data if isinstance(data, list) else []
+
+    async def select_all_rows(
+        self,
+        table: str,
+        params: dict[str, str],
+        *,
+        page_size: int = 1000,
+    ) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        offset = 0
+        while True:
+            page_params = dict(params)
+            page_params["limit"] = str(page_size)
+            page_params["offset"] = str(offset)
+            page = await self.select_rows(table, page_params)
+            rows.extend(page)
+            if len(page) < page_size:
+                return rows
+            offset += page_size

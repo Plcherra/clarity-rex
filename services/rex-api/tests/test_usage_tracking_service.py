@@ -199,6 +199,23 @@ async def test_owner_usage_allows_configured_owner_without_client_secret(monkeyp
                 {"id": "user-1", "email": "owner@example.com"},
                 {"id": "user-2", "email": "second@example.com"},
             ]
+        elif "user_usage_events" in url:
+            response.json = lambda: [
+                {
+                    "user_id": "user-1",
+                    "provider": "grok",
+                    "feature": "assistant_response",
+                    "channel": "chat",
+                    "event_type": "llm",
+                    "unit_count": 100,
+                    "duration_ms": 0,
+                    "estimated_cost_cents": 12.5,
+                }
+            ]
+        elif "plaid_items" in url:
+            response.json = lambda: [{"user_id": "user-2"}]
+        elif "plaid_accounts" in url:
+            response.json = lambda: [{"user_id": "user-2"}, {"user_id": "user-2"}]
         else:
             response.json = lambda: [
                 {
@@ -235,7 +252,83 @@ async def test_owner_usage_allows_configured_owner_without_client_secret(monkeyp
     assert result["users"][1]["user_id"] == "user-2"
     assert result["users"][1]["email"] == "second@example.com"
     assert result["users"][1]["month_llm_calls"] == 0
+    assert result["users"][0]["largest_cost_driver"]["label_key"] == "grok_chat"
+    assert result["users"][0]["cost_breakdown"][0]["estimated_cost_cents"] == 12.5
+    assert result["users"][1]["plaid_item_count"] == 1
+    assert result["users"][1]["plaid_account_count"] == 2
+    assert result["users"][1]["plaid_cost_metered"] is False
     assert "admin_users" not in "".join(calls)
+
+
+@pytest.mark.asyncio
+async def test_owner_platform_summary_includes_mix_and_pricing(monkeypatch):
+    async def fake_request(method, url, headers=None, json=None):
+        response = FakeResponse()
+        if "profiles" in url:
+            response.json = lambda: [{"id": "user-1", "email": "owner@example.com"}]
+        elif "user_usage_events" in url:
+            response.json = lambda: [
+                {
+                    "user_id": "user-1",
+                    "provider": "google_tts",
+                    "feature": "text_to_speech",
+                    "channel": "voice",
+                    "event_type": "tts",
+                    "estimated_cost_cents": 40,
+                    "duration_ms": 1000,
+                    "unit_count": 8,
+                },
+                {
+                    "user_id": "user-1",
+                    "provider": "grok",
+                    "feature": "assistant_response",
+                    "channel": "chat",
+                    "event_type": "llm",
+                    "estimated_cost_cents": 10,
+                    "unit_count": 20,
+                },
+            ]
+        elif "plaid_" in url:
+            response.json = lambda: [{"user_id": "user-1"}]
+        else:
+            response.json = lambda: [
+                {
+                    "user_id": "user-1",
+                    "usage_date": "2026-06-06",
+                    "voice_seconds": 120,
+                    "llm_calls": 3,
+                    "chat_llm_calls": 2,
+                    "voice_llm_calls": 1,
+                    "stt_seconds": 0,
+                    "tts_seconds": 10,
+                    "estimated_cost_cents": 50,
+                }
+            ]
+        return response
+
+    monkeypatch.setattr(usage_transport_module, "request_with_retries", fake_request)
+    settings = _settings()
+    settings.usage_owner_user_id = "owner-1"
+    service = UsageTrackingService(settings=settings)
+
+    result = await service.get_owner_platform_summary(
+        requester_user_id="owner-1",
+        today=usage_module.date(2026, 6, 6),
+        period="all",
+    )
+
+    assert result["authorized"] is True
+    assert result["cost_mix"][0]["label_key"] == "google_tts"
+    assert result["largest_cost_driver"]["label_key"] == "google_tts"
+    assert result["pricing"]["cogs_cents"] == 50
+    assert result["pricing"]["price_floor_2x_cents"] == 100
+    assert result["pricing"]["plaid_included"] is False
+    assert result["plaid"] == {
+        "metered": False,
+        "user_count": 1,
+        "item_count": 1,
+        "account_count": 1,
+    }
 
 
 def test_merge_owner_users_with_profiles_includes_zero_usage_accounts():

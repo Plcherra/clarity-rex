@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/features/owner_debug/presentation/owner_debug_screen.dart';
 import 'package:clarity/features/usage_admin/application/owner_usage_controller.dart';
+import 'package:clarity/features/usage_admin/data/usage_admin_breakdown.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_models.dart';
+import 'package:clarity/features/usage_admin/presentation/owner_usage_cost_mix.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_usage_period_filter.dart';
+import 'package:clarity/features/usage_admin/presentation/owner_usage_pricing_card.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_user_detail_screen.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_card.dart';
@@ -139,9 +142,30 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                             color: colors.textMuted,
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          summary.largestCostDriver?.hasDriver == true
+                              ? l10n.usageAdminLargestDriver(
+                                  usageCostSliceLabel(
+                                    l10n,
+                                    summary.largestCostDriver!.labelKey,
+                                  ),
+                                )
+                              : l10n.usageAdminNoMeteredCost,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        OwnerUsageCostMixList(
+                          slices: summary.costMix,
+                          plaid: summary.plaid,
+                        ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  OwnerUsagePricingCard(pricing: summary.pricing),
                   const SizedBox(height: 16),
                 ],
                 Text(
@@ -164,7 +188,7 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                   for (final user in _controller.users) ...[
                     _OwnerUserTile(
                       user: user,
-                      onTap: () => Navigator.of(context).push<void>(
+                      onOpenCharts: () => Navigator.of(context).push<void>(
                         MaterialPageRoute<void>(
                           builder: (_) => OwnerUserDetailScreen(
                             user: user,
@@ -184,64 +208,123 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
   }
 }
 
-class _OwnerUserTile extends StatelessWidget {
-  const _OwnerUserTile({required this.user, required this.onTap});
+class _OwnerUserTile extends StatefulWidget {
+  const _OwnerUserTile({required this.user, required this.onOpenCharts});
 
   final OwnerUserUsage user;
-  final VoidCallback onTap;
+  final VoidCallback onOpenCharts;
+
+  @override
+  State<_OwnerUserTile> createState() => _OwnerUserTileState();
+}
+
+class _OwnerUserTileState extends State<_OwnerUserTile> {
+  var _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final user = widget.user;
+    final driver = user.largestCostDriver;
 
     return Material(
       color: colors.surfaceSoft.withValues(alpha: 0.35),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
+        key: Key('owner_user_tile_${user.userId}'),
         borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
+        onTap: () => setState(() => _expanded = !_expanded),
         child: Padding(
           padding: const EdgeInsets.all(14),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.displayLabel,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.displayLabel,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.usageAdminUserTileSummary(
+                            formatUsageMinutes(l10n, user.monthVoiceSeconds),
+                            user.monthChatLlmCalls,
+                            user.monthVoiceLlmCalls,
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          driver?.hasDriver == true
+                              ? l10n.usageAdminLargestDriver(
+                                  usageCostSliceLabel(l10n, driver!.labelKey),
+                                )
+                              : l10n.usageAdminNoMeteredCost,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.usageAdminUserTileSummary(
-                        formatUsageMinutes(l10n, user.monthVoiceSeconds),
-                        user.monthChatLlmCalls,
-                        user.monthVoiceLlmCalls,
-                      ),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colors.textMuted,
-                      ),
+                  ),
+                  Text(
+                    formatUsageCost(
+                      l10n,
+                      user.monthEstimatedCostCents,
+                      hasUsageWithoutCost:
+                          user.monthLlmCalls > 0 || user.monthVoiceSeconds > 0,
                     ),
-                  ],
-                ),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: colors.accent,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                formatUsageCost(
-                  l10n,
-                  user.monthEstimatedCostCents,
-                  hasUsageWithoutCost: user.monthLlmCalls > 0 ||
-                      user.monthVoiceSeconds > 0,
+              if (_expanded) ...[
+                const SizedBox(height: 12),
+                Text(
+                  l10n.usageAdminUserUsageCounts(
+                    formatUsageMinutes(l10n, user.monthVoiceSeconds),
+                    user.monthChatLlmCalls,
+                    user.monthVoiceLlmCalls,
+                    formatUsageMinutes(l10n, user.monthSttSeconds),
+                    formatUsageMinutes(l10n, user.monthTtsSeconds),
+                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.textMuted,
+                  ),
                 ),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: colors.accent,
+                const SizedBox(height: 10),
+                OwnerUsageCostMixList(
+                  title: l10n.usageAdminBreakdownSection,
+                  slices: user.costBreakdown,
+                  plaid: UsagePlaidLinks(
+                    metered: user.plaidCostMetered,
+                    userCount: user.plaidItemCount > 0 ? 1 : 0,
+                    itemCount: user.plaidItemCount,
+                    accountCount: user.plaidAccountCount,
+                  ),
                 ),
-              ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: widget.onOpenCharts,
+                    child: Text(l10n.usageAdminOpenDailyCharts),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

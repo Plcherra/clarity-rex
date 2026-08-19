@@ -3,10 +3,14 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from app.services.usage_cost_breakdown import count_plaid_links
 from app.services.usage_tracking_transport import (
     ADMIN_USERS_TABLE,
     OWNER_USAGE_DAILY_VIEW,
+    PLAID_ACCOUNTS_TABLE,
+    PLAID_ITEMS_TABLE,
     PROFILES_TABLE,
+    USAGE_EVENTS_TABLE,
     UsageTrackingTransport,
 )
 
@@ -254,6 +258,40 @@ class UsageOwnerQueries:
             if user_id:
                 emails[user_id] = email if isinstance(email, str) else None
         return emails
+
+    async def select_usage_events(
+        self,
+        *,
+        start_date: date,
+        end_date: date,
+    ) -> list[dict[str, Any]]:
+        start = start_date.isoformat()
+        end = f"{end_date.isoformat()}T23:59:59"
+        return await self._transport.select_all_rows(
+            USAGE_EVENTS_TABLE,
+            {
+                "select": (
+                    "user_id,created_at,provider,feature,channel,event_type,"
+                    "unit_count,duration_ms,estimated_cost_cents"
+                ),
+                "and": f"(created_at.gte.{start},created_at.lte.{end})",
+                "order": "created_at.asc",
+            },
+        )
+
+    async def plaid_link_counts(self) -> dict[str, dict[str, int]]:
+        try:
+            items = await self._transport.select_rows(
+                PLAID_ITEMS_TABLE,
+                {"select": "user_id"},
+            )
+            accounts = await self._transport.select_rows(
+                PLAID_ACCOUNTS_TABLE,
+                {"select": "user_id"},
+            )
+        except Exception:
+            return {}
+        return count_plaid_links(items, accounts)
 
     async def is_admin_user(self, user_id: str) -> bool:
         rows = await self._transport.select_rows(

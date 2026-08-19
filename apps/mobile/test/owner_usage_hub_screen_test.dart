@@ -2,6 +2,7 @@ import 'package:clarity/features/owner_debug/presentation/owner_debug_screen.dar
 import 'package:clarity/features/usage_admin/application/owner_usage_controller.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_api.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_filter.dart';
+import 'package:clarity/features/usage_admin/data/usage_admin_breakdown.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_models.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_usage_hub_screen.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_usage_profile_entry.dart';
@@ -41,9 +42,54 @@ void main() {
     expect(find.text('Month'), findsOneWidget);
     expect(find.text('Day'), findsOneWidget);
     expect(find.text(r'$1.99'), findsWidgets);
+    expect(find.text('Spend mix'), findsOneWidget);
+    expect(find.text('Google TTS'), findsOneWidget);
+    expect(find.textContaining('Largest cost: Google TTS'), findsWidgets);
+    expect(find.text('Pricing from COGS'), findsOneWidget);
+    expect(find.textContaining('Cost per active user'), findsOneWidget);
+    expect(find.textContaining('2× COGS'), findsOneWidget);
+    expect(find.textContaining('Plaid not metered yet'), findsOneWidget);
+    expect(find.text('Users', skipOffstage: false), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('a***@example.com', skipOffstage: false),
+      240,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('a***@example.com'), findsOneWidget);
-    expect(find.text('Users'), findsOneWidget);
 
+    _expectDebugDumpAbsent();
+  });
+
+  testWidgets('expanding a user shows function-level cost and Plaid links', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapWithL10n(
+        OwnerUsageHubScreen(
+          controller: OwnerUsageController(api: _FakeUsageAdminApi()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('owner_user_tile_user-1'), skipOffstage: false),
+      240,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('owner_user_tile_user-1')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Cost by function', skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(find.text('Grok chat', skipOffstage: false), findsWidgets);
+    expect(
+      find.textContaining('Plaid not metered yet · 1 linked items', skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(find.textContaining('voice LLM', skipOffstage: false), findsOneWidget);
     _expectDebugDumpAbsent();
   });
 
@@ -127,6 +173,59 @@ class _FakeUsageAdminApi extends UsageAdminApi {
       monthChatLlmCalls: 3,
       monthVoiceLlmCalls: 2,
       monthEstimatedCostCents: 199,
+      costMix: [
+        UsageCostSlice(
+          id: 'google_tts:text_to_speech:voice:tts',
+          labelKey: 'google_tts',
+          provider: 'google_tts',
+          feature: 'text_to_speech',
+          channel: 'voice',
+          eventType: 'tts',
+          eventCount: 8,
+          unitCount: 10,
+          durationMs: 1000,
+          estimatedCostCents: 140,
+          share: 0.7,
+          metered: true,
+        ),
+        UsageCostSlice(
+          id: 'grok:assistant_response:chat:llm',
+          labelKey: 'grok_chat',
+          provider: 'grok',
+          feature: 'assistant_response',
+          channel: 'chat',
+          eventType: 'llm',
+          eventCount: 3,
+          unitCount: 20,
+          durationMs: 0,
+          estimatedCostCents: 59,
+          share: 0.3,
+          metered: true,
+        ),
+      ],
+      largestCostDriver: UsageCostDriver(
+        labelKey: 'google_tts',
+        estimatedCostCents: 140,
+        share: 0.7,
+      ),
+      pricing: UsagePricingHelper(
+        cogsCents: 199,
+        activeUserCount: 1,
+        voiceMinutes: 3,
+        costPerActiveUserCents: 199,
+        costPerVoiceMinuteCents: 40,
+        priceFloor2xCents: 398,
+        priceFloor3xCents: 597,
+        pricePerUser2xCents: 398,
+        pricePerUser3xCents: 597,
+        plaidIncluded: false,
+      ),
+      plaid: UsagePlaidLinks(
+        metered: false,
+        userCount: 1,
+        itemCount: 2,
+        accountCount: 3,
+      ),
     );
   }
 
@@ -143,6 +242,43 @@ class _FakeUsageAdminApi extends UsageAdminApi {
         monthSttSeconds: 60,
         monthTtsSeconds: 60,
         monthEstimatedCostCents: 199,
+        largestCostDriver: UsageCostDriver(
+          labelKey: 'google_tts',
+          estimatedCostCents: 140,
+          share: 0.7,
+        ),
+        plaidItemCount: 1,
+        plaidAccountCount: 2,
+        costBreakdown: [
+          UsageCostSlice(
+            id: 'google_tts:text_to_speech:voice:tts',
+            labelKey: 'google_tts',
+            provider: 'google_tts',
+            feature: 'text_to_speech',
+            channel: 'voice',
+            eventType: 'tts',
+            eventCount: 8,
+            unitCount: 10,
+            durationMs: 1000,
+            estimatedCostCents: 140,
+            share: 0.7,
+            metered: true,
+          ),
+          UsageCostSlice(
+            id: 'grok:assistant_response:chat:llm',
+            labelKey: 'grok_chat',
+            provider: 'grok',
+            feature: 'assistant_response',
+            channel: 'chat',
+            eventType: 'llm',
+            eventCount: 3,
+            unitCount: 20,
+            durationMs: 0,
+            estimatedCostCents: 59,
+            share: 0.3,
+            metered: true,
+          ),
+        ],
       ),
     ];
   }

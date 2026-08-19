@@ -19,6 +19,16 @@ from app.services.usage_cost_estimator import (
     resolve_tts_usage_provider,
 )
 from app.services.usage_admin_period import UsageAdminPeriod, resolve_usage_admin_period
+from app.services.usage_cost_breakdown import (
+    attach_user_cost_insights,
+    finalize_slices,
+    group_events_by_user,
+    largest_driver,
+    merge_all_slices,
+    plaid_platform_totals,
+    pricing_from_cogs,
+    voice_cost_cents,
+)
 from app.services.usage_tracking_owner_queries import (
     UsageOwnerQueries,
     aggregate_owner_users,
@@ -262,6 +272,12 @@ class UsageTrackingService:
         usage_users = aggregate_owner_users(rows)
         profiles = await self._owner_queries.list_profiles()
         users = merge_owner_users_with_profiles(usage_users, profiles)
+        insights = await self._owner_cost_insights(resolved)
+        users = attach_user_cost_insights(
+            users,
+            grouped=insights["grouped"],
+            plaid_counts=insights["plaid_counts"],
+        )
         payload = {"authorized": True, "users": users}
         payload.update(resolved.to_response())
         payload["registered_user_count"] = len(profiles)
@@ -290,10 +306,39 @@ class UsageTrackingService:
         rows = await self._load_owner_period_rows(resolved)
         profiles = await self._owner_queries.list_profiles()
         summary = build_period_platform_summary(rows)
+        insights = await self._owner_cost_insights(resolved)
+        slices = insights["slices"]
         summary["registered_user_count"] = len(profiles)
         summary["authorized"] = True
+        summary["cost_mix"] = slices
+        summary["largest_cost_driver"] = largest_driver(slices)
+        summary["pricing"] = pricing_from_cogs(
+            cogs_cents=float(summary.get("month_estimated_cost_cents") or 0),
+            active_user_count=int(summary.get("active_user_count") or 0),
+            voice_seconds=float(summary.get("month_voice_seconds") or 0),
+            voice_cost_cents=voice_cost_cents(slices),
+        )
+        summary["plaid"] = insights["plaid"]
         summary.update(resolved.to_response())
         return summary
+
+    async def _owner_cost_insights(
+        self,
+        resolved: UsageAdminPeriod,
+    ) -> dict[str, Any]:
+        events = await self._owner_queries.select_usage_events(
+            start_date=resolved.start_date,
+            end_date=resolved.end_date,
+        )
+        grouped = group_events_by_user(events)
+        slices = finalize_slices(merge_all_slices(grouped))
+        plaid_counts = await self._owner_queries.plaid_link_counts()
+        return {
+            "grouped": grouped,
+            "slices": slices,
+            "plaid_counts": plaid_counts,
+            "plaid": plaid_platform_totals(plaid_counts),
+        }
 
     async def _load_owner_period_rows(
         self,

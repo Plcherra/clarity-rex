@@ -4026,6 +4026,100 @@ class AppLocalizationsEn extends AppLocalizations {
   String get usageAdminUserLoadFailed => 'Could not load user usage history.';
 
   @override
+  String get usageAdminCostMixTitle => 'Spend mix';
+
+  @override
+  String get usageAdminPricingTitle => 'Pricing from COGS';
+
+  @override
+  String get usageAdminPricingHint =>
+      'Suggested subscription floor from real provider cost in this period. Plaid is not included.';
+
+  @override
+  String usageAdminLargestDriver(String label) {
+    return 'Largest cost: $label';
+  }
+
+  @override
+  String get usageAdminNoMeteredCost => 'No metered cost';
+
+  @override
+  String usageAdminSliceShare(String percent) {
+    return '$percent% of spend';
+  }
+
+  @override
+  String usageAdminCostPerActiveUser(String cost) {
+    return 'Cost per active user $cost';
+  }
+
+  @override
+  String usageAdminCostPerVoiceMinute(String cost) {
+    return 'Cost per voice minute $cost';
+  }
+
+  @override
+  String usageAdminPriceFloor2x(String total, String perUser) {
+    return '2× COGS · $total · $perUser / active user';
+  }
+
+  @override
+  String usageAdminPriceFloor3x(String total, String perUser) {
+    return '3× COGS · $total · $perUser / active user';
+  }
+
+  @override
+  String usageAdminPlaidNotMetered(int items, int accounts) {
+    return 'Plaid not metered yet · $items linked items · $accounts accounts';
+  }
+
+  @override
+  String usageAdminPlaidUserLinks(int items, int accounts) {
+    return 'Plaid · $items items · $accounts accounts · cost not metered';
+  }
+
+  @override
+  String get usageAdminBreakdownSection => 'Cost by function';
+
+  @override
+  String get usageAdminOpenDailyCharts => 'Daily charts';
+
+  @override
+  String get usageAdminSliceGrokChat => 'Grok chat';
+
+  @override
+  String get usageAdminSliceGrokVoice => 'Grok voice';
+
+  @override
+  String get usageAdminSliceGoogleTts => 'Google TTS';
+
+  @override
+  String get usageAdminSliceDeepgramStt => 'Deepgram STT';
+
+  @override
+  String get usageAdminSliceDeepgramTts => 'Deepgram TTS';
+
+  @override
+  String get usageAdminSliceVoiceSession => 'Voice session (not metered)';
+
+  @override
+  String get usageAdminSlicePlaid => 'Plaid';
+
+  @override
+  String get usageAdminSliceOther => 'Other';
+
+  @override
+  String usageAdminUserUsageCounts(
+    String voiceMinutes,
+    int chatCalls,
+    int voiceCalls,
+    String sttMinutes,
+    String ttsMinutes,
+  ) {
+    return '$voiceMinutes voice · $chatCalls chat · $voiceCalls voice LLM · $sttMinutes STT · $ttsMinutes TTS';
+  }
+
+  @override
   String get usageSummaryLoadFailed => 'Could not load usage right now.';
 
   @override

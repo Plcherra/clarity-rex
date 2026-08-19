@@ -4092,6 +4092,100 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo cargar el historial de uso del usuario.';
 
   @override
+  String get usageAdminCostMixTitle => 'Mezcla de gasto';
+
+  @override
+  String get usageAdminPricingTitle => 'Precio desde COGS';
+
+  @override
+  String get usageAdminPricingHint =>
+      'Suelo de suscripción sugerido a partir del costo real del proveedor en este periodo. Plaid no está incluido.';
+
+  @override
+  String usageAdminLargestDriver(String label) {
+    return 'Mayor costo: $label';
+  }
+
+  @override
+  String get usageAdminNoMeteredCost => 'Sin costo medido';
+
+  @override
+  String usageAdminSliceShare(String percent) {
+    return '$percent% del gasto';
+  }
+
+  @override
+  String usageAdminCostPerActiveUser(String cost) {
+    return 'Costo por usuario activo $cost';
+  }
+
+  @override
+  String usageAdminCostPerVoiceMinute(String cost) {
+    return 'Costo por minuto de voz $cost';
+  }
+
+  @override
+  String usageAdminPriceFloor2x(String total, String perUser) {
+    return '2× COGS · $total · $perUser / usuario activo';
+  }
+
+  @override
+  String usageAdminPriceFloor3x(String total, String perUser) {
+    return '3× COGS · $total · $perUser / usuario activo';
+  }
+
+  @override
+  String usageAdminPlaidNotMetered(int items, int accounts) {
+    return 'Plaid aún no se mide · $items ítems vinculados · $accounts cuentas';
+  }
+
+  @override
+  String usageAdminPlaidUserLinks(int items, int accounts) {
+    return 'Plaid · $items ítems · $accounts cuentas · costo no medido';
+  }
+
+  @override
+  String get usageAdminBreakdownSection => 'Costo por función';
+
+  @override
+  String get usageAdminOpenDailyCharts => 'Gráficos diarios';
+
+  @override
+  String get usageAdminSliceGrokChat => 'Grok chat';
+
+  @override
+  String get usageAdminSliceGrokVoice => 'Grok voz';
+
+  @override
+  String get usageAdminSliceGoogleTts => 'Google TTS';
+
+  @override
+  String get usageAdminSliceDeepgramStt => 'Deepgram STT';
+
+  @override
+  String get usageAdminSliceDeepgramTts => 'Deepgram TTS';
+
+  @override
+  String get usageAdminSliceVoiceSession => 'Sesión de voz (no medida)';
+
+  @override
+  String get usageAdminSlicePlaid => 'Plaid';
+
+  @override
+  String get usageAdminSliceOther => 'Otro';
+
+  @override
+  String usageAdminUserUsageCounts(
+    String voiceMinutes,
+    int chatCalls,
+    int voiceCalls,
+    String sttMinutes,
+    String ttsMinutes,
+  ) {
+    return '$voiceMinutes voz · $chatCalls chat · $voiceCalls voz LLM · $sttMinutes STT · $ttsMinutes TTS';
+  }
+
+  @override
   String get usageSummaryLoadFailed =>
       'No se pudo cargar el uso en este momento.';
 

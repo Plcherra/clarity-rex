@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/features/usage_admin/application/owner_usage_controller.dart';
+import 'package:clarity/features/usage_admin/data/usage_admin_breakdown.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_filter.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_models.dart';
+import 'package:clarity/features/usage_admin/presentation/owner_usage_cost_mix.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_card.dart';
 import 'package:clarity/widgets/clarity_diamond_loader.dart';
@@ -106,6 +108,28 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
                       ),
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.user.largestCostDriver?.hasDriver == true
+                          ? l10n.usageAdminLargestDriver(
+                              usageCostSliceLabel(
+                                l10n,
+                                widget.user.largestCostDriver!.labelKey,
+                              ),
+                            )
+                          : l10n.usageAdminNoMeteredCost,
+                    ),
+                    const SizedBox(height: 12),
+                    OwnerUsageCostMixList(
+                      title: l10n.usageAdminBreakdownSection,
+                      slices: widget.user.costBreakdown,
+                      plaid: UsagePlaidLinks(
+                        metered: widget.user.plaidCostMetered,
+                        userCount: widget.user.plaidItemCount > 0 ? 1 : 0,
+                        itemCount: widget.user.plaidItemCount,
+                        accountCount: widget.user.plaidAccountCount,
                       ),
                     ),
                   ],
