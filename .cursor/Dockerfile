@@ -38,10 +38,10 @@ RUN curl -fsSL -o /tmp/flutter.tar.xz \
 
 ENV PATH="/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:${PATH}"
 
-# Warm the Flutter tool + host artifacts as the runtime user so per-user
-# config and caches are baked into the image.
+# Warm the Flutter tool as the runtime user so per-user config is baked into
+# the image. Platform/host artifacts are fetched by `flutter pub get` during
+# the install step (which runs at build time and is captured in the snapshot).
 USER ubuntu
 RUN git config --global --add safe.directory /opt/flutter \
     && flutter config --no-analytics >/dev/null 2>&1 || true \
-    && flutter --version \
-    && flutter precache --universal
+    && flutter --version
