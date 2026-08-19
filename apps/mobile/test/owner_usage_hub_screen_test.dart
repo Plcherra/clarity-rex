@@ -1,5 +1,7 @@
 import 'package:clarity/features/owner_debug/presentation/owner_debug_screen.dart';
 import 'package:clarity/features/usage_admin/application/owner_usage_controller.dart';
+import 'package:clarity/features/usage_admin/data/usage_admin_api.dart';
+import 'package:clarity/features/usage_admin/data/usage_admin_filter.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_models.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_usage_hub_screen.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_usage_profile_entry.dart';
@@ -24,7 +26,11 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      wrapWithL10n(OwnerUsageHubScreen(controller: _StubOwnerUsageController())),
+      wrapWithL10n(
+        OwnerUsageHubScreen(
+          controller: OwnerUsageController(api: _FakeUsageAdminApi()),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -45,7 +51,11 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      wrapWithL10n(OwnerUsageHubScreen(controller: _StubOwnerUsageController())),
+      wrapWithL10n(
+        OwnerUsageHubScreen(
+          controller: OwnerUsageController(api: _FakeUsageAdminApi()),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -67,7 +77,7 @@ void main() {
       wrapWithL10n(
         Scaffold(
           body: OwnerUsageProfileEntry(
-            controller: _StubOwnerAccessController(),
+            controller: OwnerAccessController(api: _FakeUsageAdminApi()),
           ),
         ),
       ),
@@ -99,12 +109,17 @@ void _expectDebugDumpAbsent() {
   expect(find.text('Git SHA'), findsNothing);
 }
 
-final class _StubOwnerUsageController extends OwnerUsageController {
+class _FakeUsageAdminApi extends UsageAdminApi {
+  _FakeUsageAdminApi() : super(baseUrl: 'http://localhost');
+
   @override
-  Future<void> load() async {
-    isLoading = false;
-    loadFailed = false;
-    summary = const OwnerPlatformSummary(
+  Future<bool> fetchOwnerAccess() async => true;
+
+  @override
+  Future<OwnerPlatformSummary> fetchPlatformSummary(
+    UsageAdminFilter filter,
+  ) async {
+    return const OwnerPlatformSummary(
       activeUserCount: 1,
       registeredUserCount: 2,
       monthVoiceSeconds: 180,
@@ -113,8 +128,12 @@ final class _StubOwnerUsageController extends OwnerUsageController {
       monthVoiceLlmCalls: 2,
       monthEstimatedCostCents: 199,
     );
-    users = const [
-      OwnerUserUsage(
+  }
+
+  @override
+  Future<List<OwnerUserUsage>> fetchAllUsers(UsageAdminFilter filter) async {
+    return [
+      const OwnerUserUsage(
         userId: 'user-1',
         email: 'a***@example.com',
         monthVoiceSeconds: 120,
@@ -126,15 +145,5 @@ final class _StubOwnerUsageController extends OwnerUsageController {
         monthEstimatedCostCents: 199,
       ),
     ];
-    notifyListeners();
-  }
-}
-
-final class _StubOwnerAccessController extends OwnerAccessController {
-  @override
-  Future<void> load() async {
-    isLoading = false;
-    isOwner = true;
-    notifyListeners();
   }
 }
