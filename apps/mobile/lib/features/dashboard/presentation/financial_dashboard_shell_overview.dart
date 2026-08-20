@@ -160,6 +160,11 @@ class _DashboardOverviewBodyState extends State<_DashboardOverviewBody> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         overviewCard,
+        DashboardLeakInsightBanner(
+          snapshot: snapshot,
+          budgetPerformance: widget.budgetPerformance,
+          hasAccounts: widget.accountCount > 0,
+        ),
         SizedBox(height: widget.sectionGap),
         if (widget.wide) ...[
           Row(
