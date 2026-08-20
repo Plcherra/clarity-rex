@@ -15,3 +15,24 @@ final hasLinkedAccountsProvider = FutureProvider<bool>((ref) async {
   }
   return service.hasLinkedAccounts();
 });
+
+/// One-shot `buildSummary()` when Chat is visible and accounts exist.
+///
+/// Warms the session cache only. Does not send a Grok turn or attach finance
+/// to a message the user did not send.
+final chatFinancePrefetchProvider = FutureProvider<void>((ref) async {
+  final visible = ref.watch(assistantChatVisibleProvider);
+  if (!visible) {
+    return;
+  }
+  final service = ref.watch(assistantFinancialContextServiceProvider);
+  if (service == null) {
+    return;
+  }
+  final hasAccounts = await ref.watch(hasLinkedAccountsProvider.future);
+  if (!hasAccounts) {
+    return;
+  }
+  await service.prefetchSessionSummary();
+});
+

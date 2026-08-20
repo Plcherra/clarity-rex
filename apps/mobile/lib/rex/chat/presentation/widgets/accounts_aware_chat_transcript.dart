@@ -39,6 +39,7 @@ class AccountsAwareChatTranscript extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(chatFinancePrefetchProvider);
     final hasLinkedAccounts =
         ref.watch(hasLinkedAccountsProvider).valueOrNull ?? false;
     return ChatTranscript(

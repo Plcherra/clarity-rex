@@ -1,6 +1,6 @@
 # 06 — Pre-launch blocking fixes
 
-**Status:** Phase A complete on `cursor/phase-a-first-view-leak-7f06`. Phase B complete on `cursor/phase-b-money-chips`.  
+**Status:** Phases A–C complete on `cursor/phase-b-money-chips`.  
 **Depends on:** [`05_simple_brain_implementation.md`](05_simple_brain_implementation.md) (fetch actions exist)  
 **Launch binary:** this branch — do **not** ship from `main`
 
@@ -103,9 +103,9 @@ Not launch-blocking if Phase B attach-on-send works.
 
 **Do (optional)**
 
-- [ ] When Chat becomes visible **and** the user has accounts, call existing `AssistantFinancialContextService.buildSummary()` once (`apps/mobile/lib/features/finance/application/assistant_financial_context_service.dart`). Hook: `ChatPage` post-frame / `assistantChatVisibleProvider` in `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`.
-- [ ] Cache that pack for the session so the first money-chip send does not wait on a cold read-model build.
-- [ ] If a turn needs numbers, Grok still names `fetch_spend_insight` / `fetch_account_summary`. The one-shot does not invent a new action.
+- [x] When Chat becomes visible **and** the user has accounts, call existing `AssistantFinancialContextService.buildSummary()` once (`apps/mobile/lib/features/finance/application/assistant_financial_context_service.dart`). Hook: `assistantChatVisibleProvider` via `chatFinancePrefetchProvider` (watched from the empty-chat transcript, not a ChatPage grow).
+- [x] Cache that pack for the session so the first money-chip send does not wait on a cold read-model build.
+- [x] If a turn needs numbers, Grok still names `fetch_spend_insight` / `fetch_account_summary`. The one-shot does not invent a new action.
 
 **Do not**
 

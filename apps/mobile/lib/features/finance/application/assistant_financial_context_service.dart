@@ -16,7 +16,7 @@ final assistantFinancialContextServiceProvider =
     Provider<AssistantFinancialContextService?>((ref) => null);
 
 final class AssistantFinancialContextService {
-  const AssistantFinancialContextService({
+  AssistantFinancialContextService({
     required Future<FinancialReadModel> Function() loadFinancialReadModel,
     required DateTime Function() spendReference,
     required void Function() notifyDataChanged,
@@ -31,8 +31,28 @@ final class AssistantFinancialContextService {
   final void Function() _notifyDataChanged;
   final String Function()? _localeTag;
 
+  FinancialReadModel? _cachedModel;
+  Future<FinancialReadModel>? _inFlightModel;
+  var _prefetched = false;
+  var sessionPrefetchCount = 0;
+
   void notifyDataChanged() {
+    _cachedModel = null;
+    _inFlightModel = null;
+    _prefetched = false;
     _notifyDataChanged();
+  }
+
+  /// One session warmup so the first money send does not wait on a cold load.
+  ///
+  /// Does not attach finance to Grok. Send still gates on intent.
+  Future<void> prefetchSessionSummary() async {
+    if (_prefetched) {
+      return;
+    }
+    _prefetched = true;
+    sessionPrefetchCount += 1;
+    await buildSummary();
   }
 
   Future<bool> hasLinkedAccounts() async {
@@ -81,7 +101,7 @@ final class AssistantFinancialContextService {
 
   Future<Map<String, dynamic>> buildSummary({String? userMessage}) async {
     final summary = await AssistantFinancialContextBuilder(
-      loadFinancialReadModel: _loadFinancialReadModel,
+      loadFinancialReadModel: _safeFinancialReadModel,
       spendReference: _spendReference,
       localeTag: _localeTag,
     ).buildSummary(userMessage: userMessage);
@@ -89,10 +109,32 @@ final class AssistantFinancialContextService {
   }
 
   Future<FinancialReadModel> _safeFinancialReadModel() async {
+    final cached = _cachedModel;
+    if (cached != null) {
+      return cached;
+    }
+    final inFlight = _inFlightModel;
+    if (inFlight != null) {
+      return inFlight;
+    }
+    final load = _loadFresh();
+    _inFlightModel = load;
     try {
-      return await _loadFinancialReadModel();
+      return await load;
+    } finally {
+      if (identical(_inFlightModel, load)) {
+        _inFlightModel = null;
+      }
+    }
+  }
+
+  Future<FinancialReadModel> _loadFresh() async {
+    try {
+      final model = await _loadFinancialReadModel();
+      _cachedModel = model;
+      return model;
     } on Object catch (error) {
-      return FinancialReadModel.empty(
+      final empty = FinancialReadModel.empty(
         loadIssues: [
           FinancialReadModelLoadIssue(
             source: 'financial_read_model',
@@ -100,6 +142,8 @@ final class AssistantFinancialContextService {
           ),
         ],
       );
+      _cachedModel = empty;
+      return empty;
     }
   }
 }
