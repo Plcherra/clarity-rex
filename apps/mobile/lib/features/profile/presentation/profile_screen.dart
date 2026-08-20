@@ -7,6 +7,7 @@ import '../../../core/layout/web_centered_dialog.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../widgets/clarity_text_prompt.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../dashboard/application/home_screen_widget_publisher.dart';
 import '../../auth/presentation/mfa_enrollment_screen.dart';
 import '../application/locale_controller.dart';
 import '../application/profile_controller.dart';
@@ -193,6 +194,7 @@ final class ProfileScreen extends StatelessWidget {
     );
     if (confirmed != true || !context.mounted) return;
 
+    await clearHomeScreenWidget();
     await authController.deleteAccount();
     if (!context.mounted) return;
     final error = authController.errorMessage;

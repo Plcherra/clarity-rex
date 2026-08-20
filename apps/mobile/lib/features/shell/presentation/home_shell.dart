@@ -12,6 +12,7 @@ import '../../accounts/presentation/accounts_navigation_actions.dart';
 import '../../accounts/presentation/accounts_screen.dart';
 import '../../budgets/presentation/budgets_screen.dart';
 import '../../dashboard/application/dashboard_deep_link_navigation.dart';
+import '../../dashboard/application/home_screen_widget_bridge.dart';
 import '../../dashboard/domain/dashboard_insight_anchor.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
 import '../../plaid/application/plaid_link_service.dart';
@@ -68,6 +69,10 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    HomeScreenWidgetBridge.instance.listenForOpens(() {
+      if (!mounted) return;
+      setState(() => _selectIndex(0));
+    });
   }
 
   @override
@@ -78,6 +83,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
 
   @override
   void dispose() {
+    HomeScreenWidgetBridge.instance.stopListening();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

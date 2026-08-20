@@ -11,12 +11,24 @@ import LinkKit
     let didFinish = super.application(application, didFinishLaunchingWithOptions: launchOptions)
     if let controller = window?.rootViewController as? FlutterViewController {
       VoiceAudioBridge.shared.install(binaryMessenger: controller.binaryMessenger)
+      HomeScreenWidgetBridge.shared.install(binaryMessenger: controller.binaryMessenger)
       PlaidLinkBridge.shared.install(
         binaryMessenger: controller.binaryMessenger,
         rootViewController: controller
       )
     }
     return didFinish
+  }
+
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    if HomeScreenWidgetBridge.shared.handleOpenURL(url) {
+      return true
+    }
+    return super.application(app, open: url, options: options)
   }
 
   override func application(

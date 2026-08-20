@@ -1,6 +1,6 @@
 # 06 — Pre-launch blocking fixes
 
-**Status:** Phases A–E complete on `cursor/phase-b-money-chips`.  
+**Status:** Phases A–F implemented on `cursor/phase-b-money-chips`.  
 **Depends on:** [`05_simple_brain_implementation.md`](05_simple_brain_implementation.md) (fetch actions exist)  
 **Launch binary:** this branch — do **not** ship from `main`
 
@@ -207,8 +207,8 @@ One screen, two modes: `AuthScreen` / `_isSignUp` in `apps/mobile/lib/features/a
 
 The shared password field already has `_obscurePassword` and `authShowPassword` / `authHidePassword`. Owner still asked for the toggle on **both** Sign in and Create account.
 
-- [ ] Confirm the suffix eye works in both modes (web + iOS). If a platform swallows `suffixIcon`, fix that — do not add a second password field.
-- [ ] There is no other password field in the Flutter auth tree (`email_confirmation_screen.dart` has none). Do not invent a second create-account route.
+- [x] Confirm the suffix eye works in both modes (web + iOS). If a platform swallows `suffixIcon`, fix that — do not add a second password field.
+- [x] There is no other password field in the Flutter auth tree (`email_confirmation_screen.dart` has none). Do not invent a second create-account route.
 
 **Strength — no client validator exists today**
 
@@ -227,11 +227,11 @@ Symbol is **not** required. Three character classes + min length is the mix.
 
 **UI as they type (Create account only)**
 
-- [ ] Under the password field, a live checklist of the four rules. Met → checked/positive color; unmet → muted.
-- [ ] Disable **Create account** until all four pass. Show why if they tap early.
-- [ ] Sign in: no checklist (existing passwords may be weaker). Keep show/hide.
-- [ ] Keep mapping server `weak` / `at least` errors to `authErrorWeakPassword`.
-- [ ] Put the predicate in a small testable helper next to auth (not inline in `build`). Tests for each rule and the “all four” gate.
+- [x] Under the password field, a live checklist of the four rules. Met → checked/positive color; unmet → muted.
+- [x] Disable **Create account** until all four pass. Show why if they tap early.
+- [x] Sign in: no checklist (existing passwords may be weaker). Keep show/hide.
+- [x] Keep mapping server `weak` / `at least` errors to `authErrorWeakPassword`.
+- [x] Put the predicate in a small testable helper next to auth (not inline in `build`). Tests for each rule and the “all four” gate.
 
 **Manual tests**
 

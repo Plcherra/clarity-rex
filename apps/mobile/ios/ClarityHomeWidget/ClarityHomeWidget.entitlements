@@ -6,11 +6,5 @@
 	<array>
 		<string>group.app.goclarity.clarity</string>
 	</array>
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>applinks:goclarity.app</string>
-		<string>applinks:www.goclarity.app</string>
-		<string>applinks:api.goclarity.app</string>
-	</array>
 </dict>
 </plist>

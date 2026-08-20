@@ -188,6 +188,36 @@ abstract class AppLocalizations {
   /// **'Password'**
   String get authPasswordLabel;
 
+  /// No description provided for @authPasswordRuleLength.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters'**
+  String get authPasswordRuleLength;
+
+  /// No description provided for @authPasswordRuleLowercase.
+  ///
+  /// In en, this message translates to:
+  /// **'One lowercase letter'**
+  String get authPasswordRuleLowercase;
+
+  /// No description provided for @authPasswordRuleUppercase.
+  ///
+  /// In en, this message translates to:
+  /// **'One uppercase letter'**
+  String get authPasswordRuleUppercase;
+
+  /// No description provided for @authPasswordRuleDigit.
+  ///
+  /// In en, this message translates to:
+  /// **'One number'**
+  String get authPasswordRuleDigit;
+
+  /// No description provided for @authPasswordRulesIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Meet all password rules to create an account.'**
+  String get authPasswordRulesIncomplete;
+
   /// No description provided for @authShowPassword.
   ///
   /// In en, this message translates to:
@@ -1795,6 +1825,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Left this month'**
   String get dashboardOverviewLeftThisMonth;
+
+  /// No description provided for @homeScreenWidgetEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Clarity and connect a bank to see cash and leftover.'**
+  String get homeScreenWidgetEmpty;
 
   /// No description provided for @dashboardOverviewLeftThisPeriod.
   ///

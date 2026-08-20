@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'dart:async';
+
 import '../../../app/ui_dependencies.dart';
+import '../application/home_screen_widget_publisher.dart';
 import '../../../core/layout/clarity_breakpoints.dart';
 import '../../../core/layout/clarity_native_layout.dart';
 import '../../../core/layout/finance_content_constraints.dart';
@@ -307,6 +310,7 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
       );
       if (!mounted || generation != _loadGeneration) return;
       _dataNotifier.setData(data);
+      unawaited(publishHomeScreenWidget(data, context.l10n));
     } on Object catch (error) {
       if (!mounted || generation != _loadGeneration) return;
       _dataNotifier.setError(error);

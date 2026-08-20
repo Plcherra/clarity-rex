@@ -56,6 +56,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authPasswordLabel => 'Contraseña';
 
   @override
+  String get authPasswordRuleLength => 'Al menos 8 caracteres';
+
+  @override
+  String get authPasswordRuleLowercase => 'Una letra minúscula';
+
+  @override
+  String get authPasswordRuleUppercase => 'Una letra mayúscula';
+
+  @override
+  String get authPasswordRuleDigit => 'Un número';
+
+  @override
+  String get authPasswordRulesIncomplete =>
+      'Cumple todas las reglas de contraseña para crear una cuenta.';
+
+  @override
   String get authShowPassword => 'Mostrar contraseña';
 
   @override
@@ -964,6 +980,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dashboardOverviewLeftThisMonth => 'Sobra este mes';
+
+  @override
+  String get homeScreenWidgetEmpty =>
+      'Abre Clarity y conecta un banco para ver el efectivo y lo que sobra.';
 
   @override
   String get dashboardOverviewLeftThisPeriod => 'Sobra este período';

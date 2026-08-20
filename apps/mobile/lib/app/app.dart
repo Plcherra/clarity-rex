@@ -11,6 +11,7 @@ import '../features/auth/presentation/mfa_verification_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/profile/application/theme_mode_controller.dart';
+import '../features/dashboard/application/home_screen_widget_publisher.dart';
 import '../features/shell/presentation/home_shell.dart';
 import '../rex/chat/application/chat_action_result_formatter.dart';
 import '../rex/chat/application/chat_controller.dart';
@@ -128,7 +129,10 @@ final class ClarityApp extends StatelessWidget {
       profileController: profileController,
       themeModeController: themeModeController,
       localeController: localeController,
-      signOut: authController.signOut,
+      signOut: () async {
+        await clearHomeScreenWidget();
+        await authController.signOut();
+      },
       onResumeFromBackground: onResumeFromBackground,
     );
   }

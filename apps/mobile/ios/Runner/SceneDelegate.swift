@@ -9,6 +9,21 @@ class SceneDelegate: FlutterSceneDelegate {
   ) {
     super.scene(scene, willConnectTo: session, options: connectionOptions)
     installNativeBridges()
+    for context in connectionOptions.urlContexts {
+      HomeScreenWidgetBridge.shared.handleOpenURL(context.url)
+    }
+  }
+
+  override func scene(
+    _ scene: UIScene,
+    openURLContexts URLContexts: Set<UIOpenURLContext>
+  ) {
+    installNativeBridges()
+    if let url = URLContexts.first?.url,
+       HomeScreenWidgetBridge.shared.handleOpenURL(url) {
+      return
+    }
+    super.scene(scene, openURLContexts: URLContexts)
   }
 
   override func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
@@ -28,5 +43,6 @@ class SceneDelegate: FlutterSceneDelegate {
       rootViewController: controller
     )
     VoiceAudioBridge.shared.install(binaryMessenger: controller.binaryMessenger)
+    HomeScreenWidgetBridge.shared.install(binaryMessenger: controller.binaryMessenger)
   }
 }

@@ -27,6 +27,20 @@ void main() {
     );
   });
 
+  test('server weak-password errors stay mapped to the friendly string', () {
+    expect(
+      friendlyAuthError(
+        const AuthException('Password should be at least 8 characters'),
+        l10n,
+      ),
+      l10n.authErrorWeakPassword,
+    );
+    expect(
+      friendlyAuthError(const AuthException('Password is too weak'), l10n),
+      l10n.authErrorWeakPassword,
+    );
+  });
+
   test('email send failures are not shown as MFA errors', () {
     expect(
       friendlyAuthError(

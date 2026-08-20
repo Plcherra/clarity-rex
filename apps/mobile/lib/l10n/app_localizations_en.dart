@@ -55,6 +55,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authPasswordLabel => 'Password';
 
   @override
+  String get authPasswordRuleLength => 'At least 8 characters';
+
+  @override
+  String get authPasswordRuleLowercase => 'One lowercase letter';
+
+  @override
+  String get authPasswordRuleUppercase => 'One uppercase letter';
+
+  @override
+  String get authPasswordRuleDigit => 'One number';
+
+  @override
+  String get authPasswordRulesIncomplete =>
+      'Meet all password rules to create an account.';
+
+  @override
   String get authShowPassword => 'Show password';
 
   @override
@@ -955,6 +971,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardOverviewLeftThisMonth => 'Left this month';
+
+  @override
+  String get homeScreenWidgetEmpty =>
+      'Open Clarity and connect a bank to see cash and leftover.';
 
   @override
   String get dashboardOverviewLeftThisPeriod => 'Left this period';

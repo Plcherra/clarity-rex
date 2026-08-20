@@ -7,6 +7,9 @@ import '../../../widgets/clarity_button.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../profile/application/locale_controller.dart';
 import '../application/auth_controller.dart';
+import '../application/auth_password_strength.dart';
+import 'auth_password_field.dart';
+import 'auth_password_strength_checklist.dart';
 
 final class AuthScreen extends StatefulWidget {
   const AuthScreen({
@@ -30,11 +33,20 @@ final class _AuthScreenState extends State<AuthScreen> {
   String? _localError;
 
   @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_onPasswordChanged);
+  }
+
+  @override
   void dispose() {
+    _passwordController.removeListener(_onPasswordChanged);
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
+
+  void _onPasswordChanged() => setState(() {});
 
   @override
   void didChangeDependencies() {
@@ -60,6 +72,10 @@ final class _AuthScreenState extends State<AuthScreen> {
     setState(() => _localError = null);
     if (email.isEmpty || password.isEmpty) {
       setState(() => _localError = context.l10n.authEnterEmailPassword);
+      return;
+    }
+    if (_isSignUp && !AuthPasswordStrength.evaluate(password).isStrong) {
+      setState(() => _localError = context.l10n.authPasswordRulesIncomplete);
       return;
     }
 
@@ -100,6 +116,10 @@ final class _AuthScreenState extends State<AuthScreen> {
         final cs = theme.colorScheme;
         final l10n = context.l10n;
         final error = _localError ?? widget.controller.errorMessage;
+        final passwordStrength = AuthPasswordStrength.evaluate(
+          _passwordController.text,
+        );
+        final canCreateAccount = !_isSignUp || passwordStrength.isStrong;
         return Scaffold(
           body: DecoratedBox(
             decoration: const BoxDecoration(
@@ -163,29 +183,20 @@ final class _AuthScreenState extends State<AuthScreen> {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          TextField(
+                          AuthPasswordField(
                             controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            onSubmitted: (_) => _submit(),
-                            decoration: InputDecoration(
-                              labelText: l10n.authPasswordLabel,
-                              suffixIcon: IconButton(
-                                tooltip: _obscurePassword
-                                    ? l10n.authShowPassword
-                                    : l10n.authHidePassword,
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                ),
-                              ),
-                            ),
+                            obscurePassword: _obscurePassword,
+                            onToggleObscure: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                            onSubmitted: _submit,
                           ),
+                          if (_isSignUp)
+                            AuthPasswordStrengthChecklist(
+                              strength: passwordStrength,
+                            ),
                           if (!_isSignUp) ...[
                             const SizedBox(height: 8),
                             Align(
@@ -219,13 +230,26 @@ final class _AuthScreenState extends State<AuthScreen> {
                             ),
                           ],
                           const SizedBox(height: 22),
-                          ClarityButton.filled(
-                            label: _isSignUp
-                                ? l10n.authCreateAccountButton
-                                : l10n.authSignInButton,
-                            onPressed: _submit,
-                            isLoading: widget.controller.isLoading,
-                            expanded: true,
+                          GestureDetector(
+                            key: const Key('authCreateAccountBlockedTap'),
+                            behavior: HitTestBehavior.opaque,
+                            onTap: canCreateAccount
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _localError =
+                                          l10n.authPasswordRulesIncomplete;
+                                    });
+                                  },
+                            child: ClarityButton.filled(
+                              key: const Key('authPrimaryButton'),
+                              label: _isSignUp
+                                  ? l10n.authCreateAccountButton
+                                  : l10n.authSignInButton,
+                              onPressed: canCreateAccount ? _submit : null,
+                              isLoading: widget.controller.isLoading,
+                              expanded: true,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           ClarityButton.text(
