@@ -103,6 +103,8 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
                   profileController: composition.profileController,
                   themeModeController: composition.themeModeController,
                   localeController: composition.localeController,
+                  onResumeFromBackground:
+                      composition.startupService.recoverAfterResume,
                 )
               : _BootLoadingApp(
                   themeModeController: _themeModeController,

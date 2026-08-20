@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../core/supabase/supabase_exceptions.dart';
+import '../core/supabase/supabase_realtime_supervisor.dart';
 import '../features/accounts/data/account_service.dart';
 import '../features/auth/application/auth_service.dart';
 import '../features/budgets/data/budget_service.dart';
@@ -19,7 +20,15 @@ class AppStartupService {
     required this.notifyDashboardAndBudgetsChanged,
     required this.notifyAccountsChanged,
     required this.notifyTransactionDataChanged,
-  });
+    SupabaseRealtimeSupervisor? realtime,
+  }) : _realtime =
+           realtime ??
+           SupabaseRealtimeSupervisor(
+             refreshSession: () async {
+               await authService.refreshAuthSession();
+             },
+             hasSession: () => authService.currentSession != null,
+           );
 
   final AuthService authService;
   final BudgetService budgetService;
@@ -30,14 +39,20 @@ class AppStartupService {
   final void Function() notifyDashboardAndBudgetsChanged;
   final void Function() notifyAccountsChanged;
   final void Function() notifyTransactionDataChanged;
+  final SupabaseRealtimeSupervisor _realtime;
 
-  final List<StreamSubscription<Object?>> _subscriptions = [];
   StreamSubscription<dynamic>? _authSubscription;
 
   Future<void> hydrateForStartup() async {
     _startAuthWatcher();
     await _fetchInitialSupabaseData();
-    _startSupabaseWatchers();
+    await _startSupabaseWatchers();
+  }
+
+  /// Real background resume: refresh JWT, then resubscribe if the socket died.
+  Future<void> recoverAfterResume() async {
+    if (authService.currentSession == null) return;
+    await _realtime.recoverAfterResume();
   }
 
   Future<void> _fetchInitialSupabaseData() async {
@@ -60,38 +75,44 @@ class AppStartupService {
     if (transactionsLoaded) notifyTransactionDataChanged();
   }
 
-  void _startSupabaseWatchers() {
-    if (_subscriptions.isNotEmpty) return;
+  Future<void> _startSupabaseWatchers() async {
+    if (_realtime.isListening) return;
+    await _realtime.start(_financeWatches());
+  }
 
-    _listenIfAuthenticated(
-      accountService.watchAccounts,
-      (_) => notifyAccountsChanged(),
-    );
-    _listenIfAuthenticated(
-      budgetService.watchBudgets,
-      (_) => notifyDashboardAndBudgetsChanged(),
-    );
-    try {
-      categoryReadModel.startWatching(
-        onChanged: () {
+  List<SupabaseRealtimeWatch> _financeWatches() {
+    return [
+      SupabaseRealtimeWatch(
+        name: 'accounts',
+        open: accountService.watchAccounts,
+        onData: (_) => notifyAccountsChanged(),
+      ),
+      SupabaseRealtimeWatch(
+        name: 'budgets',
+        open: budgetService.watchBudgets,
+        onData: (_) => notifyDashboardAndBudgetsChanged(),
+      ),
+      SupabaseRealtimeWatch(
+        name: 'categories',
+        open: categoryService.watchCategories,
+        onData: (rows) {
+          categoryReadModel.applyRemoteCategories(rows);
           notifyDashboardAndBudgetsChanged();
           notifyTransactionDataChanged();
         },
-      );
-    } on SupabaseAuthRequiredException {
-      return;
-    }
-    _listenIfAuthenticated(
-      transactionService.watchTransactions,
-      (_) => notifyTransactionDataChanged(),
-    );
+      ),
+      SupabaseRealtimeWatch(
+        name: 'transactions',
+        open: transactionService.watchTransactions,
+        onData: (_) => notifyTransactionDataChanged(),
+      ),
+    ];
   }
 
   void _startAuthWatcher() {
     _authSubscription ??= authService.authStateChanges.listen((_) async {
       if (authService.currentUser == null) {
         _stopSupabaseWatchers();
-        categoryReadModel.stopWatching();
         notifyAccountsChanged();
         notifyDashboardAndBudgetsChanged();
         notifyTransactionDataChanged();
@@ -99,7 +120,7 @@ class AppStartupService {
       }
 
       await _fetchInitialSupabaseData();
-      _startSupabaseWatchers();
+      await _startSupabaseWatchers();
     });
   }
 
@@ -112,17 +133,6 @@ class AppStartupService {
     }
   }
 
-  void _listenIfAuthenticated(
-    Stream<Object?> Function() streamFactory,
-    void Function(Object?) onData,
-  ) {
-    try {
-      _subscriptions.add(streamFactory().listen(onData));
-    } on SupabaseAuthRequiredException {
-      return;
-    }
-  }
-
   void dispose() {
     unawaited(_authSubscription?.cancel());
     _authSubscription = null;
@@ -130,10 +140,7 @@ class AppStartupService {
   }
 
   void _stopSupabaseWatchers() {
-    for (final subscription in _subscriptions) {
-      unawaited(subscription.cancel());
-    }
-    _subscriptions.clear();
+    _realtime.stop();
     categoryReadModel.stopWatching();
   }
 }

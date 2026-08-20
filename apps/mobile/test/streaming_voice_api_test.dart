@@ -47,6 +47,26 @@ void main() {
     },
   );
 
+  test('StreamingVoiceApi refreshes a stale session before connecting', () async {
+    var prepared = 0;
+    final socket = _FakeVoiceWebSocket();
+    final api = StreamingVoiceApi(
+      apiClient: RexApiClient(
+        baseUrl: 'https://clarity.example.com/rex',
+        authHeaders: RexAuthHeaders(
+          accessTokenProvider: _testAccessToken,
+          ensureFreshSession: () async {
+            prepared += 1;
+          },
+        ),
+      ),
+      connector: (uri, {headers}) async => socket,
+    );
+
+    await api.connect();
+    expect(prepared, 1);
+  });
+
   test('VoiceStreamEvent exposes memory changes', () {
     final event = VoiceStreamEvent.fromJson({
       'event': 'messages.updated',

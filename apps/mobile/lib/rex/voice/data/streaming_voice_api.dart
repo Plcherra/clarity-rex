@@ -148,6 +148,7 @@ class StreamingVoiceApi {
     String client = 'flutter_streaming',
     Map<String, dynamic>? financialContext,
   }) async {
+    await _apiClient.prepareAuthSession();
     final socket = await _connector(
       _streamUri(),
       headers: _apiClient.authHeaders(),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,6 +38,7 @@ class HomeShell extends ConsumerStatefulWidget {
     required this.themeModeController,
     required this.localeController,
     this.signOut,
+    this.onResumeFromBackground,
   });
 
   final AppUiDependencies ui;
@@ -44,6 +47,7 @@ class HomeShell extends ConsumerStatefulWidget {
   final ThemeModeController themeModeController;
   final LocaleController localeController;
   final Future<void> Function()? signOut;
+  final Future<void> Function()? onResumeFromBackground;
 
   @override
   ConsumerState<HomeShell> createState() => _HomeShellState();
@@ -88,8 +92,14 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
         previous == AppLifecycleState.paused ||
         previous == AppLifecycleState.hidden;
     if (state == AppLifecycleState.resumed && returningFromBackground) {
-      widget.ui.notifyAll();
+      unawaited(_recoverRealtimeThenNotify());
     }
+  }
+
+  Future<void> _recoverRealtimeThenNotify() async {
+    await widget.onResumeFromBackground?.call();
+    if (!mounted) return;
+    widget.ui.notifyAll();
   }
 
   void _openCategoryManagement() {

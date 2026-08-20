@@ -1,6 +1,6 @@
 # 06 — Pre-launch blocking fixes
 
-**Status:** Phases A–C complete on `cursor/phase-b-money-chips`.  
+**Status:** Phases A–D complete on `cursor/phase-b-money-chips`.  
 **Depends on:** [`05_simple_brain_implementation.md`](05_simple_brain_implementation.md) (fetch actions exist)  
 **Launch binary:** this branch — do **not** ship from `main`
 
@@ -145,11 +145,11 @@ Timeouts show up on the same subscribe path when the socket never recovers.
 
 **Do**
 
-- [ ] Before every `.stream()` subscribe (startup + restart), `await authService.refreshAuthSession()` when a session exists.
-- [ ] Give every watcher `onError`: refresh session, cancel, resubscribe. Do not leave a dead subscription.
-- [ ] On real background → resume (`paused`/`hidden` → `resumed`), refresh JWT then restart watchers if the socket is dead. Keep the screenshot `inactive→resumed` skip so the dashboard does not flash-load.
-- [ ] After a handled 1006 / expired JWT, recover quietly. Do not report it as an unhandled fatal (`ClarityCrashReporting` / `runZonedGuarded` in `apps/mobile/lib/core/observability/clarity_crash_reporting.dart`).
-- [ ] Prefer one helper (startup service or a small realtime supervisor) so accounts/transactions/budgets/categories share the same refresh+retry. Do not copy-paste five slightly different listeners.
+- [x] Before every `.stream()` subscribe (startup + restart), `await authService.refreshAuthSession()` when a session exists.
+- [x] Give every watcher `onError`: refresh session, cancel, resubscribe. Do not leave a dead subscription.
+- [x] On real background → resume (`paused`/`hidden` → `resumed`), refresh JWT then restart watchers if the socket is dead. Keep the screenshot `inactive→resumed` skip so the dashboard does not flash-load.
+- [x] After a handled 1006 / expired JWT, recover quietly. Do not report it as an unhandled fatal (`ClarityCrashReporting` / `runZonedGuarded` in `apps/mobile/lib/core/observability/clarity_crash_reporting.dart`).
+- [x] Prefer one helper (startup service or a small realtime supervisor) so accounts/transactions/budgets/categories share the same refresh+retry. Do not copy-paste five slightly different listeners.
 
 **Do not**
 

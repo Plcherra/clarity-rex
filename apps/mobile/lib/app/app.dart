@@ -32,6 +32,7 @@ final class ClarityApp extends StatelessWidget {
     required this.profileController,
     required this.themeModeController,
     required this.localeController,
+    this.onResumeFromBackground,
   });
 
   final AppUiDependencies ui;
@@ -39,6 +40,7 @@ final class ClarityApp extends StatelessWidget {
   final ProfileController profileController;
   final ThemeModeController themeModeController;
   final LocaleController localeController;
+  final Future<void> Function()? onResumeFromBackground;
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +129,7 @@ final class ClarityApp extends StatelessWidget {
       themeModeController: themeModeController,
       localeController: localeController,
       signOut: authController.signOut,
+      onResumeFromBackground: onResumeFromBackground,
     );
   }
 }

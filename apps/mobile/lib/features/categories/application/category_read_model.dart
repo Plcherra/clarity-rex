@@ -94,6 +94,14 @@ final class CategoryReadModel extends ChangeNotifier {
     _setCategories(await _categoryService.fetchCategories());
   }
 
+  void applyRemoteCategories(Object? rows) {
+    if (rows is! Iterable) return;
+    _setCategories([
+      for (final row in rows)
+        if (row is CategoryRecord) row,
+    ]);
+  }
+
   void startWatching({required void Function() onChanged}) {
     if (_subscription != null) return;
     _subscription = _categoryService.watchCategories().listen((categories) {

@@ -58,6 +58,8 @@ final class RexApiClient {
     return _authHeaders.headers(baseHeaders);
   }
 
+  Future<void> prepareAuthSession() => _authHeaders.prepareSession();
+
   Future<http.Response> get(String path, {Map<String, String>? query}) {
     return _observeResponse(
       path,

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/supabase/supabase_exceptions.dart';
+import '../../../core/supabase/supabase_realtime_errors.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../auth/application/auth_service.dart';
 import '../domain/assistant_proposal_settings.dart';
@@ -37,6 +38,8 @@ final class ProfileController extends ChangeNotifier {
   final SharedPreferencesAsync _preferences;
   StreamSubscription<dynamic>? _authSubscription;
   StreamSubscription<ProfileRecord?>? _profileSubscription;
+  var _profileRestartQueued = false;
+  var _profileRestartAttempts = 0;
 
   ProfileRecord? profile;
   bool isLoading = false;
@@ -67,6 +70,7 @@ final class ProfileController extends ChangeNotifier {
   Future<void> hydrateProfileForCurrentUser() async {
     await _profileSubscription?.cancel();
     _profileSubscription = null;
+    _profileRestartAttempts = 0;
     var shouldBlockUi = profile == null && _cachedOnboardingName == null;
 
     try {
@@ -98,22 +102,7 @@ final class ProfileController extends ChangeNotifier {
             ? (localeTag) => updatePreferredLocale(localeTag)
             : null,
       );
-      _profileSubscription = profileService.watchCurrentProfile().listen((
-        next,
-      ) async {
-        if (next != null) {
-          profile = next;
-          await _cacheOnboardingName(next.fullName);
-        } else if (authService.currentUser == null) {
-          profile = null;
-          _cachedOnboardingName = null;
-        }
-        await _refreshAvatarUrl();
-        await _localeController?.resolveAfterProfileHydrate(
-          profilePreferredLocale: profile?.preferredLocale,
-        );
-        notifyListeners();
-      });
+      await _listenCurrentProfile();
     } on SupabaseAuthRequiredException {
       profile = null;
     } catch (e) {
@@ -260,6 +249,59 @@ final class ProfileController extends ChangeNotifier {
     } finally {
       isUpdatingAvatar = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> _listenCurrentProfile() async {
+    await _profileSubscription?.cancel();
+    _profileSubscription = null;
+    if (authService.currentUser == null) return;
+    await authService.refreshAuthSession();
+    try {
+      _profileSubscription = profileService.watchCurrentProfile().listen(
+        (next) async {
+          _profileRestartAttempts = 0;
+          if (next != null) {
+            profile = next;
+            await _cacheOnboardingName(next.fullName);
+          } else if (authService.currentUser == null) {
+            profile = null;
+            _cachedOnboardingName = null;
+          }
+          await _refreshAvatarUrl();
+          await _localeController?.resolveAfterProfileHydrate(
+            profilePreferredLocale: profile?.preferredLocale,
+          );
+          notifyListeners();
+        },
+        onError: (Object error, StackTrace stack) {
+          _handleProfileStreamError(error);
+        },
+        cancelOnError: false,
+      );
+    } on SupabaseAuthRequiredException {
+      rethrow;
+    } on Object catch (error) {
+      _handleProfileStreamError(error);
+    }
+  }
+
+  void _handleProfileStreamError(Object error) {
+    if (isRecoverableSupabaseRealtimeError(error)) {
+      debugPrint('[Clarity][Realtime] profile: $error');
+    }
+    unawaited(_restartProfileWatch());
+  }
+
+  Future<void> _restartProfileWatch() async {
+    if (_profileRestartQueued || _profileRestartAttempts >= 3) return;
+    _profileRestartQueued = true;
+    _profileRestartAttempts += 1;
+    try {
+      await authService.refreshAuthSession();
+      await _listenCurrentProfile();
+    } finally {
+      _profileRestartQueued = false;
     }
   }
 
