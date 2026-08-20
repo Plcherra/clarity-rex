@@ -993,7 +993,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dashboardOverviewPendingCashFlowNote =>
-      'Ingresos y gastos esperan a que los pendientes se confirmen. El neto ya los incluye.';
+      'Ingresos y gastos incluyen pendientes. Se actualizan cuando el banco los confirma.';
 
   @override
   String get dashboardOverviewSavings => 'Ahorros';

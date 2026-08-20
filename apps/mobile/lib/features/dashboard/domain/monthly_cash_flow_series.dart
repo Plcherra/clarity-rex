@@ -3,7 +3,7 @@ import '../../transactions/domain/transaction_resolution.dart';
 
 /// Income and spending for one calendar month.
 ///
-/// Measured with the same rules the overview card uses — settled rows only,
+/// Measured with the same rules the overview card uses — pending included,
 /// counted through [ResolvedTransaction.countsAsIncome] and
 /// [ResolvedTransaction.countsAsSpend], so transfers between the user's own
 /// accounts and credit-card payments never land on both sides of the month.
@@ -37,7 +37,6 @@ List<MonthlyCashFlowPoint> buildMonthlyCashFlowSeries(
 
   for (final row in resolved) {
     final transaction = row.transaction;
-    if (transaction.pending) continue;
     final key = yearMonthKey(transaction.date);
     if (row.countsAsSpend) {
       spendByMonth[key] = (spendByMonth[key] ?? 0) + -transaction.amount;

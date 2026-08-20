@@ -36,7 +36,6 @@ double totalIncomeInMonth(
   var sum = 0.0;
   for (final r in resolved) {
     final t = r.transaction;
-    if (t.pending) continue;
     if (!_inMonth(t.date, reference)) continue;
     if (!r.countsAsIncome) continue;
     sum += t.amount;
@@ -49,7 +48,6 @@ void addResolvedCategorySpend(
   ResolvedTransaction resolved,
 ) {
   final transaction = resolved.transaction;
-  if (transaction.pending) return;
   final bucket = spendCategoryBucketKey(resolved);
   if (isNeedsCategoryGroupKey(bucket)) {
     map[bucket] = (map[bucket] ?? 0) + transaction.amount.abs();
@@ -65,7 +63,6 @@ Map<String, Map<String, double>> monthlyCategorySpendTotals(
 ) {
   final byMonth = <String, Map<String, double>>{};
   for (final row in resolved) {
-    if (row.transaction.pending) continue;
     final month = yearMonthKey(row.transaction.date);
     addResolvedCategorySpend(byMonth.putIfAbsent(month, () => {}), row);
   }
@@ -93,7 +90,6 @@ Map<String, double> _spendByCategoryInMonth(
   final map = <String, double>{};
   for (final r in resolved) {
     final t = r.transaction;
-    if (t.pending) continue;
     if (!_inMonth(t.date, month)) continue;
     final bucket = spendCategoryBucketKey(r);
     if (isNeedsCategoryGroupKey(bucket)) {

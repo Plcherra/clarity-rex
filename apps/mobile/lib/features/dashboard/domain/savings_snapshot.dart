@@ -45,7 +45,6 @@ SavingsSnapshot? buildSavingsSnapshot({
   var change = 0.0;
   for (final row in resolved) {
     final transaction = row.transaction;
-    if (transaction.pending) continue;
     if (!ids.contains(transaction.accountId)) continue;
     if (transaction.date.year != reference.year ||
         transaction.date.month != reference.month) {

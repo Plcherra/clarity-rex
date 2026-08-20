@@ -102,7 +102,7 @@ void main() {
       expect(snapshot.spentThisMonth, closeTo(480.35, 0.001));
     });
 
-    test('pending rows stay out until they settle', () {
+    test('pending rows count now and stay marked until they settle', () {
       final snapshot = _snapshot([
         _tx(
           description: 'AMAZON MKTPL',
@@ -129,8 +129,10 @@ void main() {
         ),
       ]);
 
-      expect(snapshot.monthlyCashFlow.single.spend, closeTo(50, 0.001));
-      expect(snapshot.incomeThisMonth, 0);
+      expect(snapshot.monthlyCashFlow.single.spend, closeTo(550, 0.001));
+      expect(snapshot.monthlyCashFlow.single.income, closeTo(607.82, 0.001));
+      expect(snapshot.incomeThisMonth, closeTo(607.82, 0.001));
+      expect(snapshot.spentThisMonth, closeTo(550, 0.001));
       expect(snapshot.pendingSpentThisMonth, closeTo(500, 0.001));
       expect(snapshot.pendingIncomeThisMonth, closeTo(607.82, 0.001));
       expect(snapshot.hasPendingCashFlowThisMonth, isTrue);

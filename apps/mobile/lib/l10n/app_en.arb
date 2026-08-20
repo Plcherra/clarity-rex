@@ -528,7 +528,7 @@
   "dashboardOverviewPeriodThisYear": "This year",
   "dashboardOverviewActivityNotBalanceNote": "This month's leftover — not cash in the bank",
   "dashboardOverviewActivityNotBalanceNotePeriod": "This period's leftover — not cash in the bank",
-  "dashboardOverviewPendingCashFlowNote": "Income and spending wait until pending posts. Net already includes them.",
+  "dashboardOverviewPendingCashFlowNote": "Income and spending include pending. They update when the bank posts.",
   "dashboardOverviewSavings": "Savings",
   "dashboardOverviewSavingsMovedIn": "{amount} moved in this month",
   "@dashboardOverviewSavingsMovedIn": {

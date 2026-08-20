@@ -3,7 +3,7 @@ import '../../../core/models/models.dart';
 /// Right-now position across accounts: cash, card debt, leftover credit.
 ///
 /// Kept apart from this-month income/spending on purpose. Those are flow.
-/// These numbers are stock. NOW must match the bank, including pending.
+/// These numbers are stock. Both clocks count pending; flow updates when it posts.
 class AccountBalanceBreakdown {
   const AccountBalanceBreakdown({
     required this.cashTotal,

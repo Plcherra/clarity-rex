@@ -27,9 +27,7 @@ class DashboardCategoryTransactionGroup {
 
   double get spending => transactions
       .where(
-        (transaction) =>
-            !transaction.transaction.pending &&
-            (transaction.countsAsSpend || isNeedsCategory),
+        (transaction) => transaction.countsAsSpend || isNeedsCategory,
       )
       .fold<double>(
         0,
@@ -38,7 +36,6 @@ class DashboardCategoryTransactionGroup {
 }
 
 bool _belongsInNeedsCategoryGroup(ResolvedTransaction transaction) {
-  if (transaction.transaction.pending) return false;
   if (transaction.transaction.amount >= 0) return false;
   final label = transaction.displayCategory.trim();
   if (isIncomeCategoryLabel(label) || isIgnoredCategoryLabel(label)) {
@@ -65,8 +62,7 @@ spendingCategoryGroupsForResolvedTransactions(
         isUnresolvedCategoryLabel(category) ||
         isIncomeCategoryLabel(category) ||
         isIgnoredCategoryLabel(category) ||
-        !transaction.countsAsSpend ||
-        transaction.transaction.pending) {
+        !transaction.countsAsSpend) {
       continue;
     }
     byCategory.putIfAbsent(category, () => []).add(transaction);

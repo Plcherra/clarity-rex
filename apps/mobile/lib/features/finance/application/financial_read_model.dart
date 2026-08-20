@@ -315,7 +315,6 @@ final class FinancialReadModel {
     final out = <String, double>{};
     for (final resolved in resolvedTransactionsForScope(scope)) {
       final transaction = resolved.transaction;
-      if (transaction.pending) continue;
       if (!_inRangeInclusive(transaction.date, start, end)) continue;
       if (!resolved.countsAsSpend) continue;
       final display = resolved.displayCategory;
@@ -336,7 +335,6 @@ final class FinancialReadModel {
     final recordsById = transactionRecordsById;
     for (final resolved in resolvedTransactionsForScope(scope)) {
       final transaction = resolved.transaction;
-      if (transaction.pending) continue;
       if (!_inRangeInclusive(transaction.date, start, end)) continue;
       if (!resolved.countsAsSpend) continue;
       final recordId = transaction.fingerprint;

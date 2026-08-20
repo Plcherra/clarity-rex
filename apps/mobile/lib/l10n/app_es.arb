@@ -1259,7 +1259,7 @@
   "dashboardOverviewAccountHealth": "Estado de la cuenta",
   "dashboardOverviewActivityNotBalanceNote": "Lo que sobró este mes — no es el efectivo",
   "dashboardOverviewActivityNotBalanceNotePeriod": "Lo que sobró en este período — no es el efectivo",
-  "dashboardOverviewPendingCashFlowNote": "Ingresos y gastos esperan a que los pendientes se confirmen. El neto ya los incluye.",
+  "dashboardOverviewPendingCashFlowNote": "Ingresos y gastos incluyen pendientes. Se actualizan cuando el banco los confirma.",
   "dashboardOverviewSavings": "Ahorros",
   "dashboardOverviewSavingsMovedIn": "{amount} ingresados este mes",
   "@dashboardOverviewSavingsMovedIn": {

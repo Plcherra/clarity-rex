@@ -596,7 +596,7 @@ void main() {
               )
               as Map<String, dynamic>;
 
-      expect(cashFlow['spent_this_month'], 12.34);
+      expect(cashFlow['spent_this_month'], 111.34);
       expect(cashFlow['income_this_month'], 2500);
       expect(dataSources['primary_source'], 'plaid');
       expect(dataSources['plaid_accounts'], 1);
@@ -624,7 +624,7 @@ void main() {
 
       expect(budget['period_key'], '2026-06');
       expect(budget['total_budgeted'], 50);
-      expect(budget['total_spent'], 12.34);
+      expect(budget['total_spent'], 111.34);
       expect(coffee['budgeted'], 50);
       expect(coffee['spent'], 12.34);
       expect(coffee['remaining'], 37.66);

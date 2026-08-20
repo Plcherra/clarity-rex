@@ -94,10 +94,10 @@ class DashboardSnapshot {
   /// Income minus spending this month. Not cash on hand.
   final double availableThisMonth;
 
-  /// Inflows that would count as income once the bank posts them.
+  /// Pending slice already included in [incomeThisMonth].
   final double pendingIncomeThisMonth;
 
-  /// Outflows that would count as spend once the bank posts them.
+  /// Pending slice already included in [spentThisMonth].
   final double pendingSpentThisMonth;
 
   final List<CategorySpend> topCategories;
@@ -146,10 +146,9 @@ DashboardSnapshot buildDashboardSnapshot({
   final y = reference.year;
   final m = reference.month;
 
-  // Spend/income are computed over the scoped list, but role resolution uses global
-  // transaction context so internal-payment matching remains correct.
-  // Pending rows stay out of the posted totals but are tracked so the UI can
-  // explain why a visible paycheck has not moved Income yet.
+  // Spend/income use the scoped list; role resolution uses global context so
+  // internal-payment matching stays correct. Pending rows count now and drop
+  // out when Plaid replaces them with the posted copy — same clock as NOW.
   var spent = 0.0;
   var income = 0.0;
   var pendingSpent = 0.0;
@@ -157,13 +156,14 @@ DashboardSnapshot buildDashboardSnapshot({
   for (final r in resolved) {
     final t = r.transaction;
     if (t.date.year != y || t.date.month != m) continue;
-    if (t.pending) {
-      if (r.countsAsSpend) pendingSpent += -t.amount;
-      if (r.countsAsIncome) pendingIncome += t.amount;
-      continue;
+    if (r.countsAsSpend) {
+      spent += -t.amount;
+      if (t.pending) pendingSpent += -t.amount;
     }
-    if (r.countsAsSpend) spent += -t.amount;
-    if (r.countsAsIncome) income += t.amount;
+    if (r.countsAsIncome) {
+      income += t.amount;
+      if (t.pending) pendingIncome += t.amount;
+    }
   }
 
   final available = income - spent;
@@ -179,7 +179,7 @@ DashboardSnapshot buildDashboardSnapshot({
   // for role resolution context. For v1, this is acceptable; the major correctness
   // issue (CC payment exclusion) is handled in spend/income above.
   final leaks = biggestCategoryLeaks(
-    scopedTransactions.where((transaction) => !transaction.pending).toList(),
+    scopedTransactions,
     accounts,
     reference,
     limit: 3,

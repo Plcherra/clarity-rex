@@ -229,7 +229,7 @@ void main() {
       expect(detail.averageTransaction, closeTo(250, 0.001));
     });
 
-    test('pending rows and card payments stay out of the detail', () {
+    test('card payments stay out of the detail; pending spend counts', () {
       final detail = _detail([
         _tx(description: 'PUBLIX 1234', amount: -100, day: 4),
         _tx(description: 'PUBLIX 1234 HOLD', amount: -60, day: 5, pending: true),
@@ -241,8 +241,8 @@ void main() {
         ),
       ], 'Grocery / Supermarket');
 
-      expect(detail.transactionCount, 1);
-      expect(detail.spent, closeTo(100, 0.001));
+      expect(detail.transactionCount, 2);
+      expect(detail.spent, closeTo(160, 0.001));
     });
   });
 }

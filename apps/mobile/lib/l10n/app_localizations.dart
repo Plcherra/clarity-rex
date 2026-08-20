@@ -1847,7 +1847,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardOverviewPendingCashFlowNote.
   ///
   /// In en, this message translates to:
-  /// **'Income and spending wait until pending posts. Net already includes them.'**
+  /// **'Income and spending include pending. They update when the bank posts.'**
   String get dashboardOverviewPendingCashFlowNote;
 
   /// No description provided for @dashboardOverviewSavings.

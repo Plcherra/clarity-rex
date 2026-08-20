@@ -301,14 +301,12 @@ class _RexSliceAccumulator {
 }
 
 bool _isVisibleFinancialCategorySlice(ResolvedTransaction resolved) {
-  final transaction = resolved.transaction;
   final category = resolved.displayCategory.trim();
   return category.isNotEmpty &&
       !isUnresolvedCategoryLabel(category) &&
       !isIncomeCategoryLabel(category) &&
       !isIgnoredCategoryLabel(category) &&
-      resolved.countsAsSpend &&
-      !transaction.pending;
+      resolved.countsAsSpend;
 }
 
 String _transactionId(ResolvedTransaction resolved) {

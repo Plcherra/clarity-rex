@@ -21,7 +21,7 @@ void main() {
         transactions: [
           _tx(amount: 400, account: 'savings', day: 9),
           _tx(amount: -100, account: 'savings', day: 21),
-          // Last month, and a pending row: neither belongs to this month.
+          // Last month stays out. Pending this month counts until it posts.
           _tx(amount: 900, account: 'savings', day: 4, month: 6),
           _tx(amount: 500, account: 'savings', day: 28, pending: true),
           _tx(amount: -60, account: 'checking', day: 5),
@@ -30,7 +30,7 @@ void main() {
 
       final savings = snapshot.savings!;
       expect(savings.balance, closeTo(2500, 0.001));
-      expect(savings.changeThisMonth, closeTo(300, 0.001));
+      expect(savings.changeThisMonth, closeTo(800, 0.001));
       expect(savings.grewThisMonth, isTrue);
       expect(savings.accountCount, 1);
     });

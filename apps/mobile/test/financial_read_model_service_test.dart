@@ -773,7 +773,7 @@ void main() {
     });
   });
 
-  test('Plaid multi-account totals use signs and keep pending out of month spend', () {
+  test('Plaid multi-account totals use signs and count pending in month spend', () {
     final model = FinancialReadModel.fromRecords(
       accounts: const [
         Account(
@@ -852,8 +852,8 @@ void main() {
     expect(snapshot.debtTotal, 210);
     expect(snapshot.totalBalance, 790);
     expect(snapshot.incomeThisMonth, 3000);
-    expect(snapshot.spentThisMonth, 125);
-    expect(snapshot.availableThisMonth, 2875);
+    expect(snapshot.spentThisMonth, 135);
+    expect(snapshot.availableThisMonth, 2865);
     expect(model.transactionsByAccount['checking'], hasLength(2));
     expect(model.transactionsByAccount['credit'], hasLength(2));
     expect(model.transactionsByAccount['credit']!.last.pending, isTrue);
@@ -863,7 +863,7 @@ void main() {
         start: DateTime(2026, 6),
         end: DateTime(2026, 6, 30),
       ),
-      {'Coffee / Quick Food': 125},
+      {'Coffee / Quick Food': 135},
     );
   });
 
@@ -907,7 +907,7 @@ void main() {
     expect(model.dashboardSnapshot(
       scope: const GlobalDashboardScope(),
       reference: DateTime(2026, 8, 13),
-    ).spentThisMonth, 0);
+    ).spentThisMonth, 4.14);
   });
 
   test('net worth is live cash minus current card debt, including new charges', () {

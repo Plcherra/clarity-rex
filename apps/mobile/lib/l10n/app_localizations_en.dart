@@ -985,7 +985,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardOverviewPendingCashFlowNote =>
-      'Income and spending wait until pending posts. Net already includes them.';
+      'Income and spending include pending. They update when the bank posts.';
 
   @override
   String get dashboardOverviewSavings => 'Savings';
