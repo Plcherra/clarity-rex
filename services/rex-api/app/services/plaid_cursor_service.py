@@ -80,7 +80,7 @@ class PlaidCursorService:
             "GET",
             PLAID_ITEMS_TABLE,
             query={
-                "select": "id,user_id,plaid_item_id,institution_name,sync_cursor,status",
+                "select": "id,user_id,plaid_item_id,institution_id,institution_name,sync_cursor,status",
                 "id": f"eq.{item_id}",
                 "limit": "1",
             },
@@ -113,7 +113,7 @@ class PlaidCursorService:
             "GET",
             PLAID_ITEMS_TABLE,
             query={
-                "select": "id,user_id,plaid_item_id,institution_name,sync_cursor,status",
+                "select": "id,user_id,plaid_item_id,institution_id,institution_name,sync_cursor,status",
                 "user_id": f"eq.{user_id}",
                 "id": f"eq.{item_id}",
                 "limit": "1",
@@ -236,10 +236,7 @@ class PlaidCursorService:
         await self.supabase_request(
             "PATCH",
             "plaid_accounts",
-            body={
-                "status": "disconnected",
-                "last_synced_at": disconnected_at,
-            },
+            body={"status": "disconnected"},
             query={"user_id": f"eq.{user_id}", "item_id": f"eq.{item_id}"},
             prefer="return=minimal",
         )

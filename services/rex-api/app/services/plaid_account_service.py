@@ -5,6 +5,7 @@ import re
 from typing import Any
 
 from app.services.plaid_api_client import PlaidApiClient, PlaidApiClientError
+from app.services.plaid_account_relink import PlaidAccountRelinkService
 from app.services.plaid_cursor_service import PlaidCursorService
 from app.services.plaid_liability_balances import (
     apply_credit_liability_patch,
@@ -12,7 +13,6 @@ from app.services.plaid_liability_balances import (
 )
 from app.services.plaid_sync_models import (
     dict_or_empty,
-    first_row,
     number_or_none,
     required_string,
     string_or_none,
@@ -41,6 +41,9 @@ class PlaidAccountService:
     ) -> None:
         self.plaid_client = plaid_client
         self.cursor_service = cursor_service
+        self.relink_service = PlaidAccountRelinkService(
+            cursor_service=cursor_service,
+        )
 
     async def sync_accounts(
         self,
@@ -48,11 +51,16 @@ class PlaidAccountService:
         user_id: str,
         item_id: str,
         access_token: str,
+        institution_id: str | None = None,
         institution_name: str | None = None,
         accounts_response: dict[str, Any] | None = None,
     ) -> dict[str, str]:
         if accounts_response is None:
             accounts_response = await self.plaid_client.get_accounts(access_token)
+        await self.relink_service.collapse_duplicate_accounts(
+            user_id=user_id,
+            institution_name=institution_name,
+        )
         liability_patches = await self._credit_liability_patches(access_token)
         account_map: dict[str, str] = {}
         for account in _account_list(accounts_response.get("accounts")):
@@ -78,6 +86,12 @@ class PlaidAccountService:
                 account=account,
             )
             account_map[plaid_account_id] = linked_account_id
+        await self.relink_service.disconnect_replaced_items(
+            user_id=user_id,
+            keep_item_id=item_id,
+            institution_id=institution_id,
+            institution_name=institution_name,
+        )
         return account_map
 
     async def sanitized_accounts_for_item(
@@ -171,17 +185,19 @@ class PlaidAccountService:
         )
         if resolved_balance is not None:
             body["balance"] = resolved_balance
-        rows = await self.cursor_service.supabase_request(
-            "POST",
-            ACCOUNTS_TABLE,
-            body=body,
-            query={
-                "on_conflict": "user_id,plaid_account_id",
-                "select": "id,plaid_account_id",
-            },
-            prefer="resolution=merge-duplicates,return=representation",
+        existing_id = await self.relink_service.resolve_existing_account_id(
+            user_id=user_id,
+            plaid_account_id=plaid_account_id,
+            institution_name=institution_name,
+            mask=string_or_none(account.get("mask")),
+            account_type=string_or_none(account.get("type")),
+            account_subtype=string_or_none(account.get("subtype")),
         )
-        return first_row(rows, "Supabase account upsert returned no rows.")
+        return await self.relink_service.write_clarity_account(
+            user_id=user_id,
+            existing_id=existing_id,
+            body=body,
+        )
 
     async def _credit_liability_patches(
         self,

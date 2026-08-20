@@ -148,11 +148,7 @@ final class AccountService {
         )
         .eq('user_id', userId)
         .inFilter('linked_account_id', plaidAccountIds);
-    final metadataByAccountId = {
-      for (final row in rows)
-        if (_nullableString(row, 'linked_account_id') != null)
-          _nullableString(row, 'linked_account_id')!: row,
-    };
+    final metadataByAccountId = _preferActivePlaidMetadata(rows);
     return [
       for (final account in accounts)
         if (metadataByAccountId[account.id] case final metadata?)
@@ -179,6 +175,30 @@ final class AccountService {
           account,
     ];
   }
+}
+
+Map<String, Map<String, dynamic>> _preferActivePlaidMetadata(
+  Iterable<dynamic> rows,
+) {
+  final metadataByAccountId = <String, Map<String, dynamic>>{};
+  for (final row in rows) {
+    if (row is! Map) continue;
+    final metadata = Map<String, dynamic>.from(row);
+    final accountId = _nullableString(metadata, 'linked_account_id');
+    if (accountId == null) continue;
+    final current = metadataByAccountId[accountId];
+    if (current == null || _plaidMetadataRank(metadata) > _plaidMetadataRank(current)) {
+      metadataByAccountId[accountId] = metadata;
+    }
+  }
+  return metadataByAccountId;
+}
+
+int _plaidMetadataRank(Map<String, dynamic> row) {
+  final status = (_nullableString(row, 'status') ?? '').toLowerCase();
+  if (status == 'active') return 2;
+  if (status == 'disconnected') return 0;
+  return 1;
 }
 
 Account _accountFromJson(Map<String, dynamic> json) {

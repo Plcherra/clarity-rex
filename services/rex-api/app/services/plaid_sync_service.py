@@ -166,6 +166,7 @@ class PlaidSyncService:
                 user_id=user_id,
                 item_id=normalized_item_id,
                 access_token=access_token,
+                institution_id=string_or_none(item.get("institution_id")),
                 institution_name=string_or_none(item.get("institution_name")),
                 accounts_response=accounts_response,
             )

@@ -197,23 +197,30 @@ def response(status_code=200, json_data=None, text=None):
     return httpx.Response(status_code, text=text or "", request=request)
 
 
-def sync_storage_response(url, body, token_ref):
-    if "/plaid_items?" in url and "select=" in url:
+def sync_storage_response(url, body, token_ref, method="GET"):
+    if method == "GET" and "/plaid_items?" in url and "select=" in url:
         return response(
             json_data=[
                 {
                     "id": "item-record-1",
                     "user_id": "user-1",
                     "plaid_item_id": "plaid-item-id",
+                    "institution_id": "ins_1",
                     "institution_name": "Bank of Test",
                     "sync_cursor": "cursor-old",
                     "status": "active",
                 }
             ]
         )
-    if "/plaid_item_secrets?" in url:
+    if method == "GET" and "/plaid_item_secrets?" in url:
         return response(json_data=[{"access_token_ref": token_ref}])
-    if "/accounts?" in url:
+    if method == "GET" and (
+        "/plaid_accounts?" in url
+        or "/accounts?" in url
+        or "/transactions?" in url
+    ):
+        return response(json_data=[])
+    if method == "POST" and "/accounts?" in url:
         linked_id = (
             "linked-account-2"
             if body and body.get("plaid_account_id") == "plaid-account-2"
@@ -461,7 +468,7 @@ async def test_webhook_sync_updates_runs_item_sync(monkeypatch):
 
     async def fake_request(method, url, **kwargs):
         calls.append({"method": method, "url": url, **kwargs})
-        return sync_storage_response(url, kwargs.get("json"), token_ref)
+        return sync_storage_response(url, kwargs.get("json"), token_ref, method)
 
     monkeypatch.setattr(
         "app.services.plaid_cursor_service.request_with_retries",
@@ -507,7 +514,7 @@ async def test_webhook_sync_rate_limit_marks_retryable_degraded(monkeypatch):
 
     async def fake_request(method, url, **kwargs):
         calls.append({"method": method, "url": url, **kwargs})
-        return sync_storage_response(url, kwargs.get("json"), token_ref)
+        return sync_storage_response(url, kwargs.get("json"), token_ref, method)
 
     monkeypatch.setattr(
         "app.services.plaid_cursor_service.request_with_retries",
@@ -548,7 +555,7 @@ async def test_webhook_sync_failure_marks_non_retryable_degraded(monkeypatch):
 
     async def fake_request(method, url, **kwargs):
         calls.append({"method": method, "url": url, **kwargs})
-        return sync_storage_response(url, kwargs.get("json"), token_ref)
+        return sync_storage_response(url, kwargs.get("json"), token_ref, method)
 
     monkeypatch.setattr(
         "app.services.plaid_cursor_service.request_with_retries",
@@ -648,7 +655,7 @@ async def test_sync_item_persists_accounts_transactions_and_cursor(monkeypatch):
 
     async def fake_request(method, url, **kwargs):
         calls.append({"method": method, "url": url, **kwargs})
-        return sync_storage_response(url, kwargs.get("json"), token_ref)
+        return sync_storage_response(url, kwargs.get("json"), token_ref, method)
 
     monkeypatch.setattr(
         "app.services.plaid_cursor_service.request_with_retries",
@@ -743,7 +750,7 @@ async def test_sync_item_with_bank_refresh_requests_fresh_data(monkeypatch):
 
     async def fake_request(method, url, **kwargs):
         calls.append({"method": method, "url": url, **kwargs})
-        return sync_storage_response(url, kwargs.get("json"), token_ref)
+        return sync_storage_response(url, kwargs.get("json"), token_ref, method)
 
     monkeypatch.setattr(
         "app.services.plaid_cursor_service.request_with_retries",
@@ -772,7 +779,7 @@ async def test_sync_item_skips_transactions_refresh_when_disabled(monkeypatch):
     token_ref = service._encrypted_access_token_ref("access-token-secret")
 
     async def fake_request(method, url, **kwargs):
-        return sync_storage_response(url, kwargs.get("json"), token_ref)
+        return sync_storage_response(url, kwargs.get("json"), token_ref, method)
 
     monkeypatch.setattr(
         "app.services.plaid_cursor_service.request_with_retries",
@@ -799,7 +806,7 @@ async def test_sync_item_handles_plaid_rate_limit(monkeypatch):
     token_ref = service._encrypted_access_token_ref("access-token-secret")
 
     async def fake_request(method, url, **kwargs):
-        return sync_storage_response(url, kwargs.get("json"), token_ref)
+        return sync_storage_response(url, kwargs.get("json"), token_ref, method)
 
     monkeypatch.setattr(
         "app.services.plaid_cursor_service.request_with_retries",
@@ -825,7 +832,7 @@ async def test_sync_item_continues_when_liabilities_product_is_missing(
     token_ref = service._encrypted_access_token_ref("access-token-secret")
 
     async def fake_request(method, url, **kwargs):
-        return sync_storage_response(url, kwargs.get("json"), token_ref)
+        return sync_storage_response(url, kwargs.get("json"), token_ref, method)
 
     monkeypatch.setattr(
         "app.services.plaid_cursor_service.request_with_retries",
