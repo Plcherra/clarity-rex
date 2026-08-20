@@ -31,6 +31,7 @@ import '../../../widgets/clarity_path_loader.dart';
 import '../domain/savings_snapshot.dart';
 import '../domain/dashboard_available_months.dart';
 import 'category_detail_screen.dart';
+import 'dashboard_leak_insight_banner.dart';
 import 'dashboard_month_switcher.dart';
 import 'month_detail_screen.dart';
 import 'charts/finance_charts.dart';
