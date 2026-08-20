@@ -6,6 +6,7 @@ import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
 import '../../../dashboard/domain/account_balance_breakdown.dart';
 import '../../data/plaid_account_service.dart';
+import '../credit_card_month_copy.dart';
 import 'plaid_account_detail_chip.dart';
 import 'plaid_account_header.dart';
 
@@ -40,10 +41,12 @@ class PlaidAccountTile extends StatelessWidget {
       account,
       owed: balance,
     );
-    final showCreditLeft =
-        account.type == AccountType.creditCard && remainingCredit != null;
+    final isCreditCard = isCreditCardAccount(account);
+    final creditLimit = account.plaidCreditLimit;
+    final showCreditLeft = isCreditCard && remainingCredit != null;
+    final showLimit = isCreditCard && creditLimit != null;
     final showDepositoryAvailable =
-        account.type != AccountType.creditCard &&
+        !isCreditCard &&
         availableBalance != null &&
         (balance == null || (availableBalance - balance).abs() > 0.01);
     final hasMonthlyActivity =
@@ -67,7 +70,10 @@ class PlaidAccountTile extends StatelessWidget {
                 onResync: onResync,
                 onDisconnect: onDisconnect,
               ),
-              if (showCreditLeft || showDepositoryAvailable || hasMonthlyActivity) ...[
+              if (showCreditLeft ||
+                  showLimit ||
+                  showDepositoryAvailable ||
+                  hasMonthlyActivity) ...[
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerLeft,
@@ -75,6 +81,11 @@ class PlaidAccountTile extends StatelessWidget {
                     spacing: 10,
                     runSpacing: 6,
                     children: [
+                      if (showLimit)
+                        PlaidAccountDetailChip(
+                          label: l10n.plaidAccountLimitLabel,
+                          value: formatMoney(creditLimit),
+                        ),
                       if (showCreditLeft)
                         PlaidAccountDetailChip(
                           label: l10n.plaidAccountCreditAvailableLabel,
@@ -88,10 +99,16 @@ class PlaidAccountTile extends StatelessWidget {
                       if (hasMonthlyActivity)
                         PlaidAccountDetailChip(
                           label: l10n.plaidAccountThisMonthLabel,
-                          value: l10n.plaidAccountInOutSummary(
-                            formatMoney(item.incomeThisMonth),
-                            formatMoney(item.spentThisMonth),
-                          ),
+                          value: isCreditCard
+                              ? creditCardMonthActivityValue(
+                                  l10n: l10n,
+                                  payments: item.incomeThisMonth,
+                                  charged: item.spentThisMonth,
+                                )
+                              : l10n.plaidAccountInOutSummary(
+                                  formatMoney(item.incomeThisMonth),
+                                  formatMoney(item.spentThisMonth),
+                                ),
                         ),
                     ],
                   ),

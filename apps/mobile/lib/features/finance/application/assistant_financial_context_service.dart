@@ -36,6 +36,11 @@ final class AssistantFinancialContextService {
   var _prefetched = false;
   var sessionPrefetchCount = 0;
 
+  bool get hasCachedLinkedAccounts =>
+      _cachedModel != null &&
+      !_cachedModel!.hasLoadIssues &&
+      _cachedModel!.accounts.isNotEmpty;
+
   void notifyDataChanged() {
     _cachedModel = null;
     _inFlightModel = null;
@@ -56,8 +61,18 @@ final class AssistantFinancialContextService {
   }
 
   Future<bool> hasLinkedAccounts() async {
-    final model = await _safeFinancialReadModel();
-    return model.accounts.isNotEmpty;
+    final first = await _safeFinancialReadModel();
+    if (first.accounts.isNotEmpty) {
+      return true;
+    }
+    if (!first.hasLoadIssues && _cachedModel != null) {
+      return false;
+    }
+    final retry = await _loadFresh();
+    if (!retry.hasLoadIssues) {
+      _cachedModel = retry;
+    }
+    return retry.accounts.isNotEmpty;
   }
 
   Future<Map<String, dynamic>?> budgetPerformanceSummary() async {
@@ -134,7 +149,7 @@ final class AssistantFinancialContextService {
       _cachedModel = model;
       return model;
     } on Object catch (error) {
-      final empty = FinancialReadModel.empty(
+      return FinancialReadModel.empty(
         loadIssues: [
           FinancialReadModelLoadIssue(
             source: 'financial_read_model',
@@ -142,8 +157,6 @@ final class AssistantFinancialContextService {
           ),
         ],
       );
-      _cachedModel = empty;
-      return empty;
     }
   }
 }

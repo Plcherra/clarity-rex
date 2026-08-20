@@ -15,6 +15,37 @@ void main() {
       expect(merchantKeyLowerFromDescription("DUNKIN' DONUTS"), 'dunkin');
     });
 
+    test('does not treat DoorDash DD as Dunkin', () {
+      expect(
+        merchantKeyLowerFromDescription('DD *DOORDASH STARMARKE'),
+        'starmarke',
+      );
+      expect(
+        merchantKeyLowerFromDescription('DD *DOORDASH BURGERKIN'),
+        'burgerkin',
+      );
+      expect(merchantKeyLowerFromDescription('DD/BR #1234'), 'dunkin');
+    });
+
+    test('drops bank checkcard noise before Toast so Bom Dough is one shop', () {
+      expect(
+        merchantKeyLowerFromDescription(
+          'CHECKCARD 0811 TST*BOM DOUGH - ONE CAN Cambridge MA',
+        ),
+        'bom dough one can',
+      );
+      expect(
+        merchantKeyLowerFromDescription(
+          'TST* BOM DOUGH 02/28 MOBILE PURCHASE CAMBRIDGE MA',
+        ),
+        'bom dough',
+      );
+      expect(
+        merchantKeysAreSameFamily('bom dough', 'bom dough one can'),
+        isTrue,
+      );
+    });
+
     test('keeps underlying merchant when a payment aggregator is present', () {
       expect(
         merchantKeyLowerFromDescription(

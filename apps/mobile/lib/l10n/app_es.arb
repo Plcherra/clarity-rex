@@ -1526,10 +1526,15 @@
   "dashboardOverviewDeleteAccountTooltip": "Eliminar cuenta",
   "dashboardOverviewDeleteCsvUploadTooltip": "Eliminar carga CSV",
   "dashboardOverviewFromConnectedAccounts": "Desde tus cuentas conectadas",
+  "dashboardOverviewBalanceOwed": "Saldo adeudado",
+  "dashboardOverviewCardBalanceHint": "Saldo actual de esta tarjeta",
+  "dashboardOverviewPayments": "Pagos",
+  "dashboardOverviewCharged": "Cargos",
   "dashboardOverviewImportCsvTooltip": "Importar CSV en su lugar",
   "dashboardOverviewIncomeVsSpending": "Ingresos versus gastos",
   "dashboardOverviewLoadingLabel": "Cargando tus datos financieros...",
   "dashboardOverviewMonthlyCashFlow": "flujo de caja mensual",
+  "dashboardOverviewMonthlyCardActivity": "Actividad mensual de la tarjeta",
   "dashboardOverviewSixMonthTrend": "Tendencia de gasto",
   "financeChartRangeLabel": "Rango del gráfico",
   "financeChartRange3Months": "3M",
@@ -2141,6 +2146,26 @@
   "onboardingWelcomeTitle": "Bienvenido a Claridad",
   "plaidAccountAvailableLabel": "Disponible",
   "plaidAccountCreditAvailableLabel": "Crédito disponible",
+  "plaidAccountLimitLabel": "Límite",
+  "plaidAccountChargedSummary": "{amount} en cargos",
+  "@plaidAccountChargedSummary": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "plaidAccountPaidChargedSummary": "{payments} pagado / {charged} en cargos",
+  "@plaidAccountPaidChargedSummary": {
+    "placeholders": {
+      "payments": {
+        "type": "String"
+      },
+      "charged": {
+        "type": "String"
+      }
+    }
+  },
   "plaidAccountDisconnectTooltip": "Desconectar banco",
   "plaidAccountGenericFailed": "No se pudo actualizar esta conexión bancaria ahora.",
   "plaidAccountInOutSummary": "{income} entrada / {spending} salida",

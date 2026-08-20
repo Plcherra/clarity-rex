@@ -473,6 +473,7 @@
   "dashboardOverviewDeleteCsvUploadTooltip": "Delete CSV upload",
   "dashboardOverviewDeleteAccountTooltip": "Delete account",
   "dashboardOverviewMonthlyCashFlow": "Monthly cash flow",
+  "dashboardOverviewMonthlyCardActivity": "Monthly card activity",
   "dashboardOverviewSpendingByCategory": "Spending by category",
   "dashboardOverviewIncomeVsSpending": "Income vs spending",
   "dashboardOverviewSixMonthTrend": "Spend trend",
@@ -521,7 +522,11 @@
   "dashboardOverviewLeftThisMonth": "Left this month",
   "dashboardOverviewLeftThisPeriod": "Left this period",
   "dashboardOverviewAccountBalance": "Account balance",
+  "dashboardOverviewBalanceOwed": "Balance owed",
   "dashboardOverviewFromConnectedAccounts": "From your connected accounts",
+  "dashboardOverviewCardBalanceHint": "Current amount owed on this card",
+  "dashboardOverviewPayments": "Payments",
+  "dashboardOverviewCharged": "Charged",
   "dashboardOverviewThisMonthLabel": "This month",
   "dashboardOverviewPeriodMonthShort": "1M",
   "dashboardOverviewPeriodSixMonths": "Last 6 months",
@@ -876,8 +881,28 @@
   "accountTileViewAccount": "View account",
   "plaidAccountAvailableLabel": "Available",
   "plaidAccountCreditAvailableLabel": "Credit left",
+  "plaidAccountLimitLabel": "Limit",
   "plaidAccountThisMonthLabel": "This month",
   "plaidAccountInOutSummary": "{income} in / {spending} out",
+  "plaidAccountChargedSummary": "{amount} charged",
+  "@plaidAccountChargedSummary": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "plaidAccountPaidChargedSummary": "{payments} paid / {charged} charged",
+  "@plaidAccountPaidChargedSummary": {
+    "placeholders": {
+      "payments": {
+        "type": "String"
+      },
+      "charged": {
+        "type": "String"
+      }
+    }
+  },
   "@plaidAccountInOutSummary": {
     "placeholders": {
       "income": {

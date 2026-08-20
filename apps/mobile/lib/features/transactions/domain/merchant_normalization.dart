@@ -21,8 +21,8 @@ String merchantKeyLowerFromDescription(String description) {
   final aliasBeforeCleanup = _knownAlias(tokens);
   if (aliasBeforeCleanup != null) return aliasBeforeCleanup;
 
-  tokens = _dropAggregatorPrefix(tokens);
   tokens = _dropNoiseAndReferences(tokens);
+  tokens = _dropAggregatorPrefix(tokens);
   tokens = _dropTrailingLocationSuffix(tokens, hasCity: !hasServicePhone);
 
   final aliasAfterCleanup = _knownAlias(tokens);
@@ -45,6 +45,16 @@ String _stripDatesAndReferenceFragments(String value) {
 
 List<String> _dropAggregatorPrefix(List<String> tokens) {
   if (tokens.length < 2) return tokens;
+
+  // DoorDash prints `DD *DOORDASH STAR MARKET`. `dd` alone is Dunkin.
+  if (tokens[0] == 'dd' && tokens[1].startsWith('doordash')) {
+    final rest = tokens.sublist(2);
+    return rest.isNotEmpty ? rest : tokens.sublist(1);
+  }
+  if (tokens[0] == 'doordash') {
+    final rest = tokens.sublist(1);
+    return rest.isNotEmpty ? rest : tokens;
+  }
 
   const aggregators = <String>{
     'paypal',
@@ -130,14 +140,18 @@ String? _knownAlias(List<String> tokens) {
   if (tokens.isEmpty) return null;
 
   final first = tokens.first;
+  if (first == 'doordash' ||
+      (first == 'dd' && tokens.length >= 2 && tokens[1].startsWith('doordash'))) {
+    return null;
+  }
   if (first == 'dunkin') return 'dunkin';
-  if (first == 'dd') return 'dunkin';
   if (tokens.length >= 2 && first == 'dunkin' && tokens[1] == 'donuts') {
     return 'dunkin';
   }
   if (tokens.length >= 2 && first == 'dd' && tokens[1] == 'br') {
     return 'dunkin';
   }
+  if (first == 'dd' && tokens.length == 1) return 'dunkin';
 
   return null;
 }
@@ -147,6 +161,7 @@ const _noiseTokens = <String>{
   'auth',
   'authorization',
   'card',
+  'checkcard',
   'conf',
   'confirmation',
   'credit',

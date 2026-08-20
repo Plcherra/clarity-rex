@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 from app.services.plaid_api_client import PlaidApiClient
 from app.services.plaid_cursor_service import PlaidCursorService
+from app.services.plaid_transaction_dedupe import PlaidTransactionDedupe
 from app.services.plaid_transaction_mapper import DEFAULT_APP_TIMEZONE
 from app.services.plaid_transaction_sync import PlaidTransactionSync
 
@@ -22,6 +23,7 @@ class PlaidTransactionService:
             cursor_service=cursor_service,
             app_timezone=app_timezone,
         )
+        self.dedupe = PlaidTransactionDedupe(cursor_service=cursor_service)
 
     async def sync_transactions(
         self,
@@ -32,10 +34,17 @@ class PlaidTransactionService:
         cursor: Optional[str],
         account_map: dict[str, str],
     ) -> dict[str, Any]:
-        return await self.transaction_sync.sync_transactions(
+        result = await self.transaction_sync.sync_transactions(
             user_id=user_id,
             item_id=item_id,
             access_token=access_token,
             cursor=cursor,
             account_map=account_map,
         )
+        deleted = await self.dedupe.delete_replaced_item_duplicates(
+            user_id=user_id,
+            keep_item_id=item_id,
+        )
+        if deleted:
+            result = {**result, "duplicates_deleted": deleted}
+        return result

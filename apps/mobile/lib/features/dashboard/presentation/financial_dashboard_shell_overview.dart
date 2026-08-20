@@ -63,6 +63,7 @@ class _DashboardOverviewBody extends StatefulWidget {
     required this.onCategoryTap,
     required this.availableYearMonths,
     required this.onMonthSelected,
+    this.scopedAccount,
   });
 
   final DashboardSnapshot snapshot;
@@ -80,6 +81,7 @@ class _DashboardOverviewBody extends StatefulWidget {
   final ValueChanged<String> onCategoryTap;
   final List<String> availableYearMonths;
   final ValueChanged<DateTime> onMonthSelected;
+  final Account? scopedAccount;
 
   @override
   State<_DashboardOverviewBody> createState() => _DashboardOverviewBodyState();
@@ -103,12 +105,16 @@ class _DashboardOverviewBodyState extends State<_DashboardOverviewBody> {
       reference: snapshot.referenceMonth,
       period: _period,
     );
+    final scopedAccount = widget.scopedAccount;
+    final isCreditCardScope = scopedAccount?.type == AccountType.creditCard;
     final overviewCard = _FinancialOverviewCard(
       snapshot: snapshot,
       isGlobalScope: widget.scope is GlobalDashboardScope,
       accountCount: widget.scope is GlobalDashboardScope
           ? widget.accountCount
           : null,
+      isCreditCardScope: isCreditCardScope,
+      creditLimit: scopedAccount?.plaidCreditLimit,
       availableYearMonths: widget.availableYearMonths,
       onMonthSelected: widget.onMonthSelected,
       period: _period,
@@ -116,7 +122,9 @@ class _DashboardOverviewBodyState extends State<_DashboardOverviewBody> {
     );
     final cashFlowChart = _DashboardChartSection(
       sectionKey: widget.monthlyCashFlowKey,
-      title: l10n.dashboardOverviewMonthlyCashFlow,
+      title: isCreditCardScope
+          ? l10n.dashboardOverviewMonthlyCardActivity
+          : l10n.dashboardOverviewMonthlyCashFlow,
       child: MonthlyCashFlowChart(
         months: snapshot.monthlyCashFlow,
       ),

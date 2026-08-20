@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/features/dashboard/domain/dashboard_insight_anchor.dart';
+import 'package:clarity/features/finance/application/assistant_financial_context_service.dart';
 import 'package:clarity/rex/chat/application/chat_linked_accounts.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_transcript.dart';
@@ -40,8 +41,10 @@ class AccountsAwareChatTranscript extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(chatFinancePrefetchProvider);
+    final service = ref.watch(assistantFinancialContextServiceProvider);
     final hasLinkedAccounts =
-        ref.watch(hasLinkedAccountsProvider).valueOrNull ?? false;
+        service?.hasCachedLinkedAccounts == true ||
+        (ref.watch(hasLinkedAccountsProvider).value ?? false);
     return ChatTranscript(
       messages: messages,
       errorMessage: errorMessage,

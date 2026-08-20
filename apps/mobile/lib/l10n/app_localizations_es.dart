@@ -861,6 +861,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardOverviewMonthlyCashFlow => 'flujo de caja mensual';
 
   @override
+  String get dashboardOverviewMonthlyCardActivity =>
+      'Actividad mensual de la tarjeta';
+
+  @override
   String get dashboardOverviewSpendingByCategory => 'Gasto por categoría';
 
   @override
@@ -968,8 +972,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardOverviewAccountBalance => 'Saldo de cuenta';
 
   @override
+  String get dashboardOverviewBalanceOwed => 'Saldo adeudado';
+
+  @override
   String get dashboardOverviewFromConnectedAccounts =>
       'Desde tus cuentas conectadas';
+
+  @override
+  String get dashboardOverviewCardBalanceHint => 'Saldo actual de esta tarjeta';
+
+  @override
+  String get dashboardOverviewPayments => 'Pagos';
+
+  @override
+  String get dashboardOverviewCharged => 'Cargos';
 
   @override
   String get dashboardOverviewThisMonthLabel => 'este mes';
@@ -1516,11 +1532,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get plaidAccountCreditAvailableLabel => 'Crédito disponible';
 
   @override
+  String get plaidAccountLimitLabel => 'Límite';
+
+  @override
   String get plaidAccountThisMonthLabel => 'este mes';
 
   @override
   String plaidAccountInOutSummary(String income, String spending) {
     return '$income entrada / $spending salida';
+  }
+
+  @override
+  String plaidAccountChargedSummary(String amount) {
+    return '$amount en cargos';
+  }
+
+  @override
+  String plaidAccountPaidChargedSummary(String payments, String charged) {
+    return '$payments pagado / $charged en cargos';
   }
 
   @override

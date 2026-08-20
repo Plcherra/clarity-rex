@@ -9,6 +9,7 @@ class _PeriodActivityStrip extends StatelessWidget {
     required this.leftCash,
     required this.leftCredit,
     required this.showLeftSplit,
+    this.isCreditCard = false,
     required this.selectedMonth,
     required this.availableYearMonths,
     required this.onMonthSelected,
@@ -22,6 +23,7 @@ class _PeriodActivityStrip extends StatelessWidget {
   final double leftCash;
   final double? leftCredit;
   final bool showLeftSplit;
+  final bool isCreditCard;
   final DateTime selectedMonth;
   final List<String> availableYearMonths;
   final ValueChanged<DateTime> onMonthSelected;
@@ -62,7 +64,9 @@ class _PeriodActivityStrip extends StatelessWidget {
           children: [
             Expanded(
               child: _CashFlowSummaryMetric(
-                label: l10n.commonIncome,
+                label: isCreditCard
+                    ? l10n.dashboardOverviewPayments
+                    : l10n.commonIncome,
                 value: formatMoney(income),
                 color: ClarityColors.financePositive,
               ),
@@ -70,31 +74,35 @@ class _PeriodActivityStrip extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: _CashFlowSummaryMetric(
-                label: l10n.commonSpending,
+                label: isCreditCard
+                    ? l10n.dashboardOverviewCharged
+                    : l10n.commonSpending,
                 value: formatMoney(spent),
                 color: ClarityColors.financeSpending,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        if (showLeftSplit)
-          _LeftSplitRow(
-            leftLabel: period == DashboardActivityPeriod.month
-                ? l10n.dashboardOverviewLeftThisMonth
-                : l10n.dashboardOverviewLeftThisPeriod,
-            leftValue: left,
-            cash: leftCash,
-            credit: leftCredit,
-          )
-        else
-          _CashFlowSummaryMetric(
-            label: period == DashboardActivityPeriod.month
-                ? l10n.dashboardOverviewLeftThisMonth
-                : l10n.dashboardOverviewLeftThisPeriod,
-            value: formatMoney(left),
-            color: _balanceColor(context, left),
-          ),
+        if (!isCreditCard) ...[
+          const SizedBox(height: 10),
+          if (showLeftSplit)
+            _LeftSplitRow(
+              leftLabel: period == DashboardActivityPeriod.month
+                  ? l10n.dashboardOverviewLeftThisMonth
+                  : l10n.dashboardOverviewLeftThisPeriod,
+              leftValue: left,
+              cash: leftCash,
+              credit: leftCredit,
+            )
+          else
+            _CashFlowSummaryMetric(
+              label: period == DashboardActivityPeriod.month
+                  ? l10n.dashboardOverviewLeftThisMonth
+                  : l10n.dashboardOverviewLeftThisPeriod,
+              value: formatMoney(left),
+              color: _balanceColor(context, left),
+            ),
+        ],
       ],
     );
   }

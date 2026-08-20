@@ -218,6 +218,10 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
                                 transactionCount: widget.transactionCount,
                                 accountCount: widget.accountCount,
                                 scope: widget.scope,
+                                scopedAccount: scopedAccountForDashboard(
+                                  widget.scope,
+                                  widget.accounts,
+                                ),
                                 sectionGap: sectionGap,
                                 wide: wide,
                                 desktop: desktop,

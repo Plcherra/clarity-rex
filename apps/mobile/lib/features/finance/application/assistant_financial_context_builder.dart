@@ -2,6 +2,7 @@ import 'package:clarity/features/budgets/domain/budget_models.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_snapshot.dart';
 import 'package:clarity/features/finance/application/assistant_financial_context_records.dart';
 import 'package:clarity/features/finance/application/financial_read_model_service.dart';
+import 'package:clarity/features/finance/application/assistant_financial_period_clocks.dart';
 import 'package:clarity/rex/data/rex_financial_context_query.dart';
 import 'package:clarity/rex/data/rex_financial_transaction_policy.dart';
 
@@ -168,7 +169,11 @@ final class AssistantFinancialContextBuilder {
         if (query.hasFilters) 'matched_query': query.toContextJson(),
         if (query.hasFilters) 'matched_transaction_count': matchedTransactions.length,
         'drilldown_policy':
-            'Use included transactions, matched_transactions, and category_spend_this_month first. If a requested slice has sample_transactions, list those names/descriptions. If details are not included, say Clarity only sent an aggregate summary for this turn; do not claim you can pull/check/fetch more details unless an execution result provides them.',
+            'Use cash_flow.spent_this_month, spent_this_week, and '
+            'food_spend_this_month for those questions. Then use '
+            'category_spend_this_month and matched_transactions. '
+            'If a requested slice has sample_transactions, list those names. '
+            'Do not invent a month total by summing the transactions array.',
         'supported_drilldown_filters': [
           'account_id',
           'account_name',
@@ -206,6 +211,10 @@ final class AssistantFinancialContextBuilder {
         'income_this_month': money(snapshot.incomeThisMonth),
         'available_this_month': money(snapshot.availableThisMonth),
         'left_this_month': money(snapshot.availableThisMonth),
+        ...buildAssistantPeriodClocks(
+          resolved: resolvedViews,
+          reference: reference,
+        ),
         'burn_runway_days': snapshot.burnRunwayDays,
         'glossary':
             'net_balance is cash minus card debt right now. '

@@ -290,6 +290,22 @@ void main() {
     expect(query.categoryTerms, isNot(contains('Shopping')));
   });
 
+  test('food this month selects grocery and coffee, not shopping', () {
+    final query = extractRexFinancialContextQuery(
+      'How much in food i spent this month',
+      budgets: const [],
+      categories: [
+        _category(id: 'cat-coffee', name: 'Coffee / Quick Food'),
+        _category(id: 'cat-grocery', name: 'Grocery / Supermarket'),
+        _category(id: 'cat-shopping', name: 'Shopping'),
+      ],
+    );
+
+    expect(query.categoryTerms, contains('Coffee / Quick Food'));
+    expect(query.categoryTerms, contains('Grocery / Supermarket'));
+    expect(query.categoryTerms, isNot(contains('Shopping')));
+  });
+
   test('category spend groups repeat visits to one merchant', () {
     final transactions = [
       for (var day = 1; day <= 4; day += 1)
@@ -597,6 +613,9 @@ void main() {
               as Map<String, dynamic>;
 
       expect(cashFlow['spent_this_month'], 111.34);
+      expect(cashFlow['spent_this_week'], 99);
+      expect(cashFlow['food_spend_this_month'], 12.34);
+      expect(cashFlow['food_categories_this_month'], ['Coffee / Quick Food']);
       expect(cashFlow['income_this_month'], 2500);
       expect(dataSources['primary_source'], 'plaid');
       expect(dataSources['plaid_accounts'], 1);

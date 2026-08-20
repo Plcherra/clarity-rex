@@ -1613,6 +1613,12 @@ abstract class AppLocalizations {
   /// **'Monthly cash flow'**
   String get dashboardOverviewMonthlyCashFlow;
 
+  /// No description provided for @dashboardOverviewMonthlyCardActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly card activity'**
+  String get dashboardOverviewMonthlyCardActivity;
+
   /// No description provided for @dashboardOverviewSpendingByCategory.
   ///
   /// In en, this message translates to:
@@ -1802,11 +1808,35 @@ abstract class AppLocalizations {
   /// **'Account balance'**
   String get dashboardOverviewAccountBalance;
 
+  /// No description provided for @dashboardOverviewBalanceOwed.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance owed'**
+  String get dashboardOverviewBalanceOwed;
+
   /// No description provided for @dashboardOverviewFromConnectedAccounts.
   ///
   /// In en, this message translates to:
   /// **'From your connected accounts'**
   String get dashboardOverviewFromConnectedAccounts;
+
+  /// No description provided for @dashboardOverviewCardBalanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Current amount owed on this card'**
+  String get dashboardOverviewCardBalanceHint;
+
+  /// No description provided for @dashboardOverviewPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get dashboardOverviewPayments;
+
+  /// No description provided for @dashboardOverviewCharged.
+  ///
+  /// In en, this message translates to:
+  /// **'Charged'**
+  String get dashboardOverviewCharged;
 
   /// No description provided for @dashboardOverviewThisMonthLabel.
   ///
@@ -2710,6 +2740,12 @@ abstract class AppLocalizations {
   /// **'Credit left'**
   String get plaidAccountCreditAvailableLabel;
 
+  /// No description provided for @plaidAccountLimitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit'**
+  String get plaidAccountLimitLabel;
+
   /// No description provided for @plaidAccountThisMonthLabel.
   ///
   /// In en, this message translates to:
@@ -2721,6 +2757,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{income} in / {spending} out'**
   String plaidAccountInOutSummary(String income, String spending);
+
+  /// No description provided for @plaidAccountChargedSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} charged'**
+  String plaidAccountChargedSummary(String amount);
+
+  /// No description provided for @plaidAccountPaidChargedSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{payments} paid / {charged} charged'**
+  String plaidAccountPaidChargedSummary(String payments, String charged);
 
   /// No description provided for @plaidAccountLastSyncedUnavailable.
   ///

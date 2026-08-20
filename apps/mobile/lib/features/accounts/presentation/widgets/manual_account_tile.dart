@@ -5,6 +5,7 @@ import '../../../../core/formatting/formatting.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
 import '../../../../theme/clarity_colors.dart';
+import '../credit_card_month_copy.dart';
 import 'source_label_chip.dart';
 
 class ManualAccountTile extends StatelessWidget {
@@ -103,7 +104,15 @@ class ManualAccountTile extends StatelessWidget {
                   if (hasMonthlyActivity) ...[
                     const SizedBox(height: 3),
                     Text(
-                      l10n.accountTileThisMonthNet(formatMoney(item.netCashFlow)),
+                      isCreditCardAccount(account)
+                          ? creditCardMonthActivityValue(
+                              l10n: l10n,
+                              payments: item.incomeThisMonth,
+                              charged: item.spentThisMonth,
+                            )
+                          : l10n.accountTileThisMonthNet(
+                              formatMoney(item.netCashFlow),
+                            ),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: item.netCashFlow > 0
                             ? ClarityColors.financePositive

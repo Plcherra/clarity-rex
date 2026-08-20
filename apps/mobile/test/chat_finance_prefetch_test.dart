@@ -99,6 +99,25 @@ void main() {
     expect(service.sessionPrefetchCount, 0);
   });
 
+  test('hasLinkedAccounts retries after a failed load', () async {
+    var attempts = 0;
+    final service = AssistantFinancialContextService(
+      loadFinancialReadModel: () async {
+        attempts += 1;
+        if (attempts == 1) {
+          throw StateError('cold start');
+        }
+        return _model(hasAccount: true);
+      },
+      spendReference: () => DateTime(2026, 8, 20),
+      notifyDataChanged: () {},
+    );
+
+    expect(await service.hasLinkedAccounts(), isTrue);
+    expect(attempts, 2);
+    expect(service.hasCachedLinkedAccounts, isTrue);
+  });
+
   test('hidden chat does not prefetch', () async {
     final loads = <int>[];
     final service = _service(model: _model(hasAccount: true), loads: loads);

@@ -21,6 +21,17 @@ final class AccountDashboardScope extends DashboardScope {
   final String accountId;
 }
 
+Account? scopedAccountForDashboard(
+  DashboardScope scope,
+  List<Account> accounts,
+) {
+  if (scope is! AccountDashboardScope) return null;
+  for (final account in accounts) {
+    if (account.id == scope.accountId) return account;
+  }
+  return null;
+}
+
 /// Statement months for [scopedTransactions], newest calendar month first.
 /// Matches [DashboardSnapshot.monthlyGroups] from [buildDashboardSnapshot].
 List<MonthlyBankGroup> monthlyBankGroupsNewestFirstForScopedTransactions(

@@ -303,9 +303,10 @@ class _PlaidAccountBalanceAndSync extends StatelessWidget {
     final l10n = context.l10n;
     final balance = item.displayBalanceAmount;
     final hasMonthlyActivity =
-        item.incomeThisMonth != 0 ||
-        item.spentThisMonth != 0 ||
-        item.netCashFlow != 0;
+        item.account.type != AccountType.creditCard &&
+        (item.incomeThisMonth != 0 ||
+            item.spentThisMonth != 0 ||
+            item.netCashFlow != 0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [

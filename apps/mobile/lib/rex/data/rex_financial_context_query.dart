@@ -1,4 +1,5 @@
 import 'package:clarity/core/supabase/supabase_records.dart';
+import 'package:clarity/features/finance/application/assistant_financial_period_clocks.dart';
 import 'package:clarity/features/transactions/domain/transaction_resolution.dart';
 
 /// Terms extracted from a finance turn for transaction prioritization.
@@ -116,7 +117,9 @@ RexFinancialContextQuery extractRexFinancialContextQuery(
     }
     final normalizedName = _normalizeFinanceQueryText(name);
     if (normalized.contains(normalizedName) ||
-        _categoryNameSharesTerm(normalizedName, messageTerms)) {
+        _categoryNameSharesTerm(normalizedName, messageTerms) ||
+        (_messageAsksAboutFood(normalized) &&
+            isFoodSpendCategoryLabel(name))) {
       categoryTerms.add(name);
     }
   }
@@ -190,6 +193,11 @@ bool _categoryNameSharesTerm(String normalizedName, Set<String> messageTerms) {
     }
   }
   return false;
+}
+
+bool _messageAsksAboutFood(String normalizedMessage) {
+  return RegExp(r'\b(food|foods|grocery|groceries|eat|eating)\b')
+      .hasMatch(normalizedMessage);
 }
 
 List<String> _significantFinanceTerms(String normalizedMessage) {

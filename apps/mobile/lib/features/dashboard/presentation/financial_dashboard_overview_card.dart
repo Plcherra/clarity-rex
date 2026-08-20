@@ -9,10 +9,14 @@ class _FinancialOverviewCard extends StatelessWidget {
     required this.period,
     required this.onPeriodChanged,
     this.accountCount,
+    this.isCreditCardScope = false,
+    this.creditLimit,
   });
 
   final DashboardSnapshot snapshot;
   final bool isGlobalScope;
+  final bool isCreditCardScope;
+  final double? creditLimit;
   final int? accountCount;
   final List<String> availableYearMonths;
   final ValueChanged<DateTime> onMonthSelected;
@@ -50,6 +54,7 @@ class _FinancialOverviewCard extends StatelessWidget {
           isGlobalScope &&
           viewingCurrentMonth &&
           period == DashboardActivityPeriod.month,
+      isCreditCard: isCreditCardScope,
       selectedMonth: snapshot.referenceMonth,
       availableYearMonths: availableYearMonths,
       onMonthSelected: onMonthSelected,
@@ -93,6 +98,38 @@ class _FinancialOverviewCard extends StatelessWidget {
           cash: snapshot.cashTotal,
           credit: snapshot.creditAvailableTotal,
         ),
+      ] else if (isCreditCardScope) ...[
+        Row(
+          children: [
+            Expanded(
+              child: _CashFlowSummaryMetric(
+                label: l10n.dashboardOverviewDebtTotal,
+                value: formatMoney(snapshot.debtTotal),
+                color: snapshot.debtTotal > 0.005
+                    ? ClarityColors.financeNegative
+                    : cs.onSurface,
+              ),
+            ),
+            if (creditLimit != null) ...[
+              const SizedBox(width: 10),
+              Expanded(
+                child: _CashFlowSummaryMetric(
+                  label: l10n.plaidAccountLimitLabel,
+                  value: formatMoney(creditLimit),
+                  color: cs.onSurface,
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (snapshot.creditAvailableTotal != null) ...[
+          const SizedBox(height: 12),
+          _CashFlowSummaryMetric(
+            label: l10n.dashboardOverviewCreditAvailable,
+            value: formatMoney(snapshot.creditAvailableTotal),
+            color: cs.onSurface,
+          ),
+        ],
       ] else if (snapshot.creditAvailableTotal != null) ...[
         _CashFlowSummaryMetric(
           label: l10n.dashboardOverviewCreditAvailable,
@@ -118,6 +155,8 @@ class _FinancialOverviewCard extends StatelessWidget {
           Text(
             isGlobalScope
                 ? l10n.dashboardOverviewTotalBalance
+                : isCreditCardScope
+                ? l10n.dashboardOverviewBalanceOwed
                 : l10n.dashboardOverviewAccountBalance,
             style: theme.textTheme.labelLarge?.copyWith(
               color: cs.onSurface.withValues(alpha: 0.58),
@@ -147,6 +186,8 @@ class _FinancialOverviewCard extends StatelessWidget {
                     accountCount,
                     accountCount == 1 ? '' : 's',
                   )
+                : isCreditCardScope
+                ? l10n.dashboardOverviewCardBalanceHint
                 : l10n.dashboardOverviewFromConnectedAccounts,
             style: theme.textTheme.bodySmall?.copyWith(
               color: cs.onSurface.withValues(alpha: 0.46),

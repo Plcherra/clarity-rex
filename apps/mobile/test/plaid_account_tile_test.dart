@@ -407,6 +407,47 @@ void main() {
 
       expect(find.textContaining('Credit left'), findsOneWidget);
       expect(find.textContaining('\$629.32'), findsOneWidget);
+      expect(find.textContaining('Limit'), findsOneWidget);
+      expect(find.textContaining('\$900.00'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'PlaidAccountTile uses card debt language instead of cash in/out',
+    (tester) async {
+      await _pumpPlaidAccountTile(
+        tester,
+        PlaidAccountTile(
+          item: const AccountOverviewItem(
+            account: Account(
+              id: 'cap-card',
+              name: 'Quicksilver',
+              type: AccountType.creditCard,
+              institution: 'Capital One',
+              currentBalance: 464.38,
+              source: 'plaid',
+              plaidItemId: 'item-1',
+              plaidInstitutionName: 'Capital One',
+              plaidAccountMask: '1410',
+            ),
+            availableThisMonth: 0,
+            incomeThisMonth: 0,
+            spentThisMonth: 459.98,
+            statementBalance: -464.38,
+            netCashFlow: -459.98,
+          ),
+          status: PlaidAccountConnectionStatus.connected,
+          lastSyncedAt: DateTime.now(),
+          onResync: () {},
+          onDisconnect: () {},
+          onTap: () {},
+        ),
+      );
+
+      expect(find.textContaining('This month'), findsOneWidget);
+      expect(find.textContaining('\$459.98 charged'), findsOneWidget);
+      expect(find.textContaining('in /'), findsNothing);
+      expect(find.textContaining('Balance owed'), findsOneWidget);
     },
   );
 }

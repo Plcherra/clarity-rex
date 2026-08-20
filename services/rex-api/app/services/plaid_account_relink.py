@@ -274,6 +274,15 @@ class PlaidAccountRelinkService:
                 continue
             key = transaction_fingerprint(row)
             if key in keeper_keys:
+                await self.cursor_service.supabase_request(
+                    "DELETE",
+                    TRANSACTIONS_TABLE,
+                    query={
+                        "user_id": f"eq.{user_id}",
+                        "id": f"eq.{transaction_id}",
+                    },
+                    prefer="return=minimal",
+                )
                 continue
             await self.cursor_service.supabase_request(
                 "PATCH",

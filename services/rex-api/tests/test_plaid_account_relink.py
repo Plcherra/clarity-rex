@@ -77,6 +77,13 @@ class FakeCursorService:
                     if body:
                         row.update(body)
             return []
+        if method == "DELETE" and table == "transactions":
+            self.transactions = [
+                row
+                for row in self.transactions
+                if not _matches(row, filters, user_key="user_id")
+            ]
+            return []
         if method == "DELETE" and table == "accounts":
             self.accounts = [
                 row
@@ -109,11 +116,15 @@ def _eq_value(raw: str | None) -> str | None:
 
 def _matches(row: dict[str, Any], filters: dict[str, str], *, user_key: str) -> bool:
     for key, raw in filters.items():
-        if key in {"select", "on_conflict"}:
+        if key in {"select", "on_conflict", "limit", "offset"}:
             continue
         if raw.startswith("in.(") and raw.endswith(")"):
             wanted = {part.strip() for part in raw[4:-1].split(",") if part.strip()}
             if str(row.get(key) or "") not in wanted:
+                return False
+            continue
+        if raw == "is.null":
+            if row.get(key) is not None:
                 return False
             continue
         if raw.startswith("neq."):

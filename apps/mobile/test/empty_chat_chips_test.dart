@@ -1,8 +1,13 @@
+import 'package:clarity/core/models/models.dart';
 import 'package:clarity/features/finance/application/assistant_financial_context_intent.dart';
+import 'package:clarity/features/finance/application/assistant_financial_context_service.dart';
+import 'package:clarity/features/finance/application/financial_read_model_service.dart';
 import 'package:clarity/l10n/app_localizations.dart';
+import 'package:clarity/rex/chat/presentation/widgets/accounts_aware_chat_transcript.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_transcript.dart';
 import 'package:clarity/rex/chat/presentation/widgets/empty_chat_prompts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/l10n_test_wrapper.dart';
@@ -119,5 +124,49 @@ void main() {
     expect(find.text(es.chatTranscriptPromptSpendWeek), findsOneWidget);
     expect(find.text(es.chatTranscriptPromptBankBalance), findsOneWidget);
     expect(find.text(es.chatTranscriptPromptAccounts), findsOneWidget);
+  });
+
+  testWidgets('accounts-aware empty chat flips to money chips', (tester) async {
+    final service = AssistantFinancialContextService(
+      loadFinancialReadModel: () async {
+        return FinancialReadModel.fromRecords(
+          accounts: const [
+            Account(
+              id: 'checking',
+              name: 'Checking',
+              type: AccountType.checking,
+            ),
+          ],
+          transactionRecords: const [],
+          budgets: const [],
+        );
+      },
+      spendReference: () => DateTime(2026, 8, 20),
+      notifyDataChanged: () {},
+    );
+
+    await tester.pumpWidget(
+      wrapWithL10n(
+        ProviderScope(
+          overrides: [
+            assistantFinancialContextServiceProvider.overrideWithValue(service),
+          ],
+          child: Scaffold(
+            body: AccountsAwareChatTranscript(
+              messages: const [],
+              errorMessage: null,
+              scrollController: ScrollController(),
+              onPromptSelected: (_) {},
+              onConfirmClarityAction: (_) {},
+              onDismissClarityAction: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(en.chatTranscriptPromptSpendWeek), findsOneWidget);
+    expect(find.text(en.chatTranscriptPromptRemember), findsNothing);
   });
 }

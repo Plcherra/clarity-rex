@@ -7,6 +7,7 @@ from typing import Any
 from app.services.plaid_api_client import PlaidApiClient, PlaidApiClientError
 from app.services.plaid_account_relink import PlaidAccountRelinkService
 from app.services.plaid_cursor_service import PlaidCursorService
+from app.services.plaid_transaction_dedupe import PlaidTransactionDedupe
 from app.services.plaid_liability_balances import (
     apply_credit_liability_patch,
     credit_balance_patches_from_liabilities,
@@ -44,6 +45,7 @@ class PlaidAccountService:
         self.relink_service = PlaidAccountRelinkService(
             cursor_service=cursor_service,
         )
+        self.dedupe = PlaidTransactionDedupe(cursor_service=cursor_service)
 
     async def sync_accounts(
         self,
@@ -91,6 +93,10 @@ class PlaidAccountService:
             keep_item_id=item_id,
             institution_id=institution_id,
             institution_name=institution_name,
+        )
+        await self.dedupe.delete_replaced_item_duplicates(
+            user_id=user_id,
+            keep_item_id=item_id,
         )
         return account_map
 
