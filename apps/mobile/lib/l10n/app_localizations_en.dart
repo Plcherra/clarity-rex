@@ -1808,6 +1808,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatTranscriptPromptCheckKnows => 'Check what Clarity knows.';
 
   @override
+  String get chatTranscriptPromptSpendWeek => 'How much did I spend this week?';
+
+  @override
+  String get chatTranscriptPromptBankBalance => 'What is my bank balance?';
+
+  @override
+  String get chatTranscriptPromptAccounts => 'What accounts do I have?';
+
+  @override
   String get chatBubbleClarityAction => 'Clarity action';
 
   @override

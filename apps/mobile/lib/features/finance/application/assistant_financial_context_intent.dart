@@ -170,6 +170,18 @@ final assistantDirectFinanceIntentPatterns = <RegExp>[
   RegExp(
     r'\baccounts?\b.{0,30}\b(?:balance|balances|connected|plaid|sync|synced)\b',
   ),
+  // Spanish money nouns — same attach gate as English, not a chip special case.
+  // Dart `\b` is ASCII-only, so accented endings use letter lookaround.
+  RegExp(
+    r'(?<![A-Za-zÁÉÍÓÚáéíóúÑñ])gast(?:o|os|ar|ando|[eé]|[oó])(?![A-Za-zÁÉÍÓÚáéíóúÑñ])',
+    unicode: true,
+  ),
+  RegExp(r'\bsaldo(?:s)?\b', unicode: true),
+  RegExp(
+    r'(?:qu[eé]|cu[aá]les)\s+cuentas',
+    unicode: true,
+  ),
+  RegExp(r'cuentas\s+tengo', unicode: true),
 ];
 
 final assistantContextualMoneyIntentPatterns = <RegExp>[

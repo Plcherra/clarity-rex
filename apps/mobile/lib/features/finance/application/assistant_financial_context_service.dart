@@ -35,6 +35,11 @@ final class AssistantFinancialContextService {
     _notifyDataChanged();
   }
 
+  Future<bool> hasLinkedAccounts() async {
+    final model = await _safeFinancialReadModel();
+    return model.accounts.isNotEmpty;
+  }
+
   Future<Map<String, dynamic>?> budgetPerformanceSummary() async {
     try {
       const scope = GlobalDashboardScope();

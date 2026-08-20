@@ -8,6 +8,7 @@ import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_message_bubble.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
+import 'package:clarity/rex/chat/presentation/widgets/empty_chat_state.dart';
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
@@ -29,6 +30,7 @@ class ChatTranscript extends StatefulWidget {
     this.focusMessageId,
     this.focusHighlightTerms = const [],
     this.onFocusConsumed,
+    this.hasLinkedAccounts = false,
   });
 
   final List<ChatMessage> messages;
@@ -42,6 +44,7 @@ class ChatTranscript extends StatefulWidget {
   final String? focusMessageId;
   final List<String> focusHighlightTerms;
   final VoidCallback? onFocusConsumed;
+  final bool hasLinkedAccounts;
 
   static String welcomeMessage(AppLocalizations l10n) =>
       l10n.chatTranscriptWelcomeMessage;
@@ -138,9 +141,10 @@ class _ChatTranscriptState extends State<ChatTranscript> {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 if (!hasMessages)
-                  _EmptyChatState(
+                  EmptyChatState(
                     welcomeMessage: ChatTranscript.welcomeMessage(l10n),
                     onPromptSelected: widget.onPromptSelected,
+                    hasLinkedAccounts: widget.hasLinkedAccounts,
                   )
                 else
                   ...messages.asMap().entries.map(
@@ -341,84 +345,6 @@ class _VoiceProcessingIndicatorState extends State<_VoiceProcessingIndicator> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _EmptyChatState extends StatelessWidget {
-  const _EmptyChatState({
-    required this.welcomeMessage,
-    required this.onPromptSelected,
-  });
-
-  final String welcomeMessage;
-  final ValueChanged<String> onPromptSelected;
-
-  static List<String> prompts(AppLocalizations l10n) => [
-    l10n.chatTranscriptPromptRemember,
-    l10n.chatTranscriptPromptThinkTonight,
-    l10n.chatTranscriptPromptCheckKnows,
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.clarityColors;
-    final l10n = context.l10n;
-    final compact = MediaQuery.sizeOf(context).height < 650;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(2, compact ? 12 : 34, 2, 14),
-      child: Padding(
-        padding: EdgeInsets.all(compact ? RexUiTokens.space12 : 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.chatTranscriptReadyTitle,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w900,
-                height: 1.05,
-              ),
-            ),
-            if (!compact) ...[
-              const SizedBox(height: RexUiTokens.space8),
-              Text(
-                welcomeMessage,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colors.textSecondary,
-                  height: 1.35,
-                ),
-              ),
-            ],
-            SizedBox(height: compact ? RexUiTokens.space12 : 18),
-            Wrap(
-              spacing: RexUiTokens.space8,
-              runSpacing: RexUiTokens.space8,
-              children: prompts(l10n)
-                  .map(
-                    (prompt) => ActionChip(
-                      label: Text(prompt),
-                      onPressed: () => onPromptSelected(prompt),
-                      backgroundColor: Colors.transparent,
-                      side: BorderSide(color: colors.borderActive),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          RexUiTokens.radiusPill,
-                        ),
-                      ),
-                      labelStyle: theme.textTheme.labelLarge?.copyWith(
-                        color: colors.textSecondary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  )
-                  .toList(growable: false),
-            ),
-          ],
-        ),
       ),
     );
   }

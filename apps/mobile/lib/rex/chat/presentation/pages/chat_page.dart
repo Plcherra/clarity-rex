@@ -12,7 +12,7 @@ import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/attachment_source_sheet.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_input_bar.dart';
-import 'package:clarity/rex/chat/presentation/widgets/chat_transcript.dart';
+import 'package:clarity/rex/chat/presentation/widgets/accounts_aware_chat_transcript.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
 import 'package:clarity/rex/presentation/assistant_chat_visible_provider.dart';
@@ -510,7 +510,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
           child: Column(
             children: [
               Expanded(
-                child: ChatTranscript(
+                child: AccountsAwareChatTranscript(
                   messages: chat.messages,
                   errorMessage: chat.errorMessage,
                   scrollController: _scrollController,

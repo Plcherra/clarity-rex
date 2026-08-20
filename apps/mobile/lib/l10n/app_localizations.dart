@@ -3268,6 +3268,24 @@ abstract class AppLocalizations {
   /// **'Check what Clarity knows.'**
   String get chatTranscriptPromptCheckKnows;
 
+  /// No description provided for @chatTranscriptPromptSpendWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'How much did I spend this week?'**
+  String get chatTranscriptPromptSpendWeek;
+
+  /// No description provided for @chatTranscriptPromptBankBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'What is my bank balance?'**
+  String get chatTranscriptPromptBankBalance;
+
+  /// No description provided for @chatTranscriptPromptAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'What accounts do I have?'**
+  String get chatTranscriptPromptAccounts;
+
   /// No description provided for @chatBubbleClarityAction.
   ///
   /// In en, this message translates to:

@@ -1,6 +1,6 @@
 # 06 — Pre-launch blocking fixes
 
-**Status:** Ready to implement on `plan/04-aggressive-deletion`. Not started.  
+**Status:** Phase A complete on `cursor/phase-a-first-view-leak-7f06`. Phase B complete on `cursor/phase-b-money-chips`.  
 **Depends on:** [`05_simple_brain_implementation.md`](05_simple_brain_implementation.md) (fetch actions exist)  
 **Launch binary:** this branch — do **not** ship from `main`
 
@@ -44,10 +44,10 @@ The leftover number is already on the dashboard. The leak sentence already exist
 
 **Do**
 
-- [ ] Call `generateDashboardInsightItems(l10n:, snapshot:, budgetPerformance:)` from `_DashboardOverviewBody` (or the overview card). Sources already sit on that widget.
-- [ ] Mount **one** leak item (`InsightType.momLeak`) next to leftover on the first overview paint after accounts exist. Use `item.body`. Optional: tap → existing `DashboardInsightAnchor.spendingPressure` via `dashboardDeepLinkRequestProvider`.
-- [ ] If `_momLeakInsight` returns null (no leak / pct ≤ 0), omit the sentence. Do not invent copy.
-- [ ] Keep leftover as the existing left split / left-this-month figure. Do not rebuild leftover math.
+- [x] Call `generateDashboardInsightItems(l10n:, snapshot:, budgetPerformance:)` from `_DashboardOverviewBody` (or the overview card). Sources already sit on that widget.
+- [x] Mount **one** leak item (`InsightType.momLeak`) next to leftover on the first overview paint after accounts exist. Use `item.body`. Optional: tap → existing `DashboardInsightAnchor.spendingPressure` via `dashboardDeepLinkRequestProvider`.
+- [x] If `_momLeakInsight` returns null (no leak / pct ≤ 0), omit the sentence. Do not invent copy.
+- [x] Keep leftover as the existing left split / left-this-month figure. Do not rebuild leftover math.
 
 **Do not**
 
@@ -75,14 +75,14 @@ Empty chat chips today never match the finance-intent regex, so `fetch_spend_ins
 
 **Do**
 
-- [ ] When the user has linked accounts, replace empty-chat chips with **money** prompts that match `assistantDirectFinanceIntentPatterns` or `assistantContextualMoneyIntentPatterns`. Examples that already pass `apps/mobile/test/assistant_financial_context_service_test.dart`:
+- [x] When the user has linked accounts, replace empty-chat chips with **money** prompts that match `assistantDirectFinanceIntentPatterns` or `assistantContextualMoneyIntentPatterns`. Examples that already pass `apps/mobile/test/assistant_financial_context_service_test.dart`:
   - `How much did I spend this week?`
   - `What is my bank balance?`
   - `What accounts do I have?`
-- [ ] Keep the current memory/Knows chips when there are **no** accounts.
-- [ ] Pass a `hasLinkedAccounts` (or equivalent) into `ChatTranscript` / `_EmptyChatState`. Read accounts from the existing financial read model / account overview — no new API.
-- [ ] Chip tap must go through `onPromptSelected` → `sendMessage` so `_shouldAttachFinancialContext` is true and `financial_context` is posted.
-- [ ] Add/adjust widget + intent tests: each money chip string returns true from `shouldAttachAssistantFinancialContext`.
+- [x] Keep the current memory/Knows chips when there are **no** accounts.
+- [x] Pass a `hasLinkedAccounts` (or equivalent) into `ChatTranscript` / `_EmptyChatState`. Read accounts from the existing financial read model / account overview — no new API.
+- [x] Chip tap prefills via `onPromptSelected` (same as other chips — user taps send). Attach is computed from the sent text, so money chips post `financial_context` without an auto-send special case.
+- [x] Add/adjust widget + intent tests: each money chip string returns true from `shouldAttachAssistantFinancialContext`.
 
 **Do not**
 

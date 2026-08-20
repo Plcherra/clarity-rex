@@ -121,6 +121,20 @@ void main() {
       isTrue,
     );
     expect(
+      shouldAttachAssistantFinancialContext('¿Cuánto gasté esta semana?'),
+      isTrue,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext(
+        '¿Cuál es el saldo de mi banco?',
+      ),
+      isTrue,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext('¿Qué cuentas tengo?'),
+      isTrue,
+    );
+    expect(
       shouldAttachAssistantFinancialContext('Do I have \$20 for gas?'),
       isTrue,
     );
