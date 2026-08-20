@@ -1,6 +1,6 @@
 # 06 — Pre-launch blocking fixes
 
-**Status:** Phases A–D complete on `cursor/phase-b-money-chips`.  
+**Status:** Phases A–E complete on `cursor/phase-b-money-chips`.  
 **Depends on:** [`05_simple_brain_implementation.md`](05_simple_brain_implementation.md) (fetch actions exist)  
 **Launch binary:** this branch — do **not** ship from `main`
 
@@ -180,11 +180,11 @@ Resync is not reconnect. Reauth today leaves last balances looking current.
 
 **Do**
 
-- [ ] Persist `status=login_required` when Plaid says `ITEM_LOGIN_REQUIRED` (webhook `ITEM` / `ERROR`, and sync/balance/liabilities API errors). Same for `PENDING_EXPIRATION` → `pending_expiration` if Plaid sends it.
-- [ ] Add update-mode Link: `create_link_token` accepts the existing item and sends Plaid `access_token` (update mode). Do not start a second Item for the same bank.
-- [ ] Mobile: `loginRequired` (and pending expiration) CTA opens update-mode Link, not `syncItem`. Wire `PlaidLinkService` + accounts UI (`plaid_account_header.dart`, accounts screen).
-- [ ] After update-mode success, mark the item `active` and then sync. `ITEM_LOGIN_REPAIRED` already flips status to `active` — keep that.
-- [ ] While `login_required`, do not present last balances as live/current. Stale timestamp or explicit “needs reconnect” — leftover must not look freshly synced.
+- [x] Persist `status=login_required` when Plaid says `ITEM_LOGIN_REQUIRED` (webhook `ITEM` / `ERROR`, and sync/balance/liabilities API errors). Same for `PENDING_EXPIRATION` → `pending_expiration` if Plaid sends it.
+- [x] Add update-mode Link: `create_link_token` accepts the existing item and sends Plaid `access_token` (update mode). Do not start a second Item for the same bank.
+- [x] Mobile: `loginRequired` (and pending expiration) CTA opens update-mode Link, not `syncItem`. Wire `PlaidLinkService` + accounts UI (`plaid_account_header.dart`, accounts screen).
+- [x] After update-mode success, mark the item `active` and then sync. `ITEM_LOGIN_REPAIRED` already flips status to `active` — keep that.
+- [x] While `login_required`, do not present last balances as live/current. Stale timestamp or explicit “needs reconnect” — leftover must not look freshly synced.
 
 **Do not**
 

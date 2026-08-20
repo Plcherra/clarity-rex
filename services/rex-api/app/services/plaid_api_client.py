@@ -35,6 +35,7 @@ class PlaidApiClientError(Exception):
 class PlaidLinkTokenPayload:
     user_id: str
     platform: str | None = None
+    access_token: str | None = None
     client_name: str = "Clarity"
     language: str = "en"
     products: tuple[str, ...] = ()
@@ -52,13 +53,19 @@ class PlaidApiClient:
 
         config = require_plaid_configured(self.settings)
         platform = (payload.platform or "").strip().lower()
+        access_token = (payload.access_token or "").strip()
         body: dict[str, Any] = {
             "client_name": payload.client_name,
             "language": payload.language,
             "country_codes": list(payload.country_codes or config.country_codes),
-            "products": list(payload.products or config.products),
             "user": {"client_user_id": user_id},
         }
+        if access_token:
+            body["access_token"] = access_token
+        else:
+            body["products"] = list(payload.products or config.products)
+            if "liabilities" not in body["products"]:
+                body["required_if_supported_products"] = ["liabilities"]
         redirect_uri = self._link_redirect_uri(platform)
         if redirect_uri:
             body["redirect_uri"] = redirect_uri
@@ -68,8 +75,6 @@ class PlaidApiClient:
             body["webhook"] = self.settings.plaid_webhook_url
         if self.settings.plaid_account_filters_json:
             body["account_filters"] = self._account_filters()
-        if "liabilities" not in body["products"]:
-            body["required_if_supported_products"] = ["liabilities"]
 
         logger.info(
             "Plaid link token payload prepared platform=%s redirect_uri=%s webhook=%s android_package_name_present=%s account_filters_present=%s",

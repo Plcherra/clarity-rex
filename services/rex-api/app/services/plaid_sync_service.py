@@ -16,8 +16,10 @@ from app.services.plaid_sync_models import (
     required_string,
     string_or_none,
 )
+from app.services.plaid_item_auth_status import item_status_from_plaid_error_code
 from app.services.plaid_token_service import PlaidTokenService
 from app.services.plaid_transaction_service import PlaidTransactionService
+from app.services.plaid_webhook_events import handle_plaid_webhook_event
 
 logger = logging.getLogger(__name__)
 
@@ -161,6 +163,12 @@ class PlaidSyncService:
                     _safe_item_label(normalized_item_id),
                     _safe_error_detail(error.plaid_error_code),
                 )
+                await self._persist_item_auth_status(
+                    normalized_item_id,
+                    error.plaid_error_code,
+                )
+                if item_status_from_plaid_error_code(error.plaid_error_code):
+                    raise
             phase = "sync_accounts"
             account_map = await self.account_service.sync_accounts(
                 user_id=user_id,
@@ -206,6 +214,10 @@ class PlaidSyncService:
                 _safe_error_detail(error.plaid_error_code),
                 _safe_error_detail(error.request_id),
                 _safe_error_detail(error.detail),
+            )
+            await self._persist_item_auth_status(
+                normalized_item_id,
+                error.plaid_error_code,
             )
             if error.plaid_error_code == "RATE_LIMIT_EXCEEDED":
                 raise PlaidSyncServiceError(
@@ -319,107 +331,40 @@ class PlaidSyncService:
         *,
         payload: dict[str, Any],
     ) -> PlaidWebhookResult:
-        event = _webhook_event(payload)
-        plaid_item_id = string_or_none(payload.get("item_id"))
-        if not plaid_item_id:
-            return PlaidWebhookResult(accepted=True, action="ignored_missing_item")
+        return await handle_plaid_webhook_event(
+            payload=payload,
+            cursor_service=self.cursor_service,
+            sync_item=self.sync_item,
+        )
 
-        if event in {"ITEM_LOGIN_REPAIRED", "LOGIN_REPAIRED"}:
-            await self.cursor_service.update_items_by_plaid_id(
-                plaid_item_id,
-                status="active",
-                metadata={"last_webhook_event": event},
-            )
-            return PlaidWebhookResult(accepted=True, action="item_login_repaired")
+    async def access_token_for_user_item(self, *, user_id: str, item_id: str) -> str:
+        _item, access_token_ref = await self.cursor_service.load_user_item_and_token_ref(
+            user_id=user_id.strip(),
+            item_id=item_id.strip(),
+        )
+        return self._decrypt_access_token_ref(access_token_ref)
 
-        if event in {
-            "SYNC_UPDATES_AVAILABLE",
-            "DEFAULT_UPDATE",
-            "PRODUCT_READY",
-        }:
-            await self.cursor_service.update_items_by_plaid_id(
-                plaid_item_id,
-                status="active",
-                metadata={"last_webhook_event": event, "sync_requested": True},
-            )
-            items = await self.cursor_service.list_syncable_items_by_plaid_id(
-                plaid_item_id,
-            )
-            if not items:
-                return PlaidWebhookResult(accepted=True, action="sync_item_missing")
+    async def complete_item_update(self, *, user_id: str, item_id: str) -> PlaidSyncResult:
+        await self.get_item_status(user_id=user_id, item_id=item_id)
+        await self.cursor_service.update_item_status(
+            item_id.strip(),
+            status="active",
+            metadata={"last_webhook_event": "update_mode_completed"},
+        )
+        return await self.sync_item(item_id.strip(), request_bank_refresh=True)
 
-            synced = 0
-            retryable = 0
-            failed = 0
-            for item in items:
-                item_id = string_or_none(item.get("id"))
-                if not item_id:
-                    failed += 1
-                    continue
-                try:
-                    await self.sync_item(item_id)
-                    synced += 1
-                except PlaidSyncServiceError as error:
-                    if error.status_code == 429:
-                        retryable += 1
-                        await self._mark_webhook_sync_degraded(
-                            item_id=item_id,
-                            event=event,
-                            reason="rate_limited",
-                            retryable=True,
-                        )
-                    else:
-                        failed += 1
-                        await self._mark_webhook_sync_degraded(
-                            item_id=item_id,
-                            event=event,
-                            reason="sync_failed",
-                            retryable=False,
-                        )
-                except PlaidApiClientError:
-                    failed += 1
-                    await self._mark_webhook_sync_degraded(
-                        item_id=item_id,
-                        event=event,
-                        reason="plaid_api_failed",
-                        retryable=False,
-                    )
-
-            if failed:
-                return PlaidWebhookResult(accepted=True, action="sync_degraded")
-            if retryable:
-                return PlaidWebhookResult(accepted=True, action="sync_retryable")
-            if synced:
-                return PlaidWebhookResult(accepted=True, action="sync_completed")
-            return PlaidWebhookResult(accepted=True, action="sync_item_missing")
-
-        if event in {"ITEMS:REMOVE", "ITEM:REMOVE", "REMOVE"}:
-            await self.cursor_service.update_items_by_plaid_id(
-                plaid_item_id,
-                status="disconnected",
-                metadata={"last_webhook_event": event},
-            )
-            return PlaidWebhookResult(accepted=True, action="item_removed")
-
-        return PlaidWebhookResult(accepted=True, action="ignored")
-
-    async def _mark_webhook_sync_degraded(
+    async def _persist_item_auth_status(
         self,
-        *,
         item_id: str,
-        event: str,
-        reason: str,
-        retryable: bool,
+        error_code: str | None,
     ) -> None:
+        status = item_status_from_plaid_error_code(error_code)
+        if not status:
+            return
         await self.cursor_service.update_item_status(
             item_id,
-            status="degraded",
-            metadata={
-                "last_webhook_event": event,
-                "sync_requested": True,
-                "last_sync_error": reason,
-                "retryable": retryable,
-            },
+            status=status,
+            metadata={"last_sync_error": (error_code or "").strip().upper()},
         )
 
     def _encrypted_access_token_ref(self, access_token: str) -> str:
@@ -427,16 +372,6 @@ class PlaidSyncService:
 
     def _decrypt_access_token_ref(self, access_token_ref: str) -> str:
         return self.token_service.decrypt_access_token_ref(access_token_ref)
-
-
-def _webhook_event(payload: dict[str, Any]) -> str:
-    webhook_type = str(payload.get("webhook_type") or "").strip().upper()
-    webhook_code = str(payload.get("webhook_code") or "").strip().upper()
-    if webhook_type == "ITEMS" and webhook_code == "REMOVE":
-        return "ITEMS:REMOVE"
-    if webhook_type == "ITEM" and webhook_code == "REMOVE":
-        return "ITEM:REMOVE"
-    return webhook_code
 
 
 def _safe_user_label(user_id: str) -> str:

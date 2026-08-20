@@ -241,7 +241,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
     }
     setState(() => _syncingPlaidItemIds = {..._syncingPlaidItemIds, itemId});
     try {
-      final summary = await _resyncItem(itemId);
+      final summary = current?.needsReconnect == true
+          ? await _reconnectItem(itemId)
+          : await _resyncItem(itemId);
       if (!context.mounted) return;
       final message = buildPlaidRefreshMessage(
         context.l10n,
@@ -254,6 +256,11 @@ class _AccountsScreenState extends State<AccountsScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
+    } on PlaidLinkServiceException catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyPlaidLinkError(context.l10n, error))),
+      );
     } on PlaidAccountServiceException catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
@@ -274,8 +281,41 @@ class _AccountsScreenState extends State<AccountsScreen> {
     }
   }
 
+  Future<PlaidSyncSummary> _reconnectItem(String itemId) async {
+    final result = await widget.controller.reconnectPlaidItem(itemId);
+    if (result is PlaidConnectionExit) {
+      throw const PlaidLinkServiceException(
+        'Bank reconnection did not finish.',
+      );
+    }
+    if (result is! PlaidConnectionSuccess) {
+      throw const PlaidLinkServiceException(
+        'Bank reconnection did not finish.',
+      );
+    }
+    return _refreshItemStatus(
+      itemId,
+      PlaidSyncSummary(
+        itemId: result.itemId,
+        accountsSynced: result.accountsSynced,
+        transactionsAdded: result.transactionsAdded,
+        transactionsModified: result.transactionsModified,
+        transactionsRemoved: result.transactionsRemoved,
+      ),
+    );
+  }
+
   Future<PlaidSyncSummary> _resyncItem(String itemId) async {
-    final summary = await widget.controller.refreshPlaidItem(itemId);
+    return _refreshItemStatus(
+      itemId,
+      await widget.controller.refreshPlaidItem(itemId),
+    );
+  }
+
+  Future<PlaidSyncSummary> _refreshItemStatus(
+    String itemId,
+    PlaidSyncSummary summary,
+  ) async {
     try {
       final status = await widget.controller.plaidItemStatus(itemId);
       if (mounted) {
@@ -378,8 +418,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       for (final item in accounts)
         if (item.account.isPlaidConnected &&
             item.account.plaidItemId != null &&
-            _statusFor(item.account) !=
-                PlaidAccountConnectionStatus.disconnected)
+            _statusFor(item.account).allowsResync)
           item.account.plaidItemId!,
     };
   }

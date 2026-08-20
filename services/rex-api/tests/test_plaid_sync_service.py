@@ -649,6 +649,36 @@ async def test_webhook_item_login_repaired_marks_active(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_webhook_item_error_login_required_persists_status(monkeypatch):
+    calls = []
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return response(status_code=204, text="")
+
+    monkeypatch.setattr(
+        "app.services.plaid_cursor_service.request_with_retries",
+        fake_request,
+    )
+    service = PlaidSyncService(
+        plaid_client=FakePlaidClient(),
+        settings=settings(),
+    )
+
+    result = await service.handle_webhook_event(
+        payload={
+            "webhook_type": "ITEM",
+            "webhook_code": "ERROR",
+            "item_id": "plaid-item-id",
+            "error": {"error_code": "ITEM_LOGIN_REQUIRED"},
+        }
+    )
+
+    assert result.action == "item_login_required"
+    assert calls[0]["json"]["status"] == "login_required"
+
+
+@pytest.mark.asyncio
 async def test_webhook_item_remove_marks_disconnected(monkeypatch):
     calls = []
 

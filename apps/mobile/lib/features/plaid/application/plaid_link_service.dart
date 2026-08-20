@@ -44,6 +44,45 @@ final class PlaidLinkService {
     };
   }
 
+  /// Update-mode Link for an existing item. Does not exchange a public token.
+  Future<PlaidConnectionResult> reconnectBank(
+    String itemId, {
+    required Future<PlaidSyncSummary> Function(String itemId) completeUpdate,
+  }) async {
+    final token = await _tokenApi.createLinkToken(itemId: itemId);
+    final result = await _launcher.open(token);
+    return switch (result) {
+      PlaidLinkLaunchSuccess() => _completeExistingItem(itemId, completeUpdate),
+      PlaidLinkLaunchExit(
+        :final status,
+        :final errorCode,
+        :final errorType,
+        :final requestId,
+      ) =>
+        PlaidConnectionExit(
+          status: status,
+          errorCode: errorCode,
+          errorType: errorType,
+          requestId: requestId,
+        ),
+    };
+  }
+
+  Future<PlaidConnectionSuccess> _completeExistingItem(
+    String itemId,
+    Future<PlaidSyncSummary> Function(String itemId) completeUpdate,
+  ) async {
+    final summary = await completeUpdate(itemId);
+    return PlaidConnectionSuccess(
+      itemId: summary.itemId,
+      status: 'active',
+      accountsSynced: summary.accountsSynced,
+      transactionsAdded: summary.transactionsAdded,
+      transactionsModified: summary.transactionsModified,
+      transactionsRemoved: summary.transactionsRemoved,
+    );
+  }
+
   Future<PlaidConnectionSuccess> _exchangePublicToken(
     PlaidLinkLaunchSuccess result,
   ) async {
@@ -73,10 +112,13 @@ final class RexPlaidApi
   final RexApiClient _apiClient;
 
   @override
-  Future<PlaidLinkToken> createLinkToken() async {
+  Future<PlaidLinkToken> createLinkToken({String? itemId}) async {
     final response = await _apiClient.postJson(
       '/plaid/link-token',
-      <String, dynamic>{'platform': _plaidLinkPlatform()},
+      <String, dynamic>{
+        'platform': _plaidLinkPlatform(),
+        if (itemId != null && itemId.trim().isNotEmpty) 'item_id': itemId.trim(),
+      },
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw PlaidLinkServiceException(_safeErrorMessage(response.body));

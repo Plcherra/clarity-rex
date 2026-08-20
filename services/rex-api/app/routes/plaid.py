@@ -36,6 +36,7 @@ class PlaidLinkTokenRequest(BaseModel):
     account_id: Optional[str] = None
     user_id: Optional[str] = None
     platform: Optional[str] = None
+    item_id: Optional[str] = None
 
 
 class PlaidLinkTokenResponse(BaseModel):
@@ -127,6 +128,7 @@ async def create_link_token(
     request: Optional[PlaidLinkTokenRequest] = None,
     current_user: AuthenticatedUser = Depends(get_current_user),
     plaid_client: PlaidApiClient = Depends(get_plaid_api_client),
+    plaid_sync_service: PlaidSyncService = Depends(get_plaid_sync_service),
 ) -> PlaidLinkTokenResponse:
     request = request or PlaidLinkTokenRequest()
     if request.user_id and request.user_id != current_user.id:
@@ -137,14 +139,31 @@ async def create_link_token(
 
     try:
         logger.info(
-            "Plaid link token requested user=%s account_id_present=%s platform=%s",
+            "Plaid link token requested user=%s account_id_present=%s "
+            "item_id_present=%s platform=%s",
             _safe_user_label(current_user.id),
             bool(request.account_id),
+            bool(request.item_id),
             _safe_log_value(request.platform),
         )
+        access_token = None
+        if request.item_id:
+            access_token = await plaid_sync_service.access_token_for_user_item(
+                user_id=current_user.id,
+                item_id=request.item_id,
+            )
         data = await plaid_client.create_link_token(
-            PlaidLinkTokenPayload(user_id=current_user.id, platform=request.platform),
+            PlaidLinkTokenPayload(
+                user_id=current_user.id,
+                platform=request.platform,
+                access_token=access_token,
+            ),
         )
+    except PlaidSyncServiceError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail=error.detail,
+        ) from error
     except PlaidConfigurationError as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

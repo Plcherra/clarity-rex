@@ -213,6 +213,47 @@ void main() {
       expect(result.accounts.single.availableBalance, 1200);
       expect(result.accounts.single.isoCurrencyCode, 'USD');
     });
+
+    test('reconnect opens update-mode Link and does not exchange', () async {
+      final tokenApi = _FakePlaidLinkTokenApi(
+        token: const PlaidLinkToken(value: 'link-update-test'),
+      );
+      final launcher = _FakePlaidLinkLauncher(
+        result: const PlaidLinkLaunchSuccess(
+          publicToken: 'public-should-not-exchange',
+          institutionName: 'Bank of Test',
+          accountCount: 1,
+        ),
+      );
+      final exchangeApi = _FakePlaidExchangeApi();
+      var completedItemId = '';
+      final service = PlaidLinkService(
+        tokenApi: tokenApi,
+        exchangeApi: exchangeApi,
+        launcher: launcher,
+      );
+
+      final result = await service.reconnectBank(
+        'item-record-9',
+        completeUpdate: (itemId) async {
+          completedItemId = itemId;
+          return const PlaidSyncSummary(
+            itemId: 'item-record-9',
+            accountsSynced: 2,
+            transactionsAdded: 1,
+            transactionsModified: 0,
+            transactionsRemoved: 0,
+          );
+        },
+      );
+
+      expect(tokenApi.lastItemId, 'item-record-9');
+      expect(launcher.openedToken?.value, 'link-update-test');
+      expect(exchangeApi.exchangedPublicToken, isNull);
+      expect(completedItemId, 'item-record-9');
+      expect(result, isA<PlaidConnectionSuccess>());
+      expect((result as PlaidConnectionSuccess).status, 'active');
+    });
   });
 }
 
@@ -222,18 +263,20 @@ final class _FakePlaidLinkTokenApi implements PlaidLinkTokenApi {
   _FakePlaidLinkTokenApi({required this.token});
 
   final PlaidLinkToken token;
+  String? lastItemId;
   int calls = 0;
 
   @override
-  Future<PlaidLinkToken> createLinkToken() async {
+  Future<PlaidLinkToken> createLinkToken({String? itemId}) async {
     calls++;
+    lastItemId = itemId;
     return token;
   }
 }
 
 final class _ThrowingPlaidLinkTokenApi implements PlaidLinkTokenApi {
   @override
-  Future<PlaidLinkToken> createLinkToken() {
+  Future<PlaidLinkToken> createLinkToken({String? itemId}) {
     throw const PlaidLinkServiceException('Missing Plaid config.');
   }
 }

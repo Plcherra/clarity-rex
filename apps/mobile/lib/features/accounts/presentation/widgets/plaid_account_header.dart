@@ -4,10 +4,10 @@ import '../../../../app/ui_dependencies.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
-import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/clarity_colors.dart';
 import '../../../../widgets/clarity_path_loader.dart';
 import '../../data/plaid_account_service.dart';
+import 'plaid_account_freshness.dart';
 import 'plaid_account_status_pill.dart';
 import 'source_label_chip.dart';
 
@@ -150,7 +150,7 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
         ),
         const SizedBox(height: 5),
         Text(
-          _lastSyncedLabel(l10n, lastSyncedAt),
+          plaidAccountFreshnessLabel(l10n, status, lastSyncedAt),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(
@@ -158,18 +158,23 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        if (_statusRecoveryMessage(l10n, status) case final message?) ...[
+        if (plaidAccountStatusRecoveryMessage(l10n, status)
+            case final message?) ...[
           const SizedBox(height: 5),
           Text(
             message,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: _statusRecoveryColor(cs, status),
+              color: plaidAccountStatusRecoveryColor(cs, status),
               fontWeight: FontWeight.w700,
               height: 1.25,
             ),
           ),
         ],
-        if (_webhookFreshnessMessage(l10n, status, webhookLastReceivedAt)
+        if (plaidAccountWebhookFreshnessMessage(
+              l10n,
+              status,
+              webhookLastReceivedAt,
+            )
             case final message?) ...[
           const SizedBox(height: 5),
           Text(
@@ -193,93 +198,6 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _lastSyncedLabel(AppLocalizations l10n, DateTime? value) {
-    if (value == null) return l10n.plaidAccountLastSyncedUnavailable;
-    final now = DateTime.now();
-    final diff = now.difference(value);
-    if (diff.inMinutes < 1) return l10n.plaidAccountLastSyncedJustNow;
-    if (diff.inMinutes < 60) {
-      return l10n.plaidAccountLastSyncedMinutesAgo(diff.inMinutes);
-    }
-    if (diff.inHours < 24) {
-      return l10n.plaidAccountLastSyncedHoursAgo(diff.inHours);
-    }
-    return l10n.plaidAccountLastSyncedDate(
-      '${value.month}/${value.day}/${value.year}',
-    );
-  }
-
-  String? _statusRecoveryMessage(
-    AppLocalizations l10n,
-    PlaidAccountConnectionStatus status,
-  ) {
-    return switch (status) {
-      PlaidAccountConnectionStatus.connected => null,
-      PlaidAccountConnectionStatus.syncing => l10n.plaidAccountStatusRefreshing,
-      PlaidAccountConnectionStatus.degraded =>
-        l10n.plaidAccountStatusDegradedMessage,
-      PlaidAccountConnectionStatus.loginRequired =>
-        l10n.plaidAccountStatusLoginRequiredMessage,
-      PlaidAccountConnectionStatus.pendingExpiration =>
-        l10n.plaidAccountStatusExpiringSoonMessage,
-      PlaidAccountConnectionStatus.disconnected =>
-        l10n.plaidAccountStatusDisconnectedMessage,
-    };
-  }
-
-  Color _statusRecoveryColor(
-    ColorScheme colorScheme,
-    PlaidAccountConnectionStatus status,
-  ) {
-    return switch (status) {
-      PlaidAccountConnectionStatus.connected =>
-        colorScheme.onSurface.withValues(alpha: 0.52),
-      PlaidAccountConnectionStatus.syncing => colorScheme.secondary,
-      PlaidAccountConnectionStatus.degraded => ClarityColors.warning,
-      PlaidAccountConnectionStatus.loginRequired => colorScheme.error,
-      PlaidAccountConnectionStatus.pendingExpiration => ClarityColors.warning,
-      PlaidAccountConnectionStatus.disconnected =>
-        colorScheme.onSurface.withValues(alpha: 0.58),
-    };
-  }
-
-  String? _webhookFreshnessMessage(
-    AppLocalizations l10n,
-    PlaidAccountConnectionStatus status,
-    DateTime? webhookLastReceivedAt,
-  ) {
-    if (status == PlaidAccountConnectionStatus.disconnected ||
-        status == PlaidAccountConnectionStatus.syncing) {
-      return null;
-    }
-    if (webhookLastReceivedAt == null) {
-      return status == PlaidAccountConnectionStatus.connected
-          ? null
-          : l10n.plaidAccountNoWebhookYet;
-    }
-    final diff = DateTime.now().difference(webhookLastReceivedAt);
-    if (diff.inHours < 24) {
-      return null;
-    }
-    return l10n.plaidAccountNoRecentWebhook(
-      _relativeWebhookLabel(l10n, webhookLastReceivedAt),
-    );
-  }
-
-  String _relativeWebhookLabel(AppLocalizations l10n, DateTime value) {
-    final diff = DateTime.now().difference(value);
-    if (diff.inDays >= 1) {
-      return l10n.plaidAccountWebhookDaysAgo(diff.inDays);
-    }
-    if (diff.inHours >= 1) {
-      return l10n.plaidAccountWebhookHoursAgo(diff.inHours);
-    }
-    if (diff.inMinutes >= 1) {
-      return l10n.plaidAccountWebhookMinutesAgo(diff.inMinutes);
-    }
-    return l10n.plaidAccountWebhookJustNow;
   }
 }
 
@@ -326,7 +244,7 @@ class _PlaidAccountBalanceAndSync extends StatelessWidget {
               balance == null ? l10n.commonUnavailable : formatMoney(balance),
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: balance == null
+                color: balance == null || status.needsReconnect
                     ? cs.onSurface.withValues(alpha: 0.46)
                     : cs.onSurface,
               ),
@@ -351,7 +269,12 @@ class _PlaidAccountBalanceAndSync extends StatelessWidget {
                   : onResync,
               icon: status == PlaidAccountConnectionStatus.syncing
                   ? const ClarityInlineLoader(size: 18, strokeWidth: 2)
-                  : const Icon(Icons.sync_rounded, size: 19),
+                  : Icon(
+                      status.needsReconnect
+                          ? Icons.login_rounded
+                          : Icons.sync_rounded,
+                      size: 19,
+                    ),
             ),
             if (status != PlaidAccountConnectionStatus.disconnected)
               IconButton(

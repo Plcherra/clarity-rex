@@ -79,6 +79,35 @@ async def test_create_link_token_posts_ios_oauth_payload(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_create_link_token_update_mode_sends_access_token(monkeypatch):
+    calls = []
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return make_response(json_data={"link_token": "link-update"})
+
+    monkeypatch.setattr(
+        "app.services.plaid_api_client.request_with_retries",
+        fake_request,
+    )
+    client = PlaidApiClient(configured_settings())
+
+    result = await client.create_link_token(
+        PlaidLinkTokenPayload(
+            user_id="user-1",
+            platform="ios",
+            access_token="access-existing-item",
+        )
+    )
+
+    assert result["link_token"] == "link-update"
+    body = calls[0]["json"]
+    assert body["access_token"] == "access-existing-item"
+    assert "products" not in body
+    assert "required_if_supported_products" not in body
+
+
+@pytest.mark.asyncio
 async def test_create_link_token_posts_web_oauth_payload(monkeypatch):
     calls = []
 

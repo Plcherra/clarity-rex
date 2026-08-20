@@ -6,7 +6,11 @@ from app.dependencies import get_plaid_api_client, get_plaid_sync_service
 from app.main import app
 from app.services.plaid_api_client import PlaidApiClientError
 from app.services.plaid_config import PlaidConfigurationError
-from app.services.plaid_sync_models import PlaidItemStatus, PlaidSyncServiceError
+from app.services.plaid_sync_models import (
+    PlaidItemStatus,
+    PlaidSyncResult,
+    PlaidSyncServiceError,
+)
 
 
 class FakePlaidApiClient:
@@ -154,6 +158,67 @@ def test_link_token_route_returns_normalized_plaid_errors():
     assert response.status_code == 400
     assert response.json()["detail"] == "Plaid request failed."
     assert "request-1" not in response.text
+
+
+class FakeUpdateModePlaidSyncService:
+    token_call = None
+    complete_call = None
+
+    async def access_token_for_user_item(self, *, user_id, item_id):
+        self.token_call = {"user_id": user_id, "item_id": item_id}
+        return "access-existing-item"
+
+    async def complete_item_update(self, *, user_id, item_id):
+        self.complete_call = {"user_id": user_id, "item_id": item_id}
+        return PlaidSyncResult(
+            plaid_item_record_id=item_id,
+            accounts_synced=2,
+            transactions_added=1,
+            transactions_modified=0,
+            transactions_removed=0,
+            next_cursor="cursor-1",
+            balances_refreshed=True,
+            transactions_refresh_status="ok",
+        )
+
+
+def test_link_token_route_loads_access_token_for_existing_item():
+    plaid_client = FakePlaidApiClient()
+    sync_service = FakeUpdateModePlaidSyncService()
+    app.dependency_overrides[get_current_user] = fake_current_user
+    app.dependency_overrides[get_plaid_api_client] = lambda: plaid_client
+    app.dependency_overrides[get_plaid_sync_service] = lambda: sync_service
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/plaid/link-token",
+            json={"platform": "ios", "item_id": "item-record-9"},
+        )
+
+    assert response.status_code == 200
+    assert sync_service.token_call == {
+        "user_id": "user-1",
+        "item_id": "item-record-9",
+    }
+    assert plaid_client.payload.access_token == "access-existing-item"
+    assert "access_token" not in response.text
+
+
+def test_complete_update_route_marks_active_and_syncs():
+    sync_service = FakeUpdateModePlaidSyncService()
+    app.dependency_overrides[get_current_user] = fake_current_user
+    app.dependency_overrides[get_plaid_sync_service] = lambda: sync_service
+
+    with TestClient(app) as client:
+        response = client.post("/plaid/complete-update/item-record-9")
+
+    assert response.status_code == 200
+    assert sync_service.complete_call == {
+        "user_id": "user-1",
+        "item_id": "item-record-9",
+    }
+    assert response.json()["plaid_item_record_id"] == "item-record-9"
+    assert response.json()["accounts_synced"] == 2
 
 
 def test_link_token_route_requires_authentication():

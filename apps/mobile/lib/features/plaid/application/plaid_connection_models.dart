@@ -164,7 +164,7 @@ String buildPlaidRefreshMessage(
 }
 
 abstract interface class PlaidLinkTokenApi {
-  Future<PlaidLinkToken> createLinkToken();
+  Future<PlaidLinkToken> createLinkToken({String? itemId});
 }
 
 abstract interface class PlaidPublicTokenExchangeApi {

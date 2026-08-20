@@ -499,6 +499,13 @@ final class AccountUiController extends _UiController {
     return bindings.plaidAccountService.syncItem(itemId);
   }
 
+  Future<PlaidConnectionResult> reconnectPlaidItem(String itemId) {
+    return bindings.plaidLinkService.reconnectBank(
+      itemId,
+      completeUpdate: bindings.plaidAccountService.completeUpdate,
+    );
+  }
+
   Future<PlaidDisconnectSummary> disconnectPlaidItem(String itemId) {
     return bindings.plaidAccountService.disconnectItem(itemId);
   }

@@ -11,6 +11,9 @@ from app.services.plaid_webhook_verifier import (
 ITEM_EVENTS_REQUIRING_ITEM = {
     "ITEM_LOGIN_REPAIRED",
     "LOGIN_REPAIRED",
+    "ITEM_LOGIN_REQUIRED",
+    "PENDING_EXPIRATION",
+    "ERROR",
     "SYNC_UPDATES_AVAILABLE",
     "DEFAULT_UPDATE",
     "PRODUCT_READY",

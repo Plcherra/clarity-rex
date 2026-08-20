@@ -21,6 +21,7 @@ from app.routes.entities import router as entities_router
 from app.routes.finance_audit import router as finance_audit_router
 from app.routes.memory import router as memory_router
 from app.routes.plaid import router as plaid_router
+from app.routes.plaid_update import router as plaid_update_router
 from app.routes.plaid_webhooks import router as plaid_webhook_router
 from app.routes.plans import router as plans_router
 from app.routes.rules import router as rules_router
@@ -231,6 +232,7 @@ app.include_router(accountability_router, dependencies=auth_dependencies)
 app.include_router(usage_router, dependencies=auth_dependencies)
 app.include_router(apple_app_site_association_router)
 app.include_router(plaid_router)
+app.include_router(plaid_update_router)
 app.include_router(plaid_webhook_router)
 app.include_router(voice_router, dependencies=auth_dependencies)
 app.include_router(voice_stream_router)

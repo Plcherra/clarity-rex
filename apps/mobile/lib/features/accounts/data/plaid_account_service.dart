@@ -12,6 +12,15 @@ enum PlaidAccountConnectionStatus {
   disconnected,
 }
 
+extension PlaidAccountConnectionReconnect on PlaidAccountConnectionStatus {
+  bool get needsReconnect =>
+      this == PlaidAccountConnectionStatus.loginRequired ||
+      this == PlaidAccountConnectionStatus.pendingExpiration;
+
+  bool get allowsResync =>
+      this != PlaidAccountConnectionStatus.disconnected && !needsReconnect;
+}
+
 extension PlaidAccountConnectionStatusLabel on PlaidAccountConnectionStatus {
   String get label => switch (this) {
     PlaidAccountConnectionStatus.connected => 'Connected',
@@ -114,6 +123,36 @@ final class PlaidAccountService {
     }
     final response = await _apiClient.post(
       '/plaid/sync-item/$normalizedItemId',
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw PlaidAccountServiceException(_safeErrorMessage(response.body));
+    }
+
+    final decoded = _safeJsonMap(response.body);
+    final responseItemId = decoded['plaid_item_record_id'];
+    return PlaidSyncSummary(
+      itemId: responseItemId is String && responseItemId.trim().isNotEmpty
+          ? responseItemId.trim()
+          : normalizedItemId,
+      accountsSynced: _intOrZero(decoded['accounts_synced']),
+      transactionsAdded: _intOrZero(decoded['transactions_added']),
+      transactionsModified: _intOrZero(decoded['transactions_modified']),
+      transactionsRemoved: _intOrZero(decoded['transactions_removed']),
+      balancesRefreshed: decoded['balances_refreshed'] == true,
+      transactionsRefreshStatus:
+          _stringOrNull(decoded['transactions_refresh_status']) ?? 'skipped',
+    );
+  }
+
+  Future<PlaidSyncSummary> completeUpdate(String itemId) async {
+    final normalizedItemId = itemId.trim();
+    if (normalizedItemId.isEmpty) {
+      throw const PlaidAccountServiceException(
+        'No connected bank to reconnect.',
+      );
+    }
+    final response = await _apiClient.post(
+      '/plaid/complete-update/$normalizedItemId',
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw PlaidAccountServiceException(_safeErrorMessage(response.body));
