@@ -207,11 +207,10 @@ class PlaidAccountService:
             payload = await self.plaid_client.get_liabilities(access_token)
         except PlaidApiClientError as error:
             code = error.plaid_error_code or ""
-            if code not in _LIABILITY_SKIP_CODES:
-                logger.warning(
-                    "Plaid liabilities fetch failed code=%s",
-                    code or "unknown",
-                )
+            logger.warning(
+                "Plaid liabilities fetch skipped code=%s",
+                code or "unknown",
+            )
             return {}
         return credit_balance_patches_from_liabilities(payload)
 

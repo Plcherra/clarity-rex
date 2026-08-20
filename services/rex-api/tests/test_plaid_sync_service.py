@@ -504,6 +504,40 @@ async def test_webhook_sync_updates_runs_item_sync(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_liabilities_product_ready_webhook_runs_item_sync(monkeypatch):
+    calls = []
+    plaid_client = FullSyncPlaidClient()
+    service = PlaidSyncService(
+        plaid_client=plaid_client,
+        settings=settings(),
+    )
+    token_ref = service._encrypted_access_token_ref("access-token-secret")
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return sync_storage_response(url, kwargs.get("json"), token_ref, method)
+
+    monkeypatch.setattr(
+        "app.services.plaid_cursor_service.request_with_retries",
+        fake_request,
+    )
+
+    result = await service.handle_webhook_event(
+        payload={
+            "webhook_type": "LIABILITIES",
+            "webhook_code": "PRODUCT_READY",
+            "item_id": "plaid-item-id",
+        }
+    )
+
+    assert result.action == "sync_completed"
+    assert plaid_client.liability_get_calls == 1
+    assert any(
+        call["method"] == "POST" and "/plaid_accounts?" in call["url"] for call in calls
+    )
+
+
+@pytest.mark.asyncio
 async def test_webhook_sync_rate_limit_marks_retryable_degraded(monkeypatch):
     calls = []
     service = PlaidSyncService(

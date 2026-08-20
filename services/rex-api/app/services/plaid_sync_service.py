@@ -332,7 +332,11 @@ class PlaidSyncService:
             )
             return PlaidWebhookResult(accepted=True, action="item_login_repaired")
 
-        if event == "SYNC_UPDATES_AVAILABLE":
+        if event in {
+            "SYNC_UPDATES_AVAILABLE",
+            "DEFAULT_UPDATE",
+            "PRODUCT_READY",
+        }:
             await self.cursor_service.update_items_by_plaid_id(
                 plaid_item_id,
                 status="active",

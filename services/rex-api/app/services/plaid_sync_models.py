@@ -71,8 +71,18 @@ def list_of_dicts(value: Any) -> list[dict[str, Any]]:
 
 
 def number_or_none(value: Any) -> Optional[float]:
+    if isinstance(value, bool):
+        return None
     if isinstance(value, (int, float)):
         return float(value)
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return None
+        try:
+            return float(stripped)
+        except ValueError:
+            return None
     return None
 
 

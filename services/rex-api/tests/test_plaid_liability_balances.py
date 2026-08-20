@@ -60,6 +60,32 @@ def test_liability_patch_does_not_overwrite_existing_available():
     assert merged["balances"]["limit"] == 500.0
 
 
+def test_liabilities_parse_string_limit_values():
+    patches = credit_balance_patches_from_liabilities(
+        {
+            "accounts": [
+                {
+                    "account_id": "cap-card",
+                    "type": "credit",
+                    "balances": {"current": "464.38", "available": None, "limit": None},
+                }
+            ],
+            "liabilities": {
+                "credit": [
+                    {
+                        "account_id": "cap-card",
+                        "available_credit": "435.62",
+                        "credit_limit": "900.00",
+                    }
+                ]
+            },
+        }
+    )
+
+    assert patches["cap-card"]["available"] == 435.62
+    assert patches["cap-card"]["limit"] == 900.0
+
+
 def test_liabilities_ignore_depository_accounts():
     patches = credit_balance_patches_from_liabilities(
         {
